@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import Machine from '../models/Machine';
 import MachineIngredientInventory from '../models/MachineIngredientInventory';
 import Warning from '../models/Warning';
+import websocketService from '../services/websocketService';
 
 // Get all machines
 export const getAllMachines = async (req: Request, res: Response): Promise<void> => {
@@ -73,6 +74,10 @@ export const createMachine = async (req: Request, res: Response): Promise<void> 
       created_at: new Date()
     });
 
+    // Emit websocket event for new machine
+    websocketService.emitMachineStatusUpdate(machine);
+    websocketService.emitMachineTemperatureUpdate(machine);
+
     res.status(201).json({
       success: true,
       data: machine
@@ -122,6 +127,17 @@ export const updateMachine = async (req: Request, res: Response): Promise<void> 
       },
       { new: true, runValidators: true }
     );
+
+    if (updatedMachine) {
+      // Emit websocket events if status or temperature changed
+      if (machine.status !== status) {
+        websocketService.emitMachineStatusUpdate(updatedMachine);
+      }
+      
+      if (machine.temperature_c !== temperature_c) {
+        websocketService.emitMachineTemperatureUpdate(updatedMachine);
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -196,17 +212,14 @@ export const updateMachineInventory = async (req: Request, res: Response): Promi
   try {
     const { ingredient_id, quantity } = req.body;
     
-    // Check if machine exists
-    const machine = await Machine.findOne({ machine_id: req.params.machineId });
-    if (!machine) {
-      res.status(404).json({
+    if (!ingredient_id || quantity === undefined) {
+      res.status(400).json({
         success: false,
-        message: 'Machine not found'
+        message: 'Please provide ingredient_id and quantity'
       });
       return;
     }
-
-    // Find or create inventory entry
+    
     let inventory = await MachineIngredientInventory.findOne({
       machine_id: req.params.machineId,
       ingredient_id
@@ -242,6 +255,13 @@ export const updateMachineInventory = async (req: Request, res: Response): Promi
         created_at: new Date()
       });
     }
+
+    // Get the full inventory and emit update via WebSocket
+    const fullInventory = await MachineIngredientInventory.find({
+      machine_id: req.params.machineId
+    });
+    
+    websocketService.emitMachineInventoryUpdate(req.params.machineId, fullInventory);
 
     res.status(200).json({
       success: true,

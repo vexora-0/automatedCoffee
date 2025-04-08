@@ -1,0 +1,66 @@
+import { io } from '../server';
+import { IMachine } from '../types';
+import { Document } from 'mongoose';
+
+// WebSocket event types
+export enum WebSocketEvents {
+  RECIPE_UPDATE = 'recipe-update',
+  MACHINE_STATUS_UPDATE = 'machine-status-update',
+  MACHINE_TEMPERATURE_UPDATE = 'machine-temperature-update',
+  MACHINE_INVENTORY_UPDATE = 'machine-inventory-update'
+}
+
+/**
+ * WebSocket Service to handle emitting events to connected clients
+ */
+export const websocketService = {
+  /**
+   * Emit recipe data updates to all connected clients
+   */
+  emitRecipeUpdate: (recipes: any[]) => {
+    io.emit(WebSocketEvents.RECIPE_UPDATE, recipes);
+  },
+
+  /**
+   * Emit machine status update to specific machine room and all connected clients
+   */
+  emitMachineStatusUpdate: (machine: IMachine & Document) => {
+    // Emit to specific machine room
+    io.to(`machine-${machine.machine_id}`).emit(
+      WebSocketEvents.MACHINE_STATUS_UPDATE, 
+      {
+        machine_id: machine.machine_id,
+        status: machine.status,
+        location: machine.location
+      }
+    );
+  },
+
+  /**
+   * Emit machine temperature update to specific machine room
+   */
+  emitMachineTemperatureUpdate: (machine: IMachine & Document) => {
+    io.to(`machine-${machine.machine_id}`).emit(
+      WebSocketEvents.MACHINE_TEMPERATURE_UPDATE, 
+      {
+        machine_id: machine.machine_id, 
+        temperature_c: machine.temperature_c
+      }
+    );
+  },
+
+  /**
+   * Emit machine ingredient inventory update to specific machine room
+   */
+  emitMachineInventoryUpdate: (machineId: string, inventory: any[]) => {
+    io.to(`machine-${machineId}`).emit(
+      WebSocketEvents.MACHINE_INVENTORY_UPDATE, 
+      {
+        machine_id: machineId,
+        inventory: inventory
+      }
+    );
+  }
+};
+
+export default websocketService; 

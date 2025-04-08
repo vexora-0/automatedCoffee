@@ -5,6 +5,13 @@ import RecipeCategory from '../models/RecipeCategory';
 import RecipeIngredient from '../models/RecipeIngredient';
 import Ingredient from '../models/Ingredient';
 import Order from '../models/Order';
+import websocketService from '../services/websocketService';
+
+// Helper function to emit recipe updates
+const emitRecipeUpdates = async () => {
+  const recipes = await Recipe.find().sort({ created_at: -1 });
+  websocketService.emitRecipeUpdate(recipes);
+};
 
 // Get all recipe categories
 export const getAllCategories = async (req: Request, res: Response): Promise<void> => {
@@ -166,6 +173,9 @@ export const createRecipe = async (req: Request, res: Response): Promise<void> =
         recipeIngredients.push(recipeIngredient);
       }
       
+      // Emit recipe update via WebSocket
+      await emitRecipeUpdates();
+      
       res.status(201).json({
         success: true,
         data: {
@@ -174,6 +184,9 @@ export const createRecipe = async (req: Request, res: Response): Promise<void> =
         }
       });
     } else {
+      // Emit recipe update via WebSocket
+      await emitRecipeUpdates();
+      
       res.status(201).json({
         success: true,
         data: recipe
@@ -257,7 +270,7 @@ export const updateRecipe = async (req: Request, res: Response): Promise<void> =
         if (!ingredient) {
           continue; // Skip invalid ingredients
         }
-        
+  
         const recipeIngredient = await RecipeIngredient.create({
           id: uuidv4(),
           recipe_id: req.params.recipeId,
@@ -268,6 +281,9 @@ export const updateRecipe = async (req: Request, res: Response): Promise<void> =
         recipeIngredients.push(recipeIngredient);
       }
       
+      // Emit recipe update via WebSocket
+      await emitRecipeUpdates();
+      
       res.status(200).json({
         success: true,
         data: {
@@ -276,6 +292,9 @@ export const updateRecipe = async (req: Request, res: Response): Promise<void> =
         }
       });
     } else {
+      // Emit recipe update via WebSocket
+      await emitRecipeUpdates();
+      
       res.status(200).json({
         success: true,
         data: updatedRecipe
@@ -302,23 +321,25 @@ export const deleteRecipe = async (req: Request, res: Response): Promise<void> =
       });
       return;
     }
-    
-    // Check if there are orders for this recipe
-    const ordersUsingRecipe = await Order.find({ recipe_id: req.params.recipeId });
-    
-    if (ordersUsingRecipe.length > 0) {
+
+    // Check if recipe is in use in any orders
+    const orders = await Order.find({ recipe_id: req.params.recipeId });
+    if (orders.length > 0) {
       res.status(400).json({
         success: false,
-        message: 'Cannot delete recipe that has existing orders'
+        message: 'Cannot delete recipe as it is used in orders'
       });
       return;
     }
-    
-    // Delete recipe ingredients
+
+    // Delete associated ingredients
     await RecipeIngredient.deleteMany({ recipe_id: req.params.recipeId });
     
     // Delete recipe
     await Recipe.findOneAndDelete({ recipe_id: req.params.recipeId });
+
+    // Emit recipe update via WebSocket
+    await emitRecipeUpdates();
 
     res.status(200).json({
       success: true,
