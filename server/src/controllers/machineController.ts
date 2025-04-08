@@ -1,0 +1,257 @@
+import { Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import Machine from '../models/Machine';
+import MachineIngredientInventory from '../models/MachineIngredientInventory';
+import Warning from '../models/Warning';
+
+// Get all machines
+export const getAllMachines = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const machines = await Machine.find().sort({ created_at: -1 });
+    res.status(200).json({
+      success: true,
+      count: machines.length,
+      data: machines
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Get single machine
+export const getMachineById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const machine = await Machine.findOne({ machine_id: req.params.machineId });
+
+    if (!machine) {
+      res.status(404).json({
+        success: false,
+        message: 'Machine not found'
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: machine
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Create new machine
+export const createMachine = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      location,
+      status,
+      temperature_c,
+      cleaning_water_ml,
+      last_regular_service,
+      last_deep_service,
+      revenue_total
+    } = req.body;
+    
+    const machine = await Machine.create({
+      machine_id: uuidv4(),
+      location,
+      status,
+      temperature_c,
+      cleaning_water_ml,
+      last_regular_service,
+      last_deep_service,
+      revenue_total: revenue_total || 0,
+      created_at: new Date()
+    });
+
+    res.status(201).json({
+      success: true,
+      data: machine
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Update machine
+export const updateMachine = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const {
+      location,
+      status,
+      temperature_c,
+      cleaning_water_ml,
+      last_regular_service,
+      last_deep_service,
+      revenue_total
+    } = req.body;
+    
+    const machine = await Machine.findOne({ machine_id: req.params.machineId });
+
+    if (!machine) {
+      res.status(404).json({
+        success: false,
+        message: 'Machine not found'
+      });
+      return;
+    }
+
+    const updatedMachine = await Machine.findOneAndUpdate(
+      { machine_id: req.params.machineId },
+      {
+        location,
+        status,
+        temperature_c,
+        cleaning_water_ml,
+        last_regular_service,
+        last_deep_service,
+        revenue_total
+      },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: updatedMachine
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Delete machine
+export const deleteMachine = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const machine = await Machine.findOne({ machine_id: req.params.machineId });
+
+    if (!machine) {
+      res.status(404).json({
+        success: false,
+        message: 'Machine not found'
+      });
+      return;
+    }
+
+    // Delete associated inventory
+    await MachineIngredientInventory.deleteMany({ machine_id: req.params.machineId });
+    
+    // Delete associated warnings
+    await Warning.deleteMany({ machine_id: req.params.machineId });
+
+    await Machine.findOneAndDelete({ machine_id: req.params.machineId });
+
+    res.status(200).json({
+      success: true,
+      data: {}
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Get machine inventory
+export const getMachineInventory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const inventory = await MachineIngredientInventory.find({ 
+      machine_id: req.params.machineId 
+    }).populate('ingredient_id');
+
+    res.status(200).json({
+      success: true,
+      count: inventory.length,
+      data: inventory
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Update machine inventory
+export const updateMachineInventory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { ingredient_id, quantity } = req.body;
+    
+    // Check if machine exists
+    const machine = await Machine.findOne({ machine_id: req.params.machineId });
+    if (!machine) {
+      res.status(404).json({
+        success: false,
+        message: 'Machine not found'
+      });
+      return;
+    }
+
+    // Find or create inventory entry
+    let inventory = await MachineIngredientInventory.findOne({
+      machine_id: req.params.machineId,
+      ingredient_id
+    });
+
+    if (inventory) {
+      // Update existing inventory
+      inventory = await MachineIngredientInventory.findOneAndUpdate(
+        { machine_id: req.params.machineId, ingredient_id },
+        { quantity, updated_at: new Date() },
+        { new: true }
+      );
+    } else {
+      // Create new inventory entry
+      inventory = await MachineIngredientInventory.create({
+        id: uuidv4(),
+        machine_id: req.params.machineId,
+        ingredient_id,
+        quantity,
+        updated_at: new Date()
+      });
+    }
+
+    // Check if inventory is low and create warning if needed
+    if (quantity <= 10) {
+      await Warning.create({
+        warning_id: uuidv4(),
+        machine_id: req.params.machineId,
+        type: 'dispenser_level',
+        severity: quantity <= 5 ? 'critical' : 'high',
+        message: `Ingredient ID ${ingredient_id} is running low (${quantity} remaining)`,
+        status: 'active',
+        created_at: new Date()
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: inventory
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+}; 
