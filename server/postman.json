@@ -1,0 +1,466 @@
+{
+    "info": {
+      "_postman_id": "b5e71d24-a4c6-4a8f-8ea7-f98f6e2aa1c3",
+      "name": "Automated Coffee System API",
+      "description": "API collection for testing the Automated Coffee System backend",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Users",
+        "item": [
+          {
+            "name": "Get All Users",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/users",
+              "description": "Get all users"
+            }
+          },
+          {
+            "name": "Get User by ID",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/users/{{userId}}",
+              "description": "Get a single user"
+            }
+          },
+          {
+            "name": "Create User",
+            "request": {
+              "method": "POST",
+              "url": "{{baseUrl}}/api/users",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"name\": \"John Doe\",\n  \"age_group\": \"30-40\",\n  \"role\": \"customer\"\n}"
+              },
+              "description": "Create a new user"
+            }
+          },
+          {
+            "name": "Update User",
+            "request": {
+              "method": "PUT",
+              "url": "{{baseUrl}}/api/users/{{userId}}",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"name\": \"John Updated\",\n  \"age_group\": \"30-40\",\n  \"role\": \"customer\"\n}"
+              },
+              "description": "Update a user"
+            }
+          },
+          {
+            "name": "Delete User",
+            "request": {
+              "method": "DELETE",
+              "url": "{{baseUrl}}/api/users/{{userId}}",
+              "description": "Delete a user"
+            }
+          },
+          {
+            "name": "Get User History",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/users/{{userId}}/history",
+              "description": "Get user history"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Machines",
+        "item": [
+          {
+            "name": "Get All Machines",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/machines",
+              "description": "Get all machines"
+            }
+          },
+          {
+            "name": "Get Machine by ID",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/machines/{{machineId}}",
+              "description": "Get a single machine"
+            }
+          },
+          {
+            "name": "Create Machine",
+            "request": {
+              "method": "POST",
+              "url": "{{baseUrl}}/api/machines",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"location\": \"Coffee Shop Main Street\",\n  \"status\": \"operational\",\n  \"temperature_c\": 92.5,\n  \"cleaning_water_ml\": 500,\n  \"last_regular_service\": \"2023-01-01\",\n  \"last_deep_service\": \"2022-12-01\",\n  \"revenue_total\": 0\n}"
+              },
+              "description": "Create a new machine"
+            }
+          },
+          {
+            "name": "Update Machine",
+            "request": {
+              "method": "PUT",
+              "url": "{{baseUrl}}/api/machines/{{machineId}}",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"location\": \"Coffee Shop Main Street Updated\",\n  \"status\": \"operational\",\n  \"temperature_c\": 93.0,\n  \"cleaning_water_ml\": 550,\n  \"last_regular_service\": \"2023-01-01\",\n  \"last_deep_service\": \"2022-12-01\",\n  \"revenue_total\": 100\n}"
+              },
+              "description": "Update a machine"
+            }
+          },
+          {
+            "name": "Delete Machine",
+            "request": {
+              "method": "DELETE",
+              "url": "{{baseUrl}}/api/machines/{{machineId}}",
+              "description": "Delete a machine"
+            }
+          },
+          {
+            "name": "Get Machine Inventory",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/machines/{{machineId}}/inventory",
+              "description": "Get machine inventory"
+            }
+          },
+          {
+            "name": "Update Machine Inventory",
+            "request": {
+              "method": "PUT",
+              "url": "{{baseUrl}}/api/machines/{{machineId}}/inventory",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"ingredient_id\": \"{{ingredientId}}\",\n  \"quantity\": 50\n}"
+              },
+              "description": "Update machine inventory"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Ingredients",
+        "item": [
+          {
+            "name": "Get All Ingredients",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/ingredients",
+              "description": "Get all ingredients"
+            }
+          },
+          {
+            "name": "Get Ingredient by ID",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/ingredients/{{ingredientId}}",
+              "description": "Get a single ingredient"
+            }
+          },
+          {
+            "name": "Create Ingredient",
+            "request": {
+              "method": "POST",
+              "url": "{{baseUrl}}/api/ingredients",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"name\": \"Coffee Beans Arabica\",\n  \"unit\": \"g\"\n}"
+              },
+              "description": "Create a new ingredient"
+            }
+          },
+          {
+            "name": "Update Ingredient",
+            "request": {
+              "method": "PUT",
+              "url": "{{baseUrl}}/api/ingredients/{{ingredientId}}",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"name\": \"Coffee Beans Arabica Premium\",\n  \"unit\": \"g\"\n}"
+              },
+              "description": "Update an ingredient"
+            }
+          },
+          {
+            "name": "Delete Ingredient",
+            "request": {
+              "method": "DELETE",
+              "url": "{{baseUrl}}/api/ingredients/{{ingredientId}}",
+              "description": "Delete an ingredient"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Recipes",
+        "item": [
+          {
+            "name": "Get All Recipe Categories",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/recipes/categories",
+              "description": "Get all recipe categories"
+            }
+          },
+          {
+            "name": "Create Recipe Category",
+            "request": {
+              "method": "POST",
+              "url": "{{baseUrl}}/api/recipes/categories",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"name\": \"Espresso Drinks\"\n}"
+              },
+              "description": "Create a new recipe category"
+            }
+          },
+          {
+            "name": "Get All Recipes",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/recipes",
+              "description": "Get all recipes"
+            }
+          },
+          {
+            "name": "Get Recipe by ID",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/recipes/{{recipeId}}",
+              "description": "Get a single recipe"
+            }
+          },
+          {
+            "name": "Create Recipe",
+            "request": {
+              "method": "POST",
+              "url": "{{baseUrl}}/api/recipes",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"name\": \"Cappuccino\",\n  \"description\": \"Classic Italian coffee drink\",\n  \"category_id\": \"{{categoryId}}\",\n  \"price\": 3.99,\n  \"image_url\": \"https://example.com/cappuccino.jpg\",\n  \"calories\": 120,\n  \"protein\": 6.5,\n  \"carbs\": 10.2,\n  \"fat\": 6.1,\n  \"sugar\": 8.0,\n  \"ingredients\": [\n    {\n      \"ingredient_id\": \"{{coffeeBeansId}}\",\n      \"quantity\": 18\n    },\n    {\n      \"ingredient_id\": \"{{milkId}}\",\n      \"quantity\": 120\n    }\n  ]\n}"
+              },
+              "description": "Create a new recipe"
+            }
+          },
+          {
+            "name": "Update Recipe",
+            "request": {
+              "method": "PUT",
+              "url": "{{baseUrl}}/api/recipes/{{recipeId}}",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"name\": \"Cappuccino Premium\",\n  \"description\": \"Classic Italian coffee drink with premium beans\",\n  \"category_id\": \"{{categoryId}}\",\n  \"price\": 4.49,\n  \"image_url\": \"https://example.com/cappuccino-premium.jpg\",\n  \"calories\": 120,\n  \"protein\": 6.5,\n  \"carbs\": 10.2,\n  \"fat\": 6.1,\n  \"sugar\": 8.0,\n  \"ingredients\": [\n    {\n      \"ingredient_id\": \"{{coffeeBeansId}}\",\n      \"quantity\": 20\n    },\n    {\n      \"ingredient_id\": \"{{milkId}}\",\n      \"quantity\": 120\n    }\n  ]\n}"
+              },
+              "description": "Update a recipe"
+            }
+          },
+          {
+            "name": "Delete Recipe",
+            "request": {
+              "method": "DELETE",
+              "url": "{{baseUrl}}/api/recipes/{{recipeId}}",
+              "description": "Delete a recipe"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Orders",
+        "item": [
+          {
+            "name": "Get All Orders",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/orders",
+              "description": "Get all orders"
+            }
+          },
+          {
+            "name": "Get Order by ID",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/orders/{{orderId}}",
+              "description": "Get a single order"
+            }
+          },
+          {
+            "name": "Create Order",
+            "request": {
+              "method": "POST",
+              "url": "{{baseUrl}}/api/orders",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"user_id\": \"{{userId}}\",\n  \"machine_id\": \"{{machineId}}\",\n  \"recipe_id\": \"{{recipeId}}\"\n}"
+              },
+              "description": "Create a new order"
+            }
+          },
+          {
+            "name": "Update Order Status",
+            "request": {
+              "method": "PUT",
+              "url": "{{baseUrl}}/api/orders/{{orderId}}/status",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"status\": \"completed\"\n}"
+              },
+              "description": "Update order status"
+            }
+          },
+          {
+            "name": "Rate Order",
+            "request": {
+              "method": "PUT",
+              "url": "{{baseUrl}}/api/orders/{{orderId}}/rate",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"rating\": 5\n}"
+              },
+              "description": "Rate an order"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Warnings",
+        "item": [
+          {
+            "name": "Get All Warnings",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/warnings",
+              "description": "Get all warnings"
+            }
+          },
+          {
+            "name": "Get Warning by ID",
+            "request": {
+              "method": "GET",
+              "url": "{{baseUrl}}/api/warnings/{{warningId}}",
+              "description": "Get a single warning"
+            }
+          },
+          {
+            "name": "Create Warning",
+            "request": {
+              "method": "POST",
+              "url": "{{baseUrl}}/api/warnings",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"machine_id\": \"{{machineId}}\",\n  \"order_id\": \"{{orderId}}\",\n  \"type\": \"dispenser_level\",\n  \"severity\": \"medium\",\n  \"message\": \"Coffee beans running low\"\n}"
+              },
+              "description": "Create a new warning"
+            }
+          },
+          {
+            "name": "Resolve Warning",
+            "request": {
+              "method": "PUT",
+              "url": "{{baseUrl}}/api/warnings/{{warningId}}/resolve",
+              "description": "Resolve a warning"
+            }
+          },
+          {
+            "name": "Delete Warning",
+            "request": {
+              "method": "DELETE",
+              "url": "{{baseUrl}}/api/warnings/{{warningId}}",
+              "description": "Delete a warning"
+            }
+          }
+        ]
+      }
+    ],
+    "variable": [
+      {
+        "key": "baseUrl",
+        "value": "http://localhost:5000"
+      }
+    ]
+  }
