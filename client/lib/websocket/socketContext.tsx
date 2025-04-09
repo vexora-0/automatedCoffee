@@ -1,15 +1,21 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { Machine, Recipe, MachineIngredientInventory } from '@/lib/api/types';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+import { io, Socket } from "socket.io-client";
+import { Recipe, MachineIngredientInventory } from "@/lib/api/types";
 
 // Socket event types - must match backend
 export enum SocketEvents {
-  RECIPE_UPDATE = 'recipe-update',
-  MACHINE_STATUS_UPDATE = 'machine-status-update',
-  MACHINE_TEMPERATURE_UPDATE = 'machine-temperature-update',
-  MACHINE_INVENTORY_UPDATE = 'machine-inventory-update'
+  RECIPE_UPDATE = "recipe-update",
+  MACHINE_STATUS_UPDATE = "machine-status-update",
+  MACHINE_TEMPERATURE_UPDATE = "machine-temperature-update",
+  MACHINE_INVENTORY_UPDATE = "machine-inventory-update",
 }
 
 // Socket context types
@@ -46,23 +52,32 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [machineStatuses, setMachineStatuses] = useState<Record<string, { status: string; location: string }>>({});
-  const [machineTemperatures, setMachineTemperatures] = useState<Record<string, number>>({});
-  const [machineInventories, setMachineInventories] = useState<Record<string, MachineIngredientInventory[]>>({});
+  const [machineStatuses, setMachineStatuses] = useState<
+    Record<string, { status: string; location: string }>
+  >({});
+  const [machineTemperatures, setMachineTemperatures] = useState<
+    Record<string, number>
+  >({});
+  const [machineInventories, setMachineInventories] = useState<
+    Record<string, MachineIngredientInventory[]>
+  >({});
 
   // Initialize socket connection
   useEffect(() => {
-    const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
-      transports: ['websocket'],
-    });
+    const socketInstance = io(
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
+      {
+        transports: ["websocket"],
+      }
+    );
 
-    socketInstance.on('connect', () => {
-      console.log('WebSocket connected');
+    socketInstance.on("connect", () => {
+      console.log("WebSocket connected");
       setIsConnected(true);
     });
 
-    socketInstance.on('disconnect', () => {
-      console.log('WebSocket disconnected');
+    socketInstance.on("disconnect", () => {
+      console.log("WebSocket disconnected");
       setIsConnected(false);
     });
 
@@ -96,7 +111,10 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
     // Handle machine inventory updates
     socketInstance.on(
       SocketEvents.MACHINE_INVENTORY_UPDATE,
-      (data: { machine_id: string; inventory: MachineIngredientInventory[] }) => {
+      (data: {
+        machine_id: string;
+        inventory: MachineIngredientInventory[];
+      }) => {
         setMachineInventories((prev) => ({
           ...prev,
           [data.machine_id]: data.inventory,
@@ -117,14 +135,14 @@ export const SocketProvider = ({ children }: SocketProviderProps) => {
   // Join a machine room to receive machine-specific updates
   const joinMachineRoom = (machineId: string) => {
     if (socket && machineId) {
-      socket.emit('join-machine', machineId);
+      socket.emit("join-machine", machineId);
     }
   };
 
   // Leave a machine room
   const leaveMachineRoom = (machineId: string) => {
     if (socket && machineId) {
-      socket.emit('leave-machine', machineId);
+      socket.emit("leave-machine", machineId);
     }
   };
 
@@ -171,7 +189,8 @@ export const useMachineStatus = (machineId: string) => {
 
 // Custom hook for machine temperature
 export const useMachineTemperature = (machineId: string) => {
-  const { machineTemperatures, joinMachineRoom, leaveMachineRoom } = useSocket();
+  const { machineTemperatures, joinMachineRoom, leaveMachineRoom } =
+    useSocket();
 
   useEffect(() => {
     joinMachineRoom(machineId);
@@ -195,4 +214,4 @@ export const useMachineInventory = (machineId: string) => {
   }, [machineId, joinMachineRoom, leaveMachineRoom]);
 
   return machineInventories[machineId];
-}; 
+};

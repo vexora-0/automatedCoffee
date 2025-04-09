@@ -7,7 +7,6 @@ import {
   Ingredient,
   RecipeCategory,
   Recipe,
-  RecipeIngredient,
   Order,
   Warning,
   ApiResponse
@@ -40,7 +39,7 @@ export const userService = {
   },
 
   // Delete user
-  deleteUser: async (userId: string): Promise<ApiResponse<{}>> => {
+  deleteUser: async (userId: string): Promise<ApiResponse<Record<string, never>>> => {
     const response = await apiClient.delete(`/users/${userId}`);
     return response.data;
   },
@@ -79,7 +78,7 @@ export const machineService = {
   },
 
   // Delete machine
-  deleteMachine: async (machineId: string): Promise<ApiResponse<{}>> => {
+  deleteMachine: async (machineId: string): Promise<ApiResponse<Record<string, never>>> => {
     const response = await apiClient.delete(`/machines/${machineId}`);
     return response.data;
   },
@@ -127,7 +126,7 @@ export const ingredientService = {
   },
 
   // Delete ingredient
-  deleteIngredient: async (ingredientId: string): Promise<ApiResponse<{}>> => {
+  deleteIngredient: async (ingredientId: string): Promise<ApiResponse<Record<string, never>>> => {
     const response = await apiClient.delete(`/ingredients/${ingredientId}`);
     return response.data;
   }
@@ -172,7 +171,7 @@ export const recipeService = {
   },
 
   // Delete recipe
-  deleteRecipe: async (recipeId: string): Promise<ApiResponse<{}>> => {
+  deleteRecipe: async (recipeId: string): Promise<ApiResponse<Record<string, never>>> => {
     const response = await apiClient.delete(`/recipes/${recipeId}`);
     return response.data;
   }

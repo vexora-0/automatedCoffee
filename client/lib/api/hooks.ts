@@ -3,7 +3,6 @@ import { AxiosError } from 'axios';
 import apiClient from './apiClient';
 import {
   User,
-  UserHistory,
   Machine,
   MachineIngredientInventory,
   Ingredient,
@@ -47,7 +46,7 @@ export const useUser = (userId?: string) => {
 };
 
 export const useUserHistory = (userId?: string) => {
-  const { data, error, isLoading, mutate } = useSWR<ApiResponse<any[]>, AxiosError>(
+  const { data, error, isLoading, mutate } = useSWR<ApiResponse<Order[]>, AxiosError>(
     userId ? `/users/${userId}/history` : null,
     fetcher
   );

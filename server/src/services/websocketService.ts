@@ -37,6 +37,20 @@ export const websocketService = {
   },
 
   /**
+   * Emit machine status update with only changed fields (delta) to reduce payload size
+   */
+  emitMachineStatusUpdateDelta: (machine: IMachine & Document, changedFields: any) => {
+    io.to(`machine-${machine.machine_id}`).emit(
+      WebSocketEvents.MACHINE_STATUS_UPDATE, 
+      {
+        machine_id: machine.machine_id,
+        delta: changedFields,
+        timestamp: Date.now()
+      }
+    );
+  },
+
+  /**
    * Emit machine temperature update to specific machine room
    */
   emitMachineTemperatureUpdate: (machine: IMachine & Document) => {
@@ -48,6 +62,32 @@ export const websocketService = {
       }
     );
   },
+
+  /**
+   * Emit machine temperature update with throttling for high-frequency updates
+   * Only sends the most recent temperature value every 2 seconds
+   */
+  emitMachineTemperatureUpdateThrottled: (() => {
+    const updates = new Map(); // Store latest updates per machine
+    
+    // Process updates every 2 seconds
+    setInterval(() => {
+      if (updates.size > 0) {
+        for (const [machineId, data] of updates.entries()) {
+          io.to(`machine-${machineId}`).emit(
+            WebSocketEvents.MACHINE_TEMPERATURE_UPDATE, data);
+        }
+        updates.clear();
+      }
+    }, 2000);
+    
+    return (machine: IMachine & Document) => {
+      updates.set(machine.machine_id, {
+        machine_id: machine.machine_id, 
+        temperature_c: machine.temperature_c
+      });
+    };
+  })(),
 
   /**
    * Emit machine ingredient inventory update to specific machine room

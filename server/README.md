@@ -16,15 +16,62 @@ This is the backend server for an automated coffee system, built with Express.js
 - Node.js (v14+)
 - MongoDB
 
-## Setup
+## Change Streams Support
 
-1. Clone the repository
-2. Install dependencies:
+This application uses MongoDB Change Streams for real-time updates. Change streams are only supported in:
+
+1. MongoDB deployments running as a replica set
+2. MongoDB deployments running as a sharded cluster
+
+For development, you have two options:
+
+### Option 1: Use the Polling Fallback (Default)
+
+The application automatically falls back to polling when change streams aren't available.
+
+### Option 2: Enable Replica Set for Development
+
+To enable full change stream functionality locally:
+
+1. Start MongoDB as a replica set:
+
+```bash
+# Create data directory if it doesn't exist
+mkdir -p ./mongo-data
+
+# Start MongoDB with replica set enabled
+mongod --dbpath ./mongo-data --replSet rs0
+```
+
+2. Initialize the replica set (one-time setup):
+
+```bash
+# Connect to MongoDB shell
+mongosh
+
+# Inside the mongo shell
+rs.initiate()
+exit
+```
+
+3. Update your .env file to include the replica set name:
+```
+MONGODB_URI=mongodb://localhost:27017/coffee_db?replicaSet=rs0
+```
+
+## Development Setup
+
+1. Install dependencies:
 ```bash
 npm install
 ```
-3. Create a `.env` file at the root of the project based on the `.env.example` file
-4. Start the development server:
+
+2. Set up environment variables:
+```
+cp .env.example .env
+```
+
+3. Start development server:
 ```bash
 npm run dev
 ```
