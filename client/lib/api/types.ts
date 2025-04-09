@@ -57,19 +57,47 @@ export interface RecipeCategory {
   name: string;
 }
 
+// Image metadata structure matching the backend
+export interface ImageMetadata {
+  cdnUrl: string;
+  publicId: string;
+  width: number;
+  height: number;
+  format: string;
+  provider: string;
+}
+
 export interface Recipe {
   recipe_id: string;
   name: string;
   description: string;
   category_id: string;
   price: number;
-  image_url: string;
+  image_url: string; // Legacy field
+  image?: ImageMetadata; // New field structure
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
   sugar: number;
   created_at: Date;
+}
+
+// Form data interfaces for submitting recipes with images
+export interface RecipeFormData {
+  name: string;
+  description: string;
+  category_id: string;
+  price: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  sugar: number;
+  ingredients?: {
+    ingredient_id: string;
+    quantity: number;
+  }[];
 }
 
 export interface RecipeIngredient {

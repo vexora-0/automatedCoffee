@@ -7,6 +7,7 @@ import {
   Ingredient,
   RecipeCategory,
   Recipe,
+  RecipeFormData,
   Order,
   Warning,
   ApiResponse
@@ -161,6 +162,42 @@ export const recipeService = {
   // Create new recipe
   createRecipe: async (recipeData: Partial<Recipe>): Promise<ApiResponse<Recipe>> => {
     const response = await apiClient.post('/recipes', recipeData);
+    return response.data;
+  },
+
+  // Create recipe with image
+  createRecipeWithImage: async (recipeData: RecipeFormData, imageFile: File): Promise<ApiResponse<Recipe>> => {
+    // Create a FormData object
+    const formData = new FormData();
+    
+    // Add the recipe data as a JSON string
+    formData.append('recipe', JSON.stringify(recipeData));
+    
+    // Add the image file
+    formData.append('image', imageFile);
+    
+    // Send the request with multipart/form-data content type (handled automatically with FormData)
+    const response = await apiClient.post('/recipes/with-image', formData, {
+      headers: {
+        // Let the browser set the Content-Type header with the boundary
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response.data;
+  },
+
+  // Update recipe image
+  updateRecipeImage: async (recipeId: string, imageFile: File): Promise<ApiResponse<Recipe>> => {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    
+    const response = await apiClient.put(`/recipes/${recipeId}/image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
     return response.data;
   },
 

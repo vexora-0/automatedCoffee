@@ -6,6 +6,7 @@ import RecipeIngredient from '../models/RecipeIngredient';
 import Ingredient from '../models/Ingredient';
 import Order from '../models/Order';
 import websocketService from '../services/websocketService';
+import imageService from '../services/imageService';
 
 // Helper function to emit recipe updates
 const emitRecipeUpdates = async () => {
@@ -99,6 +100,163 @@ export const getRecipeById = async (req: Request, res: Response): Promise<void> 
         ...recipe.toObject(),
         ingredients
       }
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Create recipe with image
+export const createRecipeWithImage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Parse recipe data from request body
+    const recipeData = req.body.recipe ? JSON.parse(req.body.recipe) : req.body;
+    
+    // Check if category exists
+    const category = await RecipeCategory.findOne({ category_id: recipeData.category_id });
+    if (!category) {
+      res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+      return;
+    }
+    
+    // Handle image upload if file is present
+    let imageMetadata = null;
+    if (req.file) {
+      try {
+        imageMetadata = await imageService.uploadImage(req.file, 'recipes');
+      } catch (uploadError) {
+        console.error('Image upload error:', uploadError);
+        res.status(400).json({
+          success: false,
+          message: 'Failed to upload image',
+          error: uploadError.message
+        });
+        return;
+      }
+    }
+    
+    // Create recipe with image data if available
+    const recipe = await Recipe.create({
+      recipe_id: uuidv4(),
+      name: recipeData.name,
+      description: recipeData.description,
+      category_id: recipeData.category_id,
+      price: recipeData.price,
+      image: imageMetadata, // Use new image structure
+      image_url: imageMetadata?.cdnUrl || recipeData.image_url, // For backward compatibility
+      calories: recipeData.calories,
+      protein: recipeData.protein,
+      carbs: recipeData.carbs,
+      fat: recipeData.fat,
+      sugar: recipeData.sugar,
+      created_at: new Date()
+    });
+    
+    // Add recipe ingredients if provided
+    if (recipeData.ingredients && Array.isArray(recipeData.ingredients)) {
+      const recipeIngredients = [];
+      
+      for (const item of recipeData.ingredients) {
+        // Verify ingredient exists
+        const ingredient = await Ingredient.findOne({ ingredient_id: item.ingredient_id });
+        if (!ingredient) {
+          continue; // Skip invalid ingredients
+        }
+        
+        const recipeIngredient = await RecipeIngredient.create({
+          id: uuidv4(),
+          recipe_id: recipe.recipe_id,
+          ingredient_id: item.ingredient_id,
+          quantity: item.quantity
+        });
+        
+        recipeIngredients.push(recipeIngredient);
+      }
+      
+      // Emit recipe update via WebSocket
+      await emitRecipeUpdates();
+      
+      res.status(201).json({
+        success: true,
+        data: {
+          ...recipe.toObject(),
+          ingredients: recipeIngredients
+        }
+      });
+    } else {
+      // Emit recipe update via WebSocket
+      await emitRecipeUpdates();
+      
+      res.status(201).json({
+        success: true,
+        data: recipe
+      });
+    }
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Update recipe image
+export const updateRecipeImage = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { recipeId } = req.params;
+    
+    // Find recipe
+    const recipe = await Recipe.findOne({ recipe_id: recipeId });
+    if (!recipe) {
+      res.status(404).json({
+        success: false,
+        message: 'Recipe not found'
+      });
+      return;
+    }
+    
+    // Check if file is present
+    if (!req.file) {
+      res.status(400).json({
+        success: false,
+        message: 'No image file provided'
+      });
+      return;
+    }
+    
+    // Delete old image if exists
+    if (recipe.image && recipe.image.publicId) {
+      try {
+        await imageService.deleteImage(recipe.image.publicId);
+      } catch (deleteError) {
+        console.warn('Failed to delete old image:', deleteError);
+        // Continue anyway
+      }
+    }
+    
+    // Upload new image
+    const imageMetadata = await imageService.uploadImage(req.file, 'recipes');
+    
+    // Update recipe with new image
+    recipe.image = imageMetadata;
+    recipe.image_url = imageMetadata.cdnUrl; // Update legacy field too
+    
+    await recipe.save();
+    
+    // Emit recipe update via WebSocket
+    await emitRecipeUpdates();
+    
+    res.status(200).json({
+      success: true,
+      data: recipe
     });
   } catch (error: any) {
     res.status(500).json({
