@@ -1,3 +1,4 @@
+"use client"
 import { create } from 'zustand';
 import { RecipeIngredient } from '@/lib/api/types';
 import { immer } from 'zustand/middleware/immer';

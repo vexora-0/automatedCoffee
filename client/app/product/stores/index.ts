@@ -32,6 +32,10 @@ export const useInitializeStores = (
   const recipeAvailabilityStore = useRecipeAvailabilityStore();
   
   useEffect(() => {
+    console.log('[Stores] Initializing stores with data');
+    console.log(`[Stores] Recipes: ${recipes.length}, Ingredients: ${ingredients.length}, Recipe-Ingredients: ${recipeIngredients.length}`);
+    console.log(`[Stores] Machine ID: ${machineId}, Inventory Items: ${machineInventory.length}`);
+    
     // Initialize all stores
     recipeStore.setRecipes(recipes);
     ingredientStore.setIngredients(ingredients);
@@ -40,6 +44,8 @@ export const useInitializeStores = (
     
     // Compute recipe availability based on current machine inventory
     recipeAvailabilityStore.computeAvailability(machineId);
+    
+    console.log('[Stores] All stores initialized');
   }, [
     recipes, 
     ingredients, 
@@ -75,6 +81,9 @@ export const useUpdateMachineInventory = (
   const recipeAvailabilityStore = useRecipeAvailabilityStore();
   
   useEffect(() => {
+    console.log(`[Stores] useUpdateMachineInventory called for machine: ${machineId}`);
+    console.log(`[Stores] Has inventory data: ${Boolean(machineInventory)}, Items: ${machineInventory?.length || 0}`);
+    
     if (machineInventory) {
       // Track which ingredients were updated
       const updatedIngredientIds = new Set<string>();
@@ -82,6 +91,8 @@ export const useUpdateMachineInventory = (
       // Get current inventory for comparison
       const currentInventory = machineInventoryStore.getInventoryForMachine(machineId);
       const currentInventoryMap: Record<string, MachineIngredientInventory> = {};
+      
+      console.log(`[Stores] Current inventory items: ${currentInventory.length}`);
       
       // Create lookup map of current inventory
       currentInventory.forEach(item => {
@@ -94,9 +105,12 @@ export const useUpdateMachineInventory = (
         
         // If quantity changed or item is new, mark as updated
         if (!currentItem || currentItem.quantity !== item.quantity) {
+          console.log(`[Stores] Ingredient ${item.ingredient_id} changed: ${currentItem?.quantity || 'none'} -> ${item.quantity}`);
           updatedIngredientIds.add(item.ingredient_id);
         }
       });
+      
+      console.log(`[Stores] Updated ingredients count: ${updatedIngredientIds.size}`);
       
       // Update machine inventory
       machineInventoryStore.setMachineInventory(machineId, machineInventory);
@@ -105,14 +119,20 @@ export const useUpdateMachineInventory = (
       if (updatedIngredientIds.size > 0) {
         // For small updates, use targeted updates
         if (updatedIngredientIds.size <= 5) {
+          console.log(`[Stores] Using targeted updates for ${updatedIngredientIds.size} ingredients`);
           updatedIngredientIds.forEach(ingredientId => {
             recipeAvailabilityStore.updateAvailabilityForIngredient(ingredientId, machineId);
           });
         } else {
           // For larger updates, recompute all (might be faster than many individual updates)
+          console.log(`[Stores] Using full recompute for ${updatedIngredientIds.size} ingredients`);
           recipeAvailabilityStore.computeAvailability(machineId);
         }
+      } else {
+        console.log('[Stores] No ingredient quantities changed, skipping recipe availability update');
       }
+    } else {
+      console.log('[Stores] No inventory data received, skipping update');
     }
   }, [machineId, machineInventory, machineInventoryStore, recipeAvailabilityStore]);
 };
@@ -130,6 +150,8 @@ export const useUpdateIngredientQuantity = (
   const recipeAvailabilityStore = useRecipeAvailabilityStore();
   
   useEffect(() => {
+    console.log(`[Stores] useUpdateIngredientQuantity: machine ${machineId}, ingredient ${ingredientId}, quantity ${quantity}`);
+    
     // Update the specific ingredient
     machineInventoryStore.updateIngredientQuantity(machineId, ingredientId, quantity);
     
