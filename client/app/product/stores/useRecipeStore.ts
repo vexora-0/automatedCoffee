@@ -55,6 +55,9 @@ const useRecipeStore = create<RecipeStore>()(
         }
         state.categorizedRecipes[recipe.category_id].push(recipe.recipe_id);
       });
+
+      // Log recipe summary
+      console.log(`[RecipeStore] Loaded ${recipes.length} recipes in ${Object.keys(state.categorizedRecipes).length} categories`);
     }),
     
     addRecipe: (recipe) => set((state) => {
@@ -161,6 +164,7 @@ export const useRecipes = () => {
   // Sync WebSocket recipes with RecipeStore when they change
   useEffect(() => {
     if (wsRecipes && wsRecipes.length > 0) {
+      console.log(`[RecipeStore] Syncing ${wsRecipes.length} recipes from WebSocket`);
       setRecipes(wsRecipes);
       setLoading(false);
     }

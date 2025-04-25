@@ -2,14 +2,17 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { Recipe, MachineIngredientInventory } from '@/lib/api/types';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 // Socket event types - must match backend
 export enum SocketEvents {
   RECIPE_UPDATE = 'recipe-update',
   MACHINE_STATUS_UPDATE = 'machine-status-update',
   MACHINE_TEMPERATURE_UPDATE = 'machine-temperature-update',
-  MACHINE_INVENTORY_UPDATE = 'machine-inventory-update'
+  MACHINE_INVENTORY_UPDATE = 'machine-inventory-update',
+  REQUEST_DATA = 'request-data',
+  RECIPE_INGREDIENTS_UPDATE = 'recipe-ingredients-update',
+  ERROR = 'error'
 }
 
 // Define specific delta update type
@@ -25,10 +28,12 @@ interface WebSocketState {
   machineTemperatures: Record<string, number>;
   machineInventories: Record<string, MachineIngredientInventory[]>;
   recipes: Recipe[];
+  error: string | null;
   initSocket: () => void;
   disconnectSocket: () => void;
   joinMachineRoom: (machineId: string) => void;
   leaveMachineRoom: (machineId: string) => void;
+  requestData: (machineId: string) => void;
 }
 
 export const useWebSocketStore = create<WebSocketState>((set, get) => ({
@@ -38,26 +43,28 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
   machineTemperatures: {},
   machineInventories: {},
   recipes: [],
+  error: null,
   
   initSocket: () => {
     const { socket } = get();
     if (socket) return;
     
     console.log('[WebSocket] Initializing socket connection...');
-    // Get base URL without trailing /api
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     const socketUrl = apiBaseUrl.replace(/\/api$/, '');
     
     console.log('[WebSocket] Using URL:', socketUrl);
     
-    // Test the connection with a simple fetch before trying WebSocket
-    // Ensure we use the correct path - the health check is at /api/health-check
     const healthCheckUrl = `${apiBaseUrl.replace(/\/api$/, '')}/api/health-check`;
     console.log('[WebSocket] Testing connection to:', healthCheckUrl);
     
     fetch(healthCheckUrl, { method: 'GET' })
       .then(response => {
         console.log('[WebSocket] Server reachable, status:', response.status);
+        return response.json();
+      })
+      .then(data => {
+        console.log('[WebSocket] Health check response:', JSON.stringify(data, null, 2));
       })
       .catch(error => {
         console.error('[WebSocket] Server unreachable:', error.message);
@@ -71,8 +78,15 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
       timeout: 20000,
     });
     
+    // Log all emitted events
+    const originalEmit = socketInstance.emit;
+    socketInstance.emit = function(event: string, ...args: any[]) {
+      console.log(`[WebSocket] Emitted: ${event}`);
+      return originalEmit.apply(this, [event, ...args]);
+    };
+    
     socketInstance.on('connect', () => {
-      console.log('[WebSocket] Connected successfully, socket ID:', socketInstance.id);
+      console.log('[WebSocket] Connected successfully');
       set({ isConnected: true });
     });
     
@@ -82,25 +96,72 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
     
     socketInstance.on('reconnect_failed', () => {
       console.error('[WebSocket] Reconnection failed after multiple attempts');
-      // Could implement user notification here
     });
     
-    socketInstance.on('disconnect', () => {
-      console.log('[WebSocket] Disconnected');
+    socketInstance.on('disconnect', (reason) => {
+      console.log('[WebSocket] Disconnected, reason:', reason);
       set({ isConnected: false });
     });
     
     socketInstance.on('connect_error', (error) => {
       console.error('[WebSocket] Connection error:', error);
+      set({ error: error.message });
+    });
+    
+    socketInstance.on('error', (error) => {
+      console.error('[WebSocket] Socket error:', error);
+      set({ error: error.message });
     });
     
     // Handle recipe updates
     socketInstance.on(SocketEvents.RECIPE_UPDATE, (data: Recipe[]) => {
-      console.log('[WebSocket] Received recipe update:', data.length, 'recipes');
-      set({ recipes: data });
+      console.log(`[WebSocket] Received ${data?.length || 0} recipes`);
+      
+      // Ensure data is an array and has length
+      if (Array.isArray(data) && data.length > 0) {
+        set({ recipes: data });
+        
+        try {
+          // Try to update the recipe store directly for better integration
+          const RecipeStore = require('./useRecipeStore').default;
+          if (RecipeStore) {
+            const recipeStore = RecipeStore.getState();
+            if (recipeStore && recipeStore.setRecipes) {
+              recipeStore.setRecipes(data);
+            }
+          }
+        } catch (error) {
+          console.error('[WebSocket] Failed to update recipe store:', error);
+        }
+      } else {
+        console.warn('[WebSocket] Received empty or invalid recipe data');
+      }
     });
     
-    // Handle machine status updates with delta support
+    // Handle recipe ingredient updates
+    socketInstance.on(SocketEvents.RECIPE_INGREDIENTS_UPDATE, (data: any[]) => {
+      console.log(`[WebSocket] Received ${data?.length || 0} recipe ingredients`);
+      
+      if (Array.isArray(data) && data.length > 0) {
+        try {
+          // Update the recipe ingredient store
+          const RecipeIngredientStore = require('./useRecipeIngredientStore').default;
+          if (RecipeIngredientStore) {
+            const store = RecipeIngredientStore.getState();
+            if (store && store.setRecipeIngredients) {
+              store.setRecipeIngredients(data);
+              // DO NOT automatically update recipe availability here
+              // Let the component handle this with proper dependencies
+              // This prevents infinite update loops
+            }
+          }
+        } catch (error) {
+          console.error('[WebSocket] Failed to update recipe ingredient store:', error);
+        }
+      }
+    });
+    
+    // Handle machine status updates
     socketInstance.on(
       SocketEvents.MACHINE_STATUS_UPDATE,
       (data: { 
@@ -110,11 +171,10 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
         location?: string;
         timestamp?: number;
       }) => {
-        console.log('[WebSocket] Received machine status update for:', data.machine_id);
+        console.log(`[WebSocket] Received status update for machine ${data.machine_id}`);
         set((state) => {
           const current = state.machineStatuses[data.machine_id] || { status: '', location: '' };
           
-          // Handle both full updates and delta updates
           if (data.delta) {
             return {
               ...state,
@@ -146,7 +206,7 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
     socketInstance.on(
       SocketEvents.MACHINE_TEMPERATURE_UPDATE,
       (data: { machine_id: string; temperature_c: number }) => {
-        console.log('[WebSocket] Received temperature update for:', data.machine_id, 'temp:', data.temperature_c);
+        console.log(`[WebSocket] Received temperature update for machine ${data.machine_id}`);
         set((state) => ({
           ...state,
           machineTemperatures: {
@@ -161,19 +221,45 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
     socketInstance.on(
       SocketEvents.MACHINE_INVENTORY_UPDATE,
       (data: { machine_id: string; inventory: MachineIngredientInventory[] }) => {
-        console.log('[WebSocket] Received inventory update for machine:', data.machine_id);
-        console.log('[WebSocket] Inventory items received:', data.inventory.length);
-        console.log('[WebSocket] First few items:', data.inventory.slice(0, 3));
+        console.log(`[WebSocket] Received inventory update for machine ${data.machine_id} with ${data.inventory?.length || 0} items`);
         
-        set((state) => ({
-          ...state,
-          machineInventories: {
-            ...state.machineInventories,
-            [data.machine_id]: data.inventory,
+        // Ensure data has machineId and inventory is an array
+        if (data.machine_id && Array.isArray(data.inventory)) {
+          set((state) => ({
+            ...state,
+            machineInventories: {
+              ...state.machineInventories,
+              [data.machine_id]: data.inventory,
+            }
+          }));
+          
+          try {
+            // Try to update the machine inventory store directly
+            const MachineInventoryStore = require('./useMachineInventoryStore').default;
+            if (MachineInventoryStore) {
+              const inventoryStore = MachineInventoryStore.getState();
+              if (inventoryStore && inventoryStore.setMachineInventory) {
+                inventoryStore.setMachineInventory(data.machine_id, data.inventory);
+                
+                // DO NOT automatically update recipe availability here
+                // Let the component handle this with proper dependencies
+                // This prevents infinite update loops
+              }
+            }
+          } catch (error) {
+            console.error('[WebSocket] Failed to update inventory store:', error);
           }
-        }));
+        } else {
+          console.warn('[WebSocket] Received invalid inventory data');
+        }
       }
     );
+    
+    // Handle error events
+    socketInstance.on(SocketEvents.ERROR, (error) => {
+      console.error('[WebSocket] Server error:', error);
+      set({ error: error.message });
+    });
     
     set({ socket: socketInstance });
   },
@@ -192,6 +278,8 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
     if (socket && machineId) {
       console.log('[WebSocket] Joining machine room:', machineId);
       socket.emit('join-machine', machineId);
+      // Request data after joining room
+      get().requestData(machineId);
     }
   },
   
@@ -202,6 +290,23 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
       socket.emit('leave-machine', machineId);
     }
   },
+
+  requestData: (machineId) => {
+    const { socket } = get();
+    if (socket && machineId) {
+      console.log('[WebSocket] Requesting data for machine:', machineId);
+      socket.emit(SocketEvents.REQUEST_DATA, { machine_id: machineId });
+      
+      // Set a timeout to retry if no data is received
+      setTimeout(() => {
+        const { recipes } = get();
+        if (!recipes || recipes.length === 0) {
+          console.log('[WebSocket] No data received after timeout, retrying request...');
+          socket.emit(SocketEvents.REQUEST_DATA, { machine_id: machineId });
+        }
+      }, 5000);
+    }
+  }
 }));
 
 // Hook to use machine data with auto-join/leave
@@ -211,7 +316,8 @@ export const useMachineData = (machineId: string) => {
     machineTemperatures, 
     machineInventories,
     joinMachineRoom,
-    leaveMachineRoom
+    leaveMachineRoom,
+    requestData
   } = useWebSocketStore();
   
   // Join room on mount, leave on unmount

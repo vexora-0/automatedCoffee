@@ -9,7 +9,7 @@ import http from 'http';
 import { Server } from 'socket.io';
 import dbChangeService from './services/dbChangeService';
 import mongoose from 'mongoose';
-import websocketService from './services/websocketService';
+import websocketService, { WebSocketEvents } from './services/websocketService';
 
 // Import routes
 import userRoutes from './routes/userRoutes';
@@ -60,7 +60,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/warnings', warningRoutes);
 
 // Health check route
-app.get('/health', (req, res) => {
+app.get('/api/health-check', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
@@ -111,6 +111,54 @@ io.on('connection', (socket) => {
   socket.on('leave-machine', (machineId) => {
     socket.leave(`machine-${machineId}`);
     console.log(`Client ${socket.id} left machine-${machineId} room`);
+  });
+
+  // Handle request-data event to send data on demand
+  socket.on('request-data', async (data) => {
+    try {
+      console.log(`Client ${socket.id} requested data:`, data);
+      
+      if (data && data.machine_id) {
+        const machineId = data.machine_id;
+        
+        // Send recipes
+        const recipes = await Recipe.find({}).lean();
+        socket.emit(WebSocketEvents.RECIPE_UPDATE, recipes);
+        
+        // Send recipe ingredients for availability calculation
+        const RecipeIngredient = require('./models/RecipeIngredient').default;
+        const recipeIngredients = await RecipeIngredient.find({}).lean();
+        socket.emit('recipe-ingredients-update', recipeIngredients);
+        
+        // Send machine status
+        const machine = await Machine.findOne({ machine_id: machineId }).lean();
+        if (machine) {
+          socket.emit(WebSocketEvents.MACHINE_STATUS_UPDATE, {
+            machine_id: machineId,
+            status: machine.status,
+            location: machine.location
+          });
+          
+          // Send machine temperature
+          socket.emit(WebSocketEvents.MACHINE_TEMPERATURE_UPDATE, {
+            machine_id: machineId,
+            temperature_c: machine.temperature_c
+          });
+        }
+        
+        // Send machine inventory
+        const inventory = await MachineIngredientInventory.find({ machine_id: machineId }).lean();
+        socket.emit(WebSocketEvents.MACHINE_INVENTORY_UPDATE, {
+          machine_id: machineId,
+          inventory: inventory
+        });
+        
+        console.log(`Sent requested data to client ${socket.id} for machine ${machineId}`);
+      }
+    } catch (error) {
+      console.error('Error handling request-data event:', error);
+      socket.emit('error', { message: 'Failed to fetch requested data' });
+    }
   });
 
   socket.on('disconnect', () => {

@@ -4,20 +4,39 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useRecipeCategories } from "@/lib/api/hooks";
-import { RecipeCategory } from "@/lib/api/types";
-import { CategoryCard } from "./components/CategoryCard";
+import { RecipeCategory, Recipe } from "@/lib/api/types";
 import { ChevronLeft, UserCircle, Coffee, LogOut } from "lucide-react";
+import { RecipeCard } from "./[categoryId]/components/RecipeCard";
+import useRecipeStore from "@/app/product/stores/useRecipeStore";
+import useRecipeAvailabilityStore from "@/app/product/stores/useRecipeAvailabilityStore";
+import { useRecipes } from "@/app/product/stores/useRecipeStore";
+import useWebSocketStore from "@/app/product/stores/useWebSocketStore";
 
-export default function RecipeCategoriesPage() {
+export default function RecipesPage() {
   const router = useRouter();
-  const { categories, isLoading } = useRecipeCategories();
-  const [userName, setUserName] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [machineId, setMachineId] = useState<string | null>(null);
+
+  // Get categories from API
+  const { categories, isLoading: isLoadingCategories } = useRecipeCategories();
+  
+  // Get recipes from store with WebSocket integration
+  const { recipes, isLoading: isLoadingRecipes } = useRecipes();
+  const getRecipesByCategory = useRecipeStore(state => state.getRecipesByCategory);
+  
+  // Get availability information
+  const recipeAvailabilityStore = useRecipeAvailabilityStore();
+  const isRecipeAvailable = recipeAvailabilityStore.isRecipeAvailable;
+  
+  // Initialize WebSocket connection and handlers
+  const webSocketStore = useWebSocketStore();
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Initialize WebSocket connection
   useEffect(() => {
     // Get user information from localStorage
     const storedUserName = localStorage.getItem("userName");
@@ -33,39 +52,46 @@ export default function RecipeCategoriesPage() {
     }
 
     setUserName(storedUserName);
+    setMachineId(storedMachineId);
+    
+    // Initialize WebSocket connection
+    webSocketStore.initSocket();
   }, [router]);
 
-  const handleCategorySelect = (categoryId: string) => {
-    router.push(`/product/pages/recipes/${categoryId}`);
-  };
+  // Join machine room and request data when machineId is available
+  useEffect(() => {
+    if (machineId) {
+      console.log(`[Recipes] Connecting to machine: ${machineId}`);
+      // Join machine room for real-time updates
+      webSocketStore.joinMachineRoom(machineId);
+      
+      // Make explicit request for data
+      webSocketStore.requestData(machineId);
+      
+      // Cleanup on unmount
+      return () => {
+        console.log(`[Recipes] Disconnecting from machine: ${machineId}`);
+        webSocketStore.leaveMachineRoom(machineId);
+      };
+    }
+  }, [machineId]);
+
+  // Compute recipe availability when we receive data updates
+  useEffect(() => {
+    if (machineId && recipes.length > 0) {
+      // Directly call recipeAvailabilityStore's computeAvailability
+      // This is safe now because we've added debouncing to prevent infinite loops
+      console.log(`[Recipes] Computing availability for ${recipes.length} recipes`);
+      recipeAvailabilityStore.computeAvailability(machineId);
+    }
+  }, [machineId, recipes]);
 
   const handleBackToLogin = () => {
-    // Go back to login page
     router.push("/product/pages/login");
   };
 
-  // Mock categories if needed for development and API is not ready
-  const mockCategories: RecipeCategory[] = [
-    { category_id: "cat1", name: "Hot Coffee" },
-    { category_id: "cat2", name: "Iced Coffee" },
-    { category_id: "cat3", name: "Specialty" },
-    { category_id: "cat4", name: "Seasonal" },
-    { category_id: "cat5", name: "Extras" },
-  ];
-
-  // Use either API data or mock data
-  const displayCategories = categories.length > 0 ? categories : mockCategories;
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        when: "beforeChildren",
-        staggerChildren: 0.1,
-      },
-    },
+  const handleRecipeSelect = (recipeId: string) => {
+    router.push(`/product/pages/recipe-details/${recipeId}`);
   };
 
   // Early SSR return to prevent hydration mismatch
@@ -82,6 +108,23 @@ export default function RecipeCategoriesPage() {
       </div>
     );
   }
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        when: "beforeChildren",
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+  };
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex flex-col relative overflow-hidden">
@@ -152,85 +195,70 @@ export default function RecipeCategoriesPage() {
         animate="visible"
       >
         <div className="max-w-6xl mx-auto">
-          <motion.div
-            className="text-center mb-12"
+          <motion.h1
+            className="text-4xl md:text-5xl font-black text-white mb-10 tracking-tight text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
           >
-            <motion.div
-              className="flex justify-center mb-6"
-              initial={{ scale: 0.8, rotate: -10 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ duration: 0.5, type: "spring" }}
-            >
-              <div className="p-4 bg-gradient-to-br from-amber-600/20 to-amber-800/5 rounded-full">
-                <Coffee className="h-10 w-10 text-amber-500" />
+            COFFEE <span className="text-amber-500">MENU</span>
+          </motion.h1>
+
+          <div className="space-y-16">
+            {isLoadingCategories ? (
+              // Loading skeleton for categories
+              <div className="space-y-12">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-6">
+                    <div className="h-8 bg-gray-800 rounded w-48 animate-pulse"></div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {[1, 2, 3, 4].map((j) => (
+                        <div 
+                          key={j} 
+                          className="bg-[#141414]/50 aspect-square rounded-xl animate-pulse border border-[#222]"
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </motion.div>
-
-            <motion.h1
-              className="text-4xl md:text-5xl font-black text-white mb-3 tracking-tight"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              COFFEE <span className="text-amber-500">MENU</span>
-            </motion.h1>
-
-            <motion.p
-              className="text-gray-400 max-w-md mx-auto"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-            >
-              Select a beverage category to explore our premium coffee offerings
-            </motion.p>
-          </motion.div>
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div
-                  key={i}
-                  className="bg-[#141414]/50 h-64 rounded-xl animate-pulse border border-[#222]"
-                ></div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayCategories.map((category) => (
-                <CategoryCard
-                  key={category.category_id}
-                  category={category}
-                  onClick={() => handleCategorySelect(category.category_id)}
-                />
-              ))}
-            </div>
-          )}
+            ) : (
+              // Display categories and their recipes
+              <>
+                {categories.map((category) => {
+                  const categoryRecipes = getRecipesByCategory(category.category_id);
+                  if (!categoryRecipes.length) return null;
+                  
+                  return (
+                    <motion.div 
+                      key={category.category_id}
+                      variants={itemVariants}
+                      className="scroll-mt-8"
+                      id={`category-${category.category_id}`}
+                    >
+                      <motion.h2 
+                        className="text-2xl font-bold text-white mb-6"
+                      >
+                        {category.name}
+                      </motion.h2>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {categoryRecipes.map((recipe: Recipe) => (
+                          <RecipeCard
+                            key={recipe.recipe_id}
+                            recipe={recipe}
+                            isAvailable={isRecipeAvailable(recipe.recipe_id)}
+                            onClick={() => handleRecipeSelect(recipe.recipe_id)}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </>
+            )}
+          </div>
         </div>
       </motion.main>
-
-      {/* Animated accent at bottom */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 1 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-      >
-        <motion.div
-          animate={{ y: [0, -10, 0] }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            repeatType: "loop",
-            ease: "easeInOut",
-          }}
-          className="text-xs text-gray-500 tracking-widest text-center"
-        >
-          PREMIUM COFFEE EXPERIENCE
-        </motion.div>
-      </motion.div>
 
       {/* Logout button */}
       <motion.button

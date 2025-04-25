@@ -31,6 +31,11 @@ interface RecipeAvailabilityStore {
   getMissingIngredients: (recipeId: string) => string[];
 }
 
+// Add a simple debounce mechanism to prevent excessive state updates
+let computeAvailabilityTimeoutId: NodeJS.Timeout | null = null;
+let lastComputeTime = 0;
+const DEBOUNCE_DELAY = 1000; // 1 second
+
 const useRecipeAvailabilityStore = create<RecipeAvailabilityStore>()(
   immer((set, get) => ({
     availableRecipeIds: new Set<string>(),
@@ -41,89 +46,100 @@ const useRecipeAvailabilityStore = create<RecipeAvailabilityStore>()(
 
     // Main computation function - computes availability for all recipes
     // This is O(n) where n is number of recipes, but each lookup after this is O(1)
-    computeAvailability: (machineId) => set((_) => {
-      console.log('[RecipeAvail] Computing availability for machine:', machineId);
-      
-      // Start fresh
-      _.availableRecipeIds = new Set<string>();
-      _.unavailableRecipeIds = new Set<string>();
-      _.availableRecipeIdArray = [];
-      _.unavailableRecipeIdArray = [];
-      _.missingIngredientsByRecipeId = {};
-      
-      // Get all necessary stores
-      const recipeStore = useRecipeStore.getState();
-      const recipeIngredientStore = useRecipeIngredientStore.getState();
-      const machineInventoryStore = useMachineInventoryStore.getState();
-      
-      // Log all available ingredients for debugging
-      const availableInventory = machineInventoryStore.getInventoryForMachine(machineId);
-      console.log('[RecipeAvail] Available ingredients in machine:');
-      availableInventory.forEach(item => {
-        console.log(`[RecipeAvail] - Ingredient ID: ${item.ingredient_id}, Quantity: ${item.quantity}`);
-      });
-      
-      const allRecipes = recipeStore.getAllRecipes();
-      console.log('[RecipeAvail] Total recipes to check:', allRecipes.length);
-      
-      // Go through every recipe
-      allRecipes.forEach(recipe => {
-        const recipeId = recipe.recipe_id;
-        const recipeIngredients = recipeIngredientStore.getIngredientsByRecipeId(recipeId);
+    computeAvailability: (machineId) => {
+      // Debounce implementation to prevent rapid successive updates
+      const now = Date.now();
+      if (now - lastComputeTime < DEBOUNCE_DELAY) {
+        // If called too frequently, debounce
+        if (computeAvailabilityTimeoutId) {
+          clearTimeout(computeAvailabilityTimeoutId);
+        }
         
-        console.log(`[RecipeAvail] Checking recipe: ${recipe.name} (${recipeId}), ingredients: ${recipeIngredients.length}`);
+        computeAvailabilityTimeoutId = setTimeout(() => {
+          // Reset the timer and call the actual implementation
+          lastComputeTime = Date.now();
+          computeAvailabilityTimeoutId = null;
+          console.log('[RecipeAvail] Running debounced computeAvailability');
+          computeAvailabilityImpl(machineId);
+        }, DEBOUNCE_DELAY);
         
-        // Log recipe ingredients for debugging
-        recipeIngredients.forEach(ri => {
-          console.log(`[RecipeAvail] - Recipe ${recipe.name} requires: Ingredient ${ri.ingredient_id}, Quantity: ${ri.quantity}`);
-        });
-        
-        // Check each ingredient
-        const missingIngredients: string[] = [];
-        
-        for (const ri of recipeIngredients) {
-          const hasEnough = machineInventoryStore.hasIngredientInStock(
-            machineId,
-            ri.ingredient_id,
-            ri.quantity
-          );
+        return;
+      }
+      
+      // If not called recently, execute immediately
+      lastComputeTime = now;
+      computeAvailabilityImpl(machineId);
+      
+      // Helper function for the actual implementation
+      function computeAvailabilityImpl(machineId: string) {
+        set((_) => {
+          console.log('[RecipeAvail] Computing availability for machine:', machineId);
           
-          if (!hasEnough) {
-            missingIngredients.push(ri.ingredient_id);
-          }
-        }
-        
-        // Store results
-        if (missingIngredients.length === 0) {
-          _.availableRecipeIds.add(recipeId);
-          _.availableRecipeIdArray.push(recipeId);
-          console.log(`[RecipeAvail] Recipe ${recipe.name} is AVAILABLE`);
-        } else {
-          _.unavailableRecipeIds.add(recipeId);
-          _.unavailableRecipeIdArray.push(recipeId);
-          _.missingIngredientsByRecipeId[recipeId] = missingIngredients;
-          console.log(`[RecipeAvail] Recipe ${recipe.name} is UNAVAILABLE, missing: ${missingIngredients.join(', ')}`);
-        }
-      });
-      
-      console.log(`[RecipeAvail] Finished computing availability. Available: ${_.availableRecipeIdArray.length}, Unavailable: ${_.unavailableRecipeIdArray.length}`);
-    }),
+          // Start fresh
+          _.availableRecipeIds = new Set<string>();
+          _.unavailableRecipeIds = new Set<string>();
+          _.availableRecipeIdArray = [];
+          _.unavailableRecipeIdArray = [];
+          _.missingIngredientsByRecipeId = {};
+          
+          // Get all necessary stores
+          const recipeStore = useRecipeStore.getState();
+          const recipeIngredientStore = useRecipeIngredientStore.getState();
+          const machineInventoryStore = useMachineInventoryStore.getState();
+          
+          // Get available ingredients (log count only)
+          const availableInventory = machineInventoryStore.getInventoryForMachine(machineId);
+          console.log(`[RecipeAvail] Machine has ${availableInventory.length} available ingredients`);
+          
+          const allRecipes = recipeStore.getAllRecipes();
+          console.log(`[RecipeAvail] Checking availability for ${allRecipes.length} recipes`);
+          
+          // Go through every recipe
+          allRecipes.forEach(recipe => {
+            const recipeId = recipe.recipe_id;
+            const recipeIngredients = recipeIngredientStore.getIngredientsByRecipeId(recipeId);
+            
+            // Check each ingredient
+            const missingIngredients: string[] = [];
+            
+            for (const ri of recipeIngredients) {
+              const hasEnough = machineInventoryStore.hasIngredientInStock(
+                machineId,
+                ri.ingredient_id,
+                ri.quantity
+              );
+              
+              if (!hasEnough) {
+                missingIngredients.push(ri.ingredient_id);
+              }
+            }
+            
+            // Store results
+            if (missingIngredients.length === 0) {
+              _.availableRecipeIds.add(recipeId);
+              _.availableRecipeIdArray.push(recipeId);
+            } else {
+              _.unavailableRecipeIds.add(recipeId);
+              _.unavailableRecipeIdArray.push(recipeId);
+              _.missingIngredientsByRecipeId[recipeId] = missingIngredients;
+            }
+          });
+          
+          console.log(`[RecipeAvail] Availability calculated: ${_.availableRecipeIdArray.length} available, ${_.unavailableRecipeIdArray.length} unavailable`);
+        });
+      }
+    },
     
     // Update a single recipe's availability - much faster than recomputing all
     updateRecipeAvailability: (recipeId, machineId) => set((state) => {
-      console.log(`[RecipeAvail] Updating availability for single recipe: ${recipeId}`);
+      console.log(`[RecipeAvail] Updating single recipe: ${recipeId}`);
       
       const recipeIngredientStore = useRecipeIngredientStore.getState();
       const machineInventoryStore = useMachineInventoryStore.getState();
       const recipeStore = useRecipeStore.getState();
       const recipe = recipeStore.getRecipeById(recipeId);
       
-      if (recipe) {
-        console.log(`[RecipeAvail] Updating recipe: ${recipe.name}`);
-      }
-      
       const recipeIngredients = recipeIngredientStore.getIngredientsByRecipeId(recipeId);
-      console.log(`[RecipeAvail] Recipe has ${recipeIngredients.length} ingredients`);
       
       // Check each ingredient
       const missingIngredients: string[] = [];
@@ -139,8 +155,6 @@ const useRecipeAvailabilityStore = create<RecipeAvailabilityStore>()(
           missingIngredients.push(ri.ingredient_id);
         }
       }
-      
-      console.log(`[RecipeAvail] Missing ingredients: ${missingIngredients.length}`);
       
       // Update sets and arrays
       if (missingIngredients.length === 0) {
@@ -158,8 +172,6 @@ const useRecipeAvailabilityStore = create<RecipeAvailabilityStore>()(
         if (!state.availableRecipeIdArray.includes(recipeId)) {
           state.availableRecipeIdArray.push(recipeId);
         }
-        
-        console.log(`[RecipeAvail] Recipe ${recipeId} is now AVAILABLE`);
       } else {
         // Recipe is unavailable
         state.availableRecipeIds.delete(recipeId);
@@ -175,8 +187,6 @@ const useRecipeAvailabilityStore = create<RecipeAvailabilityStore>()(
         if (!state.unavailableRecipeIdArray.includes(recipeId)) {
           state.unavailableRecipeIdArray.push(recipeId);
         }
-        
-        console.log(`[RecipeAvail] Recipe ${recipeId} is now UNAVAILABLE, missing: ${missingIngredients.join(', ')}`);
       }
     }),
     

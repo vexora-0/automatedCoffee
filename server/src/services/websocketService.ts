@@ -7,7 +7,9 @@ export enum WebSocketEvents {
   RECIPE_UPDATE = 'recipe-update',
   MACHINE_STATUS_UPDATE = 'machine-status-update',
   MACHINE_TEMPERATURE_UPDATE = 'machine-temperature-update',
-  MACHINE_INVENTORY_UPDATE = 'machine-inventory-update'
+  MACHINE_INVENTORY_UPDATE = 'machine-inventory-update',
+  REQUEST_DATA = 'request-data',
+  ERROR = 'error'
 }
 
 /**
