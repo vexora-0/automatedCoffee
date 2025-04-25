@@ -48,6 +48,7 @@ export interface MachineIngredientInventory {
   machine_id: string;
   ingredient_id: string;
   quantity: number;
+  max_capacity?: number;
   updated_at: Date;
 }
 
@@ -57,24 +58,13 @@ export interface RecipeCategory {
   name: string;
 }
 
-// Image metadata structure matching the backend
-export interface ImageMetadata {
-  cdnUrl: string;
-  publicId: string;
-  width: number;
-  height: number;
-  format: string;
-  provider: string;
-}
-
 export interface Recipe {
   recipe_id: string;
   name: string;
   description: string;
   category_id: string;
   price: number;
-  image_url: string; // Legacy field
-  image?: string; // New field structure
+  image_url: string;
   calories: number;
   protein: number;
   carbs: number;
@@ -89,6 +79,7 @@ export interface RecipeFormData {
   description: string;
   category_id: string;
   price: number;
+  image_url?: string;
   calories: number;
   protein: number;
   carbs: number;

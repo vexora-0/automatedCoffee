@@ -160,7 +160,7 @@ export const recipeService = {
   },
 
   // Create new recipe
-  createRecipe: async (recipeData: Partial<Recipe>): Promise<ApiResponse<Recipe>> => {
+  createRecipe: async (recipeData: RecipeFormData): Promise<ApiResponse<Recipe>> => {
     const response = await apiClient.post('/recipes', recipeData);
     return response.data;
   },
@@ -188,21 +188,13 @@ export const recipeService = {
   },
 
   // Update recipe image
-  updateRecipeImage: async (recipeId: string, imageFile: File): Promise<ApiResponse<Recipe>> => {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    
-    const response = await apiClient.put(`/recipes/${recipeId}/image`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    
+  updateRecipeImage: async (recipeId: string, imageUrl: string): Promise<ApiResponse<Recipe>> => {
+    const response = await apiClient.put(`/recipes/${recipeId}/image`, { image_url: imageUrl });
     return response.data;
   },
 
   // Update recipe
-  updateRecipe: async (recipeId: string, recipeData: Partial<Recipe>): Promise<ApiResponse<Recipe>> => {
+  updateRecipe: async (recipeId: string, recipeData: RecipeFormData): Promise<ApiResponse<Recipe>> => {
     const response = await apiClient.put(`/recipes/${recipeId}`, recipeData);
     return response.data;
   },

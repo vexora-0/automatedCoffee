@@ -66,11 +66,7 @@ export default function RecipeDetailPage() {
     : "$0.00";
 
   const handleBackToRecipes = () => {
-    if (recipe) {
-      router.push(`/product/pages/recipes/${recipe.category_id}`);
-    } else {
       router.push("/product/pages/recipes");
-    }
   };
 
   const handlePlaceOrder = async () => {

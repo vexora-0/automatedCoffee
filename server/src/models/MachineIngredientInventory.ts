@@ -23,6 +23,10 @@ const machineIngredientInventorySchema: Schema = new Schema({
     type: Number,
     required: true
   },
+  max_capacity: {
+    type: Number,
+    default: 0
+  },
   updated_at: {
     type: Date,
     default: Date.now

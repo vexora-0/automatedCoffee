@@ -4,6 +4,7 @@ import Machine from '../models/Machine';
 import MachineIngredientInventory from '../models/MachineIngredientInventory';
 import Warning from '../models/Warning';
 import websocketService from '../services/websocketService';
+import mongoose from 'mongoose';
 
 // Get all machines
 export const getAllMachines = async (req: Request, res: Response): Promise<void> => {
@@ -189,9 +190,33 @@ export const deleteMachine = async (req: Request, res: Response): Promise<void> 
 // Get machine inventory
 export const getMachineInventory = async (req: Request, res: Response): Promise<void> => {
   try {
-    const inventory = await MachineIngredientInventory.find({ 
+    // First get the inventory items
+    const inventoryItems = await MachineIngredientInventory.find({ 
       machine_id: req.params.machineId 
-    }).populate('ingredient_id');
+    });
+
+    // Get all ingredient IDs from the inventory
+    const ingredientIds = inventoryItems.map(item => item.ingredient_id);
+
+    // Find all ingredients in one query
+    const Ingredient = mongoose.model('Ingredient');
+    const ingredients = await Ingredient.find({ 
+      ingredient_id: { $in: ingredientIds } 
+    });
+
+    // Create a map of ingredient_id to ingredient for quick lookup
+    const ingredientMap: Record<string, any> = {};
+    ingredients.forEach(ingredient => {
+      ingredientMap[ingredient.ingredient_id] = ingredient;
+    });
+
+    // Create a response with ingredient details
+    const inventory = inventoryItems.map(item => {
+      return {
+        ...item.toObject(),
+        ingredient: ingredientMap[item.ingredient_id] || null
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -199,6 +224,7 @@ export const getMachineInventory = async (req: Request, res: Response): Promise<
       data: inventory
     });
   } catch (error: any) {
+    console.error('Machine inventory error:', error);
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -210,7 +236,7 @@ export const getMachineInventory = async (req: Request, res: Response): Promise<
 // Update machine inventory
 export const updateMachineInventory = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { ingredient_id, quantity } = req.body;
+    const { ingredient_id, quantity, max_capacity } = req.body;
     
     if (!ingredient_id || quantity === undefined) {
       res.status(400).json({
@@ -227,20 +253,37 @@ export const updateMachineInventory = async (req: Request, res: Response): Promi
 
     if (inventory) {
       // Update existing inventory
+      const updateData: any = { 
+        quantity, 
+        updated_at: new Date() 
+      };
+      
+      // Only include max_capacity if it's defined
+      if (max_capacity !== undefined) {
+        updateData.max_capacity = max_capacity;
+      }
+      
       inventory = await MachineIngredientInventory.findOneAndUpdate(
         { machine_id: req.params.machineId, ingredient_id },
-        { quantity, updated_at: new Date() },
+        updateData,
         { new: true }
       );
     } else {
       // Create new inventory entry
-      inventory = await MachineIngredientInventory.create({
+      const newInventory: any = {
         id: uuidv4(),
         machine_id: req.params.machineId,
         ingredient_id,
         quantity,
         updated_at: new Date()
-      });
+      };
+      
+      // Include max_capacity if provided
+      if (max_capacity !== undefined) {
+        newInventory.max_capacity = max_capacity;
+      }
+      
+      inventory = await MachineIngredientInventory.create(newInventory);
     }
 
     // Check if inventory is low and create warning if needed
@@ -268,6 +311,7 @@ export const updateMachineInventory = async (req: Request, res: Response): Promi
       data: inventory
     });
   } catch (error: any) {
+    console.error('Update machine inventory error:', error);
     res.status(500).json({
       success: false,
       message: 'Server Error',

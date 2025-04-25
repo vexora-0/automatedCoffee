@@ -6,7 +6,6 @@ import RecipeIngredient from '../models/RecipeIngredient';
 import Ingredient from '../models/Ingredient';
 import Order from '../models/Order';
 import websocketService from '../services/websocketService';
-import imageService from '../services/imageService';
 
 // Helper function to emit recipe updates
 const emitRecipeUpdates = async () => {
@@ -126,31 +125,14 @@ export const createRecipeWithImage = async (req: Request, res: Response): Promis
       return;
     }
     
-    // Handle image upload if file is present
-    let imageMetadata = null;
-    if (req.file) {
-      try {
-        imageMetadata = await imageService.uploadImage(req.file, 'recipes');
-      } catch (uploadError) {
-        console.error('Image upload error:', uploadError);
-        res.status(400).json({
-          success: false,
-          message: 'Failed to upload image',
-          error: uploadError.message
-        });
-        return;
-      }
-    }
-    
-    // Create recipe with image data if available
+    // Create recipe
     const recipe = await Recipe.create({
       recipe_id: uuidv4(),
       name: recipeData.name,
       description: recipeData.description,
       category_id: recipeData.category_id,
       price: recipeData.price,
-      image: imageMetadata, // Use new image structure
-      image_url: imageMetadata?.cdnUrl || recipeData.image_url, // For backward compatibility
+      image_url: recipeData.image_url,
       calories: recipeData.calories,
       protein: recipeData.protein,
       carbs: recipeData.carbs,
@@ -223,40 +205,22 @@ export const updateRecipeImage = async (req: Request, res: Response): Promise<vo
       return;
     }
     
-    // Check if file is present
-    if (!req.file) {
-      res.status(400).json({
-        success: false,
-        message: 'No image file provided'
-      });
-      return;
-    }
-    
-    // Delete old image if exists
-    if (recipe.image && recipe.image.publicId) {
-      try {
-        await imageService.deleteImage(recipe.image.publicId);
-      } catch (deleteError) {
-        console.warn('Failed to delete old image:', deleteError);
-        // Continue anyway
-      }
-    }
-    
-    // Upload new image
-    const imageMetadata = await imageService.uploadImage(req.file, 'recipes');
+    // Update the recipe with the new image URL
+    const { image_url } = req.body;
     
     // Update recipe with new image
-    recipe.image = imageMetadata;
-    recipe.image_url = imageMetadata.cdnUrl; // Update legacy field too
-    
-    await recipe.save();
+    const updatedRecipe = await Recipe.findOneAndUpdate(
+      { recipe_id: recipeId },
+      { image_url },
+      { new: true }
+    );
     
     // Emit recipe update via WebSocket
     await emitRecipeUpdates();
     
     res.status(200).json({
       success: true,
-      data: recipe
+      data: updatedRecipe
     });
   } catch (error: any) {
     res.status(500).json({

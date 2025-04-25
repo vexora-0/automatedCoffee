@@ -1,15 +1,5 @@
 import { Document } from 'mongoose';
 
-// Image metadata interface
-export interface IImageMetadata {
-  cdnUrl: string;
-  publicId: string;
-  width: number;
-  height: number;
-  format: string;
-  provider: string;
-}
-
 export interface IUser extends Document {
   user_id: string;
   name: string;
@@ -48,6 +38,7 @@ export interface IMachineIngredientInventory extends Document {
   machine_id: string;
   ingredient_id: string;
   quantity: number;
+  max_capacity?: number;
   updated_at: Date;
 }
 
@@ -62,8 +53,7 @@ export interface IRecipe extends Document {
   description: string;
   category_id: string;
   price: number;
-  image_url: string; // Legacy field
-  image?: IImageMetadata; // New field structure
+  image_url: string;
   calories: number;
   protein: number;
   carbs: number;
