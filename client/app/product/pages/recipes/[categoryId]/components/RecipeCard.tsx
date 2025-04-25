@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Recipe } from "@/types";
+import { Recipe } from "@/lib/api/types";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -76,7 +76,7 @@ export function RecipeCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
 
         <Image
-          src={recipe.image || "/placeholder-recipe.jpg"}
+          src={recipe.image_url || "/placeholder-recipe.jpg"}
           alt={recipe.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useRecipeCategories } from "@/lib/api/hooks";
-import { RecipeCategory, Recipe } from "@/lib/api/types";
+import { Recipe } from "@/lib/api/types";
 import { ChevronLeft, UserCircle, Coffee, LogOut } from "lucide-react";
 import { RecipeCard } from "./[categoryId]/components/RecipeCard";
 import useRecipeStore from "@/app/product/stores/useRecipeStore";
 import useRecipeAvailabilityStore from "@/app/product/stores/useRecipeAvailabilityStore";
 import { useRecipes } from "@/app/product/stores/useRecipeStore";
 import useWebSocketStore from "@/app/product/stores/useWebSocketStore";
+import useMachineInventoryStore from "@/app/product/stores/useMachineInventoryStore";
 
 export default function RecipesPage() {
   const router = useRouter();
@@ -20,17 +21,23 @@ export default function RecipesPage() {
 
   // Get categories from API
   const { categories, isLoading: isLoadingCategories } = useRecipeCategories();
-  
+
   // Get recipes from store with WebSocket integration
-  const { recipes, isLoading: isLoadingRecipes } = useRecipes();
-  const getRecipesByCategory = useRecipeStore(state => state.getRecipesByCategory);
-  
+  const { recipes } = useRecipes();
+  const getRecipesByCategory = useRecipeStore(
+    (state) => state.getRecipesByCategory
+  );
+
   // Get availability information
   const recipeAvailabilityStore = useRecipeAvailabilityStore();
   const isRecipeAvailable = recipeAvailabilityStore.isRecipeAvailable;
-  
+
   // Initialize WebSocket connection and handlers
   const webSocketStore = useWebSocketStore();
+
+  // Track if inventory is loaded
+  const [inventoryLoaded, setInventoryLoaded] = useState(false);
+  const machineInventoryStore = useMachineInventoryStore();
 
   useEffect(() => {
     setIsMounted(true);
@@ -53,7 +60,7 @@ export default function RecipesPage() {
 
     setUserName(storedUserName);
     setMachineId(storedMachineId);
-    
+
     // Initialize WebSocket connection
     webSocketStore.initSocket();
   }, [router]);
@@ -64,10 +71,10 @@ export default function RecipesPage() {
       console.log(`[Recipes] Connecting to machine: ${machineId}`);
       // Join machine room for real-time updates
       webSocketStore.joinMachineRoom(machineId);
-      
+
       // Make explicit request for data
       webSocketStore.requestData(machineId);
-      
+
       // Cleanup on unmount
       return () => {
         console.log(`[Recipes] Disconnecting from machine: ${machineId}`);
@@ -76,15 +83,27 @@ export default function RecipesPage() {
     }
   }, [machineId]);
 
+  // Track when inventory is loaded
+  useEffect(() => {
+    const inventory = machineInventoryStore.getInventoryForMachine(
+      machineId || ""
+    );
+    if (inventory && inventory.length > 0) {
+      console.log(`[Recipes] Inventory loaded with ${inventory.length} items`);
+      setInventoryLoaded(true);
+    }
+  }, [machineId, machineInventoryStore]);
+
   // Compute recipe availability when we receive data updates
   useEffect(() => {
-    if (machineId && recipes.length > 0) {
-      // Directly call recipeAvailabilityStore's computeAvailability
-      // This is safe now because we've added debouncing to prevent infinite loops
-      console.log(`[Recipes] Computing availability for ${recipes.length} recipes`);
+    if (machineId && recipes.length > 0 && inventoryLoaded) {
+      // Only compute availability when both recipes AND inventory are loaded
+      console.log(
+        `[Recipes] Computing availability for ${recipes.length} recipes with inventory loaded`
+      );
       recipeAvailabilityStore.computeAvailability(machineId);
     }
-  }, [machineId, recipes]);
+  }, [machineId, recipes.length, inventoryLoaded]);
 
   const handleBackToLogin = () => {
     router.push("/product/pages/login");
@@ -213,8 +232,8 @@ export default function RecipesPage() {
                     <div className="h-8 bg-gray-800 rounded w-48 animate-pulse"></div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                       {[1, 2, 3, 4].map((j) => (
-                        <div 
-                          key={j} 
+                        <div
+                          key={j}
                           className="bg-[#141414]/50 aspect-square rounded-xl animate-pulse border border-[#222]"
                         ></div>
                       ))}
@@ -226,19 +245,19 @@ export default function RecipesPage() {
               // Display categories and their recipes
               <>
                 {categories.map((category) => {
-                  const categoryRecipes = getRecipesByCategory(category.category_id);
+                  const categoryRecipes = getRecipesByCategory(
+                    category.category_id
+                  );
                   if (!categoryRecipes.length) return null;
-                  
+
                   return (
-                    <motion.div 
+                    <motion.div
                       key={category.category_id}
                       variants={itemVariants}
                       className="scroll-mt-8"
                       id={`category-${category.category_id}`}
                     >
-                      <motion.h2 
-                        className="text-2xl font-bold text-white mb-6"
-                      >
+                      <motion.h2 className="text-2xl font-bold text-white mb-6">
                         {category.name}
                       </motion.h2>
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

@@ -74,7 +74,7 @@ export interface Recipe {
   category_id: string;
   price: number;
   image_url: string; // Legacy field
-  image?: ImageMetadata; // New field structure
+  image?: string; // New field structure
   calories: number;
   protein: number;
   carbs: number;

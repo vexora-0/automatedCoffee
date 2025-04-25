@@ -222,28 +222,55 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
       SocketEvents.MACHINE_INVENTORY_UPDATE,
       (data: { machine_id: string; inventory: MachineIngredientInventory[] }) => {
         console.log(`[WebSocket] Received inventory update for machine ${data.machine_id} with ${data.inventory?.length || 0} items`);
-        
-        // Ensure data has machineId and inventory is an array
-        if (data.machine_id && Array.isArray(data.inventory)) {
-          set((state) => ({
-            ...state,
-            machineInventories: {
-              ...state.machineInventories,
-              [data.machine_id]: data.inventory,
-            }
-          }));
-          
+
+        if (data.inventory && Array.isArray(data.inventory)) {
           try {
-            // Try to update the machine inventory store directly
             const MachineInventoryStore = require('./useMachineInventoryStore').default;
+            
             if (MachineInventoryStore) {
               const inventoryStore = MachineInventoryStore.getState();
               if (inventoryStore && inventoryStore.setMachineInventory) {
-                inventoryStore.setMachineInventory(data.machine_id, data.inventory);
+                // Get current inventory for comparison
+                const currentInventory = inventoryStore.getInventoryForMachine(data.machine_id);
+                const currentInventoryMap: Record<string, MachineIngredientInventory> = {};
                 
-                // DO NOT automatically update recipe availability here
-                // Let the component handle this with proper dependencies
-                // This prevents infinite update loops
+                // Create lookup map of current inventory
+                currentInventory.forEach(item => {
+                  currentInventoryMap[item.ingredient_id] = item;
+                });
+                
+                // Track which ingredients were updated
+                const updatedIngredientIds = new Set<string>();
+                
+                // Compare with new inventory to identify changes
+                data.inventory.forEach(item => {
+                  const currentItem = currentInventoryMap[item.ingredient_id];
+                  if (!currentItem || currentItem.quantity !== item.quantity) {
+                    updatedIngredientIds.add(item.ingredient_id);
+                  }
+                });
+                
+                // Only update if there are actual changes
+                if (updatedIngredientIds.size > 0) {
+                  console.log(`[WebSocket] ${updatedIngredientIds.size} ingredients changed, updating inventory`);
+                  inventoryStore.setMachineInventory(data.machine_id, data.inventory);
+                  
+                  // Update recipe availability with debouncing
+                  try {
+                    const RecipeAvailabilityStore = require('./useRecipeAvailabilityStore').default;
+                    if (RecipeAvailabilityStore) {
+                      const availabilityStore = RecipeAvailabilityStore.getState();
+                      if (availabilityStore && availabilityStore.computeAvailability) {
+                        // Use the store's built-in debouncing mechanism
+                        availabilityStore.computeAvailability(data.machine_id);
+                      }
+                    }
+                  } catch (error) {
+                    console.error('[WebSocket] Failed to update recipe availability:', error);
+                  }
+                } else {
+                  console.log('[WebSocket] No ingredient quantities changed, skipping update');
+                }
               }
             }
           } catch (error) {

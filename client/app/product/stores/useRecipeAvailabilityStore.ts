@@ -103,11 +103,22 @@ const useRecipeAvailabilityStore = create<RecipeAvailabilityStore>()(
             const missingIngredients: string[] = [];
             
             for (const ri of recipeIngredients) {
+              // Debug logging to see actual values
+              console.log(`[Debug] Checking recipe ${recipe.name} ingredient ${ri.ingredient_id}`);
+              console.log(`[Debug] Required quantity: ${ri.quantity}`);
+              const availableQuantity = machineInventoryStore.getIngredientQuantity(
+                machineId,
+                ri.ingredient_id
+              );
+              console.log(`[Debug] Available quantity: ${availableQuantity}`);
+              
               const hasEnough = machineInventoryStore.hasIngredientInStock(
                 machineId,
                 ri.ingredient_id,
                 ri.quantity
               );
+              
+              console.log(`[Debug] Has enough: ${hasEnough}`);
               
               if (!hasEnough) {
                 missingIngredients.push(ri.ingredient_id);
