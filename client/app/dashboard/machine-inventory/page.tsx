@@ -39,7 +39,11 @@ import {
 } from "@/lib/api/hooks";
 import { machineService } from "@/lib/api/services";
 import { Progress } from "@/components/ui/progress";
-import { MachineIngredientInventory } from "@/lib/api/types";
+import {
+  MachineIngredientInventory,
+  Ingredient,
+  Machine,
+} from "@/lib/api/types";
 
 export default function MachineInventoryManagement() {
   const { machines, isLoading: machinesLoading } = useMachines();
@@ -65,6 +69,12 @@ export default function MachineInventoryManagement() {
     max_capacity: 0,
   });
 
+  // Add cleaning water state
+  const [isUpdatingCleaningWater, setIsUpdatingCleaningWater] = useState(false);
+  const [cleaningWaterLevel, setCleaningWaterLevel] = useState(0);
+  const [selectedMachineData, setSelectedMachineData] =
+    useState<Machine | null>(null);
+
   const { toast } = useToast();
 
   // Auto-select the first machine when data loads
@@ -73,6 +83,23 @@ export default function MachineInventoryManagement() {
       setSelectedMachine(machines[0].machine_id);
     }
   }, [machines, selectedMachine]);
+
+  // Update selected machine data when machine changes
+  useEffect(() => {
+    if (selectedMachine) {
+      const foundMachine = machines.find(
+        (m) => m.machine_id === selectedMachine
+      );
+
+      // Explicitly assign to make TypeScript happy
+      const machineData: Machine | null = foundMachine ? foundMachine : null;
+      setSelectedMachineData(machineData);
+
+      if (machineData) {
+        setCleaningWaterLevel(machineData.cleaning_water_ml);
+      }
+    }
+  }, [selectedMachine, machines]);
 
   const handleMachineSelect = (machineId: string) => {
     setSelectedMachine(machineId);
@@ -125,9 +152,46 @@ export default function MachineInventoryManagement() {
     }
   };
 
+  // Handle updating cleaning water level
+  const handleUpdateCleaningWater = async () => {
+    if (!selectedMachine) return;
+
+    try {
+      await machineService.updateMachine(selectedMachine, {
+        cleaning_water_ml: cleaningWaterLevel,
+      });
+
+      // Update the local machine data
+      const updatedMachines = machines.map((machine) =>
+        machine.machine_id === selectedMachine
+          ? { ...machine, cleaning_water_ml: cleaningWaterLevel }
+          : machine
+      );
+
+      // Update the selected machine data
+      const updatedMachine = updatedMachines.find(
+        (m) => m.machine_id === selectedMachine
+      );
+      setSelectedMachineData(updatedMachine);
+
+      setIsUpdatingCleaningWater(false);
+      toast({
+        title: "Success",
+        description: "Cleaning water level updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating cleaning water:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update cleaning water level",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Find the ingredient name by ID
   const getIngredientName = (
-    item: MachineIngredientInventory & { ingredient?: any }
+    item: MachineIngredientInventory & { ingredient?: Ingredient }
   ): string => {
     if (item.ingredient && item.ingredient.name) {
       return item.ingredient.name;
@@ -142,7 +206,7 @@ export default function MachineInventoryManagement() {
 
   // Get ingredient unit by ID
   const getIngredientUnit = (
-    item: MachineIngredientInventory & { ingredient?: any }
+    item: MachineIngredientInventory & { ingredient?: Ingredient }
   ): string => {
     if (item.ingredient && item.ingredient.unit) {
       return item.ingredient.unit;
@@ -255,6 +319,7 @@ export default function MachineInventoryManagement() {
                   <TabsTrigger value="inventory">
                     Inventory Management
                   </TabsTrigger>
+                  <TabsTrigger value="cleaning">Cleaning Water</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="inventory" className="space-y-4 pt-4">
@@ -521,6 +586,127 @@ export default function MachineInventoryManagement() {
                         ))}
                       </TableBody>
                     </Table>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="cleaning" className="space-y-4 pt-4">
+                  {!selectedMachine ? (
+                    <p>Select a machine to manage cleaning water</p>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-lg font-medium">
+                            Cleaning Water Level
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Manage the cleaning water level for this machine
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => setIsUpdatingCleaningWater(true)}
+                          disabled={!selectedMachine}
+                        >
+                          Update Cleaning Water
+                        </Button>
+                      </div>
+
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="space-y-4">
+                            <div className="flex flex-col space-y-1">
+                              <div className="flex justify-between">
+                                <span className="font-medium">
+                                  Current Level:
+                                </span>
+                                <span>
+                                  {selectedMachineData?.cleaning_water_ml || 0}{" "}
+                                  ml
+                                </span>
+                              </div>
+                              <Progress
+                                value={Math.min(
+                                  (selectedMachineData?.cleaning_water_ml ||
+                                    0) / 10,
+                                  100
+                                )}
+                                className="h-2"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <div className="flex justify-between">
+                                <span className="font-medium">
+                                  Last Regular Service:
+                                </span>
+                                <span>
+                                  {selectedMachineData?.last_regular_service
+                                    ? new Date(
+                                        selectedMachineData.last_regular_service
+                                      ).toLocaleDateString()
+                                    : "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="font-medium">
+                                  Last Deep Service:
+                                </span>
+                                <span>
+                                  {selectedMachineData?.last_deep_service
+                                    ? new Date(
+                                        selectedMachineData.last_deep_service
+                                      ).toLocaleDateString()
+                                    : "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Dialog
+                        open={isUpdatingCleaningWater}
+                        onOpenChange={setIsUpdatingCleaningWater}
+                      >
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Update Cleaning Water</DialogTitle>
+                            <DialogDescription>
+                              Update the cleaning water level for this machine
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="grid gap-4 py-4">
+                            <div>
+                              <Label htmlFor="cleaning-water">
+                                Cleaning Water (ml)
+                              </Label>
+                              <Input
+                                id="cleaning-water"
+                                type="number"
+                                value={cleaningWaterLevel}
+                                onChange={(e) =>
+                                  setCleaningWaterLevel(
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
+                                min={0}
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button
+                              variant="outline"
+                              onClick={() => setIsUpdatingCleaningWater(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button onClick={handleUpdateCleaningWater}>
+                              Update
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </>
                   )}
                 </TabsContent>
               </Tabs>
