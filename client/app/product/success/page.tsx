@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { CheckCircle, Coffee, Loader } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useMqttContext } from "@/components/MqttProvider";
 
 export default function SuccessPage() {
   const searchParams = useSearchParams();
@@ -16,12 +15,14 @@ export default function SuccessPage() {
   const [preparationStep, setPreparationStep] = useState<number>(1);
   const [orderReady, setOrderReady] = useState<boolean>(false);
   const router = useRouter();
+  const { isConnected, publish } = useMqttContext();
+  const recipePublishedRef = useRef(false);
 
   // Format price
   const formattedPrice = new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "INR",
-    currencyDisplay: "symbol"
+    currencyDisplay: "symbol",
   }).format(parseFloat(price));
 
   // Get user name from localStorage
@@ -32,6 +33,15 @@ export default function SuccessPage() {
     }
   }, []);
 
+  // Send recipe name to MQTT input topic when connected
+  useEffect(() => {
+    if (isConnected && recipeName && !recipePublishedRef.current) {
+      console.log(`Sending recipe "${recipeName}" to MQTT input topic`);
+      publish(recipeName);
+      recipePublishedRef.current = true;
+    }
+  }, [isConnected, recipeName, publish]);
+
   // Simulate preparation steps with timeouts
   useEffect(() => {
     const stepTimeouts = [
@@ -41,7 +51,7 @@ export default function SuccessPage() {
       setTimeout(() => {
         setPreparationStep(5);
         setOrderReady(true);
-        
+
         // Set timeout to redirect to login page and clear user data
         setTimeout(() => {
           // Clear all user data from localStorage
@@ -49,22 +59,22 @@ export default function SuccessPage() {
           // Redirect to login page
           router.push("/product/screensaver");
         }, 5000);
-      }, 12000)
+      }, 12000),
     ];
 
-    return () => stepTimeouts.forEach(timeout => clearTimeout(timeout));
+    return () => stepTimeouts.forEach((timeout) => clearTimeout(timeout));
   }, [router]);
 
   const preparationSteps = [
     { text: "Grinding fresh beans...", gif: "/coffee-grinding.gif" },
-    { text: "Heating water to perfect temperature...", gif: "/water-heating.gif" },
+    {
+      text: "Heating water to perfect temperature...",
+      gif: "/water-heating.gif",
+    },
     { text: "Brewing your perfect coffee...", gif: "/coffee-brewing.gif" },
     { text: "Adding final touches...", gif: "/coffee-final.gif" },
-    { text: "Your coffee is ready!", gif: "/coffee-ready.gif" }
+    { text: "Your coffee is ready!", gif: "/coffee-ready.gif" },
   ];
-
-  // Use placeholder GIFs if actual ones not available
-  const currentGif = preparationSteps[preparationStep - 1]?.gif || "/coffee-placeholder.gif";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0A0A0A] to-[#1A1A1A] flex flex-col items-center justify-center p-4">
@@ -90,7 +100,7 @@ export default function SuccessPage() {
         <h2 className="text-lg text-amber-500 text-center mb-6">
           Thank you, {userName}
         </h2>
-        
+
         <div className="bg-white/5 rounded-xl p-4 mb-6 backdrop-blur-sm border border-white/10">
           <div className="flex justify-between items-center mb-2">
             <span className="text-gray-400">Order:</span>
@@ -114,7 +124,9 @@ export default function SuccessPage() {
             ) : (
               <div className="text-center p-4">
                 <Loader className="h-10 w-10 text-amber-500 mx-auto mb-2 animate-spin" />
-                <p className="text-white/70">{preparationSteps[preparationStep - 1]?.text}</p>
+                <p className="text-white/70">
+                  {preparationSteps[preparationStep - 1]?.text}
+                </p>
               </div>
             )}
           </div>
@@ -122,7 +134,7 @@ export default function SuccessPage() {
 
         {/* Progress bar */}
         <div className="h-2 bg-gray-800 rounded-full mb-6 overflow-hidden">
-          <motion.div 
+          <motion.div
             initial={{ width: "20%" }}
             animate={{ width: `${preparationStep * 20}%` }}
             className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full"
@@ -131,7 +143,7 @@ export default function SuccessPage() {
 
         {/* Back button (enabled when ready) */}
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button 
+          <Button
             className="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 text-black font-bold border-none"
             disabled={!orderReady}
             onClick={() => {
@@ -147,4 +159,4 @@ export default function SuccessPage() {
       </motion.div>
     </div>
   );
-} 
+}
