@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Coffee } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Recipe } from "@/lib/api/types";
 
@@ -21,89 +21,96 @@ export function RecipeCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      whileHover={{ scale: 1.03 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      whileHover={{ scale: 1.02 }}
       transition={{
-        type: "spring",
-        stiffness: 400,
-        damping: 30,
-        duration: 0.3,
+        duration: 0.2,
       }}
       onClick={onClick}
       className={cn(
-        "group cursor-pointer relative overflow-hidden rounded-xl bg-black/70 border-t border-l border-white/10",
-        "shadow-[0_0_15px_rgba(255,215,0,0.15)] hover:shadow-[0_0_25px_rgba(255,215,0,0.3)]",
-        "transition-all duration-300 ease-in-out"
+        "group relative overflow-hidden rounded-xl cursor-pointer",
+        "bg-gradient-to-br from-slate-900 to-black",
+        "border border-amber-500/20 hover:border-amber-500/40",
+        "shadow-md hover:shadow-lg",
+        "transition-all duration-200 h-[320px]"
       )}
     >
-      <div className="relative aspect-square w-full overflow-hidden">
-        <div className="absolute inset-0 z-10 flex flex-col justify-between p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center justify-end"
-          >
-            <div className="rounded-full bg-black/70 px-3 py-1.5 backdrop-blur-md border border-amber-600/30">
-              <span className="text-sm font-medium text-amber-300">
-                {formattedPrice}
-              </span>
-            </div>
-          </motion.div>
-
-          <div className="space-y-1 text-shadows">
-            <motion.h3
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-lg font-semibold leading-none tracking-tight text-white group-hover:text-amber-200 transition-colors"
-            >
-              {recipe.name}
-            </motion.h3>
-            <motion.p
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-sm text-amber-100/70 line-clamp-2"
-            >
-              {recipe.description || "A delicious coffee recipe"}
-            </motion.p>
-          </div>
-        </div>
-
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
-
+      {/* Image container */}
+      <div className="relative h-[60%] w-full overflow-hidden rounded-t-xl">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent z-10" />
+        
         <Image
           src={recipe.image_url || "/placeholder-recipe.jpg"}
           alt={recipe.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           className={cn(
-            "object-cover transition-all duration-500",
-            "group-hover:scale-110 group-hover:brightness-110",
+            "object-cover transition-all duration-300",
+            "group-hover:scale-105",
             !isAvailable && "grayscale brightness-50"
           )}
         />
+        
+        {/* Price tag */}
+        <div className="absolute top-3 right-3 z-20">
+          <motion.div
+            className="rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5 border border-amber-500/30"
+          >
+            <span className="text-sm font-medium text-amber-300">
+              {formattedPrice}
+            </span>
+          </motion.div>
+        </div>
+      </div>
+      
+      {/* Content area */}
+      <div className="relative z-10 h-[40%] p-4 flex flex-col justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="h-5 w-5 rounded-full bg-amber-600/30 flex items-center justify-center">
+              <Coffee className="h-3 w-3 text-amber-500" />
+            </div>
+            <p className="text-xs font-medium uppercase tracking-wider text-amber-400/80">
+              {recipe.category_id === "1" ? "Coffee" : "Specialty"}
+            </p>
+          </div>
+          
+          <h3 className="text-lg font-bold text-white mb-1 group-hover:text-amber-300 transition-colors duration-200">
+            {recipe.name}
+          </h3>
+          
+          <p className="text-sm text-gray-300 line-clamp-2">
+            {recipe.description || "A delicious coffee recipe"}
+          </p>
+        </div>
+        
+        {/* Bottom hint */}
+        <div className="pt-2">
+          <p className="text-xs text-amber-300/70 text-center">
+            Tap to view details
+          </p>
+        </div>
       </div>
 
+      {/* Overlay for unavailable items */}
       {!isAvailable && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm"
+          className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm"
         >
           <div className="flex flex-col items-center space-y-3 px-4 text-center">
-            <div className="rounded-full bg-amber-900/30 p-3">
-              <AlertCircle className="h-6 w-6 text-amber-500" />
+            <div className="rounded-full bg-red-900/50 p-3 border border-red-500/30">
+              <AlertCircle className="h-6 w-6 text-red-400" />
             </div>
             <div className="space-y-1">
-              <h3 className="font-medium text-amber-100">
+              <h3 className="font-bold text-red-300">
                 Currently Unavailable
               </h3>
-              <p className="text-sm text-amber-300/60">
-                This recipe is not available right now
+              <p className="text-sm text-gray-400">
+                This recipe cannot be prepared right now
               </p>
             </div>
           </div>
