@@ -217,7 +217,7 @@ export default function Home() {
                 </motion.div>
               </Link>
 
-              <Link href="/product/pages/auth">
+              <Link href="/product/auth">
                 <motion.div
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}

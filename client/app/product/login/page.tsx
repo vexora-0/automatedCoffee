@@ -77,7 +77,7 @@ export default function CustomerLoginPage() {
         localStorage.setItem("userName", response.data.name);
 
         // Navigate to recipe categories page
-        router.push("/product/pages/recipes");
+        router.push("/product/recipes");
       } else {
         form.setError("root", {
           message: "Failed to create user. Please try again.",
@@ -94,7 +94,7 @@ export default function CustomerLoginPage() {
   };
 
   const handleCancel = () => {
-    router.push("/product/pages/screensaver");
+    router.push("/product/screensaver");
   };
 
   // SSR safe rendering

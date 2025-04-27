@@ -10,7 +10,8 @@ import {
   RecipeFormData,
   Order,
   Warning,
-  ApiResponse
+  ApiResponse,
+  RecipeIngredient
 } from './types';
 
 // ===== USER SERVICES =====
@@ -129,6 +130,21 @@ export const ingredientService = {
   // Delete ingredient
   deleteIngredient: async (ingredientId: string): Promise<ApiResponse<Record<string, never>>> => {
     const response = await apiClient.delete(`/ingredients/${ingredientId}`);
+    return response.data;
+  }
+};
+
+// ===== RECIPE INGREDIENT SERVICES =====
+export const recipeIngredientService = {
+  // Get all recipe ingredients
+  getAllRecipeIngredients: async (): Promise<ApiResponse<RecipeIngredient[]>> => {
+    const response = await apiClient.get('/recipes/ingredients');
+    return response.data;
+  },
+  
+  // Get recipe ingredients by recipe ID
+  getRecipeIngredientsByRecipeId: async (recipeId: string): Promise<ApiResponse<RecipeIngredient[]>> => {
+    const response = await apiClient.get(`/recipes/ingredients?recipe=${recipeId}`);
     return response.data;
   }
 };

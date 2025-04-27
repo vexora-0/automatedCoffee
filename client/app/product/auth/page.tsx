@@ -40,7 +40,7 @@ export default function MachineAuthPage() {
       localStorage.setItem("machineId", machineIdInput);
 
       // Navigate to the screensaver page
-      router.push("/product/pages/screensaver");
+      router.push("/product/screensaver");
     } catch (err) {
       setError(
         "Authentication failed. Please check your connection and try again."

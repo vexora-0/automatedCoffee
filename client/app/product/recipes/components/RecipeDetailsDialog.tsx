@@ -4,10 +4,15 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Recipe, RecipeIngredient, Ingredient } from "@/lib/api/types";
-import { orderService } from "@/lib/api/services";
+import { orderService, recipeService, recipeIngredientService } from "@/lib/api/services";
 import { Button } from "@/components/ui/button";
 import { X, CreditCard, Loader2, ThumbsUp, Coffee } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+// Interface for recipe details with ingredients
+interface RecipeDetails extends Recipe {
+  ingredients: RecipeIngredient[];
+}
 
 interface RecipeDetailsDialogProps {
   recipe: Recipe | null;
@@ -28,37 +33,49 @@ export default function RecipeDetailsDialog({
   const [isOrdering, setIsOrdering] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [debugMessage, setDebugMessage] = useState<string | null>(null);
+  const [localRecipeIngredients, setLocalRecipeIngredients] = useState<RecipeIngredient[]>([]);
+  const [isLoadingIngredients, setIsLoadingIngredients] = useState(false);
 
-  // Debug ingredient loading on mount
+  // Load recipe details with ingredients when dialog opens
   useEffect(() => {
-    if (recipe && isOpen) {
-      const recipeIngredientsCount = recipeIngredients.filter(ri => ri.recipe_id === recipe.recipe_id).length;
-      const ingredientsCount = ingredients.length;
-      
-      const recipeIngredientsIds = recipeIngredients
-        .filter(ri => ri.recipe_id === recipe.recipe_id)
-        .map(ri => ri.ingredient_id);
-      
-      const matchedIngredients = ingredients.filter(ing => 
-        recipeIngredientsIds.includes(ing.ingredient_id)
-      );
-      
-      if (recipeIngredientsCount === 0 || ingredientsCount === 0) {
-        setDebugMessage(
-          `Recipe ingredients: ${recipeIngredientsCount}, ` +
-          `Total ingredients: ${ingredientsCount}, ` +
-          `Matched: ${matchedIngredients.length}`
-        );
-      } else if (matchedIngredients.length < recipeIngredientsCount) {
-        setDebugMessage(
-          `Missing ingredients: found ${matchedIngredients.length} of ${recipeIngredientsCount} needed`
-        );
-      } else {
-        setDebugMessage(null);
+    const loadRecipeDetails = async () => {
+      if (recipe && isOpen) {
+        setIsLoadingIngredients(true);
+        try {
+          // We'll use the recipe ID to filter the recipeIngredients directly
+          const relevantIngredients = recipeIngredients.filter(
+            ri => ri.recipe_id === recipe.recipe_id
+          );
+          
+          if (relevantIngredients.length > 0) {
+            setLocalRecipeIngredients(relevantIngredients);
+            console.log(`Found ${relevantIngredients.length} ingredients for recipe ${recipe.name}`);
+          } else {
+            console.warn(`No ingredients found in props for recipe ${recipe.name} (ID: ${recipe.recipe_id}). Fetching from API...`);
+            
+            // Fallback to API request if no ingredients found in props
+            try {
+              const response = await recipeIngredientService.getRecipeIngredientsByRecipeId(recipe.recipe_id);
+              if (response.success && response.data && response.data.length > 0) {
+                setLocalRecipeIngredients(response.data);
+                console.log(`Loaded ${response.data.length} ingredients from API for recipe ${recipe.name}`);
+              } else {
+                console.warn(`No ingredients found from API for recipe ${recipe.name}`);
+              }
+            } catch (apiError) {
+              console.error(`Error fetching ingredients for recipe ${recipe.name}:`, apiError);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to process recipe ingredients:", error);
+        } finally {
+          setIsLoadingIngredients(false);
+        }
       }
-    }
-  }, [recipe, isOpen, recipeIngredients, ingredients]);
+    };
+
+    loadRecipeDetails();
+  }, [recipe, isOpen, recipeIngredients]);
 
   // Format price as currency
   const formattedPrice = recipe
@@ -109,7 +126,7 @@ export default function RecipeDetailsDialog({
 
   // Process ingredients for this recipe
   const recipeIngredientsList = recipe
-    ? recipeIngredients.filter(ri => ri.recipe_id === recipe.recipe_id).map(
+    ? (localRecipeIngredients.length > 0 ? localRecipeIngredients : recipeIngredients.filter(ri => ri.recipe_id === recipe.recipe_id)).map(
         (ri: RecipeIngredient) => {
           const ingredient = ingredients.find(
             (i: Ingredient) => i.ingredient_id === ri.ingredient_id
@@ -204,14 +221,7 @@ export default function RecipeDetailsDialog({
                       {formattedPrice}
                     </motion.div>
                   </div>
-
-                  {/* Debug message */}
-                  {debugMessage && (
-                    <div className="mb-4 px-3 py-2 bg-amber-950/30 text-amber-300 rounded-md text-xs">
-                      <p>Debug: {debugMessage}</p>
-                    </div>
-                  )}
-
+                  
                   {/* Ingredients */}
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
@@ -226,7 +236,11 @@ export default function RecipeDetailsDialog({
                       </span>
                     </h3>
                     
-                    {recipeIngredientsList.length > 0 ? (
+                    {isLoadingIngredients ? (
+                      <div className="p-4 rounded-xl bg-black/20 border border-white/10 text-center">
+                        <p className="text-gray-400">Loading ingredients...</p>
+                      </div>
+                    ) : recipeIngredientsList.length > 0 ? (
                       <div className="grid grid-cols-1 gap-3">
                         {recipeIngredientsList.map((ingredient, index) => (
                           <motion.div 

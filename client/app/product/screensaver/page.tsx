@@ -13,13 +13,13 @@ export default function ScreensaverPage() {
     const storedMachineId = localStorage.getItem("machineId");
 
     if (!storedMachineId) {
-      router.push("/product/pages/auth");
+      router.push("/product/auth");
       return;
     }
   }, [router]);
 
   const handleTap = () => {
-    router.push("/product/pages/login");
+    router.push("/product/login");
   };
 
   return (

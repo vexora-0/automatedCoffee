@@ -12,7 +12,7 @@ import useWebSocketStore from "@/app/product/stores/useWebSocketStore";
 import useMachineInventoryStore from "@/app/product/stores/useMachineInventoryStore";
 import useRecipeIngredientStore from "@/app/product/stores/useRecipeIngredientStore";
 import useIngredientStore from "@/app/product/stores/useIngredientStore";
-import { ingredientService } from "@/lib/api/services";
+import { ingredientService, recipeIngredientService } from "@/lib/api/services";
 import AllRecipesList from "./components/AllRecipesList";
 
 export default function RecipesPage() {
@@ -72,6 +72,29 @@ export default function RecipesPage() {
     loadIngredients();
   }, [ingredients.length, ingredientStore]);
 
+  // Load recipe ingredients data from API
+  useEffect(() => {
+    const loadRecipeIngredients = async () => {
+      if (Object.keys(recipeIngredientStore.recipeIngredientMap).length === 0 && recipes.length > 0) {
+        try {
+          console.log('[Recipes] Fetching recipe ingredients from API...');
+          const response = await recipeIngredientService.getAllRecipeIngredients();
+          
+          if (response.success && response.data) {
+            console.log(`[Recipes] Loaded ${response.data.length} recipe ingredients from API`);
+            recipeIngredientStore.setRecipeIngredients(response.data);
+          } else {
+            console.warn('[Recipes] No recipe ingredients returned from API');
+          }
+        } catch (error) {
+          console.error('[Recipes] Failed to fetch recipe ingredients:', error);
+        }
+      }
+    };
+    
+    loadRecipeIngredients();
+  }, [recipes.length, recipeIngredientStore]);
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -86,7 +109,7 @@ export default function RecipesPage() {
     // If no user or machine ID is stored, redirect to the appropriate page
     if (!storedUserId || !storedMachineId) {
       router.push(
-        storedMachineId ? "/product/pages/login" : "/product/pages/auth"
+        storedMachineId ? "/product/login" : "/product/auth"
       );
       return;
     }
@@ -139,7 +162,7 @@ export default function RecipesPage() {
   }, [machineId, recipes.length, inventoryLoaded]);
 
   const handleBackToLogin = () => {
-    router.push("/product/pages/login");
+    router.push("/product/login");
   };
 
   const handleLogout = () => {
@@ -148,7 +171,7 @@ export default function RecipesPage() {
     localStorage.removeItem("userName");
     
     // Redirect to login
-    router.push("/product/pages/login");
+    router.push("/product/login");
   };
 
   // Early SSR return to prevent hydration mismatch

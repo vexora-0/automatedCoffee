@@ -8,7 +8,8 @@ import {
   updateRecipe,
   deleteRecipe,
   createRecipeWithImage,
-  updateRecipeImage
+  updateRecipeImage,
+  getAllRecipeIngredients
 } from '../controllers/recipeController';
 
 const router = express.Router();
@@ -17,6 +18,10 @@ const router = express.Router();
 router.route('/categories')
   .get(getAllCategories)
   .post(createCategory);
+
+// Recipe ingredient routes
+router.route('/ingredients')
+  .get(getAllRecipeIngredients);
 
 // Recipe routes
 router.route('/')

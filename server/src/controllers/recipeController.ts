@@ -13,6 +13,29 @@ const emitRecipeUpdates = async () => {
   websocketService.emitRecipeUpdate(recipes);
 };
 
+// Get all recipe ingredients
+export const getAllRecipeIngredients = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { recipe } = req.query;
+    
+    // Optional filtering by recipe_id
+    const query = recipe ? { recipe_id: recipe } : {};
+    
+    const recipeIngredients = await RecipeIngredient.find(query);
+    res.status(200).json({
+      success: true,
+      count: recipeIngredients.length,
+      data: recipeIngredients
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
 // Get all recipe categories
 export const getAllCategories = async (req: Request, res: Response): Promise<void> => {
   try {
