@@ -144,7 +144,7 @@ export default function RecipesPage() {
     const inventory = machineInventoryStore.getInventoryForMachine(
       machineId || ""
     );
-    if (inventory && inventory.length > 0) {
+    if (machineId && inventory && inventory.length > 0) {
       console.log(`[Recipes] Inventory loaded with ${inventory.length} items`);
       setInventoryLoaded(true);
     }
@@ -152,14 +152,14 @@ export default function RecipesPage() {
 
   // Compute recipe availability when we receive data updates
   useEffect(() => {
-    if (machineId && recipes.length > 0 && inventoryLoaded) {
-      // Only compute availability when both recipes AND inventory are loaded
+    if (machineId && recipes.length > 0 && inventoryLoaded && recipeIngredients.length > 0) {
+      // Only compute availability when ALL necessary data is loaded
       console.log(
-        `[Recipes] Computing availability for ${recipes.length} recipes with inventory loaded`
+        `[Recipes] Computing availability for ${recipes.length} recipes with ${recipeIngredients.length} ingredients and inventory loaded`
       );
       recipeAvailabilityStore.computeAvailability(machineId);
     }
-  }, [machineId, recipes.length, inventoryLoaded]);
+  }, [machineId, recipes.length, inventoryLoaded, recipeIngredients.length, recipeAvailabilityStore]);
 
   const handleBackToLogin = () => {
     router.push("/product/login");
@@ -174,7 +174,6 @@ export default function RecipesPage() {
     router.push("/product/login");
   };
 
-  // Early SSR return to prevent hydration mismatch
   if (!isMounted) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center">

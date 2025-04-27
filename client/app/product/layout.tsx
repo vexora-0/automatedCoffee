@@ -33,15 +33,5 @@ export default function ProductLayout({
     }
   }, [machineId, machineInventories, setMachineInventory]);
 
-  // Log recipe data once when it changes
-  useEffect(() => {
-    if (recipes.length > 0) {
-      console.log('[Layout] Recipe data:', {
-        total: recipes.length,
-        categories: [...new Set(recipes.map(r => r.category_id))].length
-      });
-    }
-  }, [recipes]);
-
   return <>{children}</>;
 }

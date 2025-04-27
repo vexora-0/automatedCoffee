@@ -40,13 +40,6 @@ const useMachineInventoryStore = create<MachineInventoryStore>()(
 
     // Actions
     setMachineInventory: (machineId, inventory) => set((state) => {
-      console.log(`[Debug] Setting inventory for machine ${machineId} with ${inventory.length} items`);
-      
-      // Show what's in inventory
-      inventory.forEach(item => {
-        console.log(`[Debug] Inventory item: ${item.ingredient_id}, qty: ${item.quantity}`);
-      });
-      
       // Initialize machine inventory map if not exists
       if (!state.inventoryByMachineId[machineId]) {
         state.inventoryByMachineId[machineId] = {};
