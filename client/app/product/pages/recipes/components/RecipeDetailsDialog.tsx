@@ -64,9 +64,10 @@ export default function RecipeDetailsDialog({
   const formattedPrice = recipe
     ? new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: "USD",
+        currency: "INR",
+        currencyDisplay: "symbol"
       }).format(recipe.price)
-    : "$0.00";
+    : "₹0.00";
 
   const handlePlaceOrder = async () => {
     if (!recipe) return;
@@ -93,11 +94,8 @@ export default function RecipeDetailsDialog({
       });
 
       if (response.success && response.data) {
-        setShowOrderSuccess(true);
-        // Automatically return to the screensaver after a delay
-        setTimeout(() => {
-          router.push("/product/pages/screensaver");
-        }, 5000);
+        // Navigate directly to success page without delay
+        router.push(`/product/pages/success?recipe=${encodeURIComponent(recipe.name)}&price=${encodeURIComponent(recipe.price)}`);
       } else {
         setErrorMessage("Failed to place order. Please try again.");
       }
@@ -182,7 +180,7 @@ export default function RecipeDetailsDialog({
                     transition={{ delay: 0.2 }}
                     className="inline-block bg-black/60 backdrop-blur-md px-6 py-2 rounded-full border border-amber-500/30"
                   >
-                    <h2 className="text-xl font-bold text-white">{recipe.name}</h2>
+                    <h2 className="text-xl font-bold text-white">{recipe.description}</h2>
                   </motion.div>
                 </div>
               </div>
@@ -196,7 +194,7 @@ export default function RecipeDetailsDialog({
                       <div className="w-8 h-8 rounded-full bg-amber-600/30 flex items-center justify-center">
                         <Coffee className="h-4 w-4 text-amber-500" />
                       </div>
-                      <span className="text-sm font-medium text-gray-400">Premium Coffee</span>
+                      <span className="text-sm font-medium text-gray-400">{recipe.name}</span>
                     </div>
                     <motion.div
                       initial={{ opacity: 0, x: 20 }}
@@ -207,11 +205,6 @@ export default function RecipeDetailsDialog({
                     </motion.div>
                   </div>
                   
-                  {/* Description */}
-                  <div className="mb-6">
-                    <p className="text-gray-300">{recipe.description}</p>
-                  </div>
-
                   {/* Debug message */}
                   {debugMessage && (
                     <div className="mb-4 px-3 py-2 bg-amber-950/30 text-amber-300 rounded-md text-xs">

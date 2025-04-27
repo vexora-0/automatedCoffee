@@ -94,7 +94,7 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
       return;
     }
     
-    if (machine.status !== 'operational') {
+    if (machine.status !== 'active') {
       res.status(400).json({
         success: false,
         message: `Machine is not operational. Current status: ${machine.status}`
