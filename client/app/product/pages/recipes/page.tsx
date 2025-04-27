@@ -4,14 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useRecipeCategories } from "@/lib/api/hooks";
-import { Recipe } from "@/lib/api/types";
 import { ChevronLeft, UserCircle, Coffee, LogOut } from "lucide-react";
-import { RecipeCard } from "./[categoryId]/components/RecipeCard";
 import useRecipeStore from "@/app/product/stores/useRecipeStore";
 import useRecipeAvailabilityStore from "@/app/product/stores/useRecipeAvailabilityStore";
 import { useRecipes } from "@/app/product/stores/useRecipeStore";
 import useWebSocketStore from "@/app/product/stores/useWebSocketStore";
 import useMachineInventoryStore from "@/app/product/stores/useMachineInventoryStore";
+import useRecipeIngredientStore from "@/app/product/stores/useRecipeIngredientStore";
+import useIngredientStore from "@/app/product/stores/useIngredientStore";
+import { ingredientService } from "@/lib/api/services";
+import AllRecipesList from "./components/AllRecipesList";
 
 export default function RecipesPage() {
   const router = useRouter();
@@ -32,12 +34,43 @@ export default function RecipesPage() {
   const recipeAvailabilityStore = useRecipeAvailabilityStore();
   const isRecipeAvailable = recipeAvailabilityStore.isRecipeAvailable;
 
+  // Get recipe ingredients from recipeIngredientStore
+  const recipeIngredientStore = useRecipeIngredientStore();
+  const recipeIngredients = Object.values(recipeIngredientStore.recipeIngredientMap);
+
+  // Get all ingredients from ingredientStore
+  const ingredientStore = useIngredientStore();
+  const ingredients = ingredientStore.getAllIngredients();
+
   // Initialize WebSocket connection and handlers
   const webSocketStore = useWebSocketStore();
 
   // Track if inventory is loaded
   const [inventoryLoaded, setInventoryLoaded] = useState(false);
   const machineInventoryStore = useMachineInventoryStore();
+
+  // Load ingredient data from API when needed
+  useEffect(() => {
+    const loadIngredients = async () => {
+      if (ingredients.length === 0) {
+        try {
+          console.log('[Recipes] Fetching ingredients from API...');
+          const response = await ingredientService.getAllIngredients();
+          
+          if (response.success && response.data) {
+            console.log(`[Recipes] Loaded ${response.data.length} ingredients from API`);
+            ingredientStore.setIngredients(response.data);
+          } else {
+            console.warn('[Recipes] No ingredients returned from API');
+          }
+        } catch (error) {
+          console.error('[Recipes] Failed to fetch ingredients:', error);
+        }
+      }
+    };
+    
+    loadIngredients();
+  }, [ingredients.length, ingredientStore]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -109,8 +142,13 @@ export default function RecipesPage() {
     router.push("/product/pages/login");
   };
 
-  const handleRecipeSelect = (recipeId: string) => {
-    router.push(`/product/pages/recipe-details/${recipeId}`);
+  const handleLogout = () => {
+    // Clear local storage
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userName");
+    
+    // Redirect to login
+    router.push("/product/pages/login");
   };
 
   // Early SSR return to prevent hydration mismatch
@@ -127,23 +165,6 @@ export default function RecipesPage() {
       </div>
     );
   }
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        when: "beforeChildren",
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex flex-col relative overflow-hidden">
@@ -196,23 +217,19 @@ export default function RecipesPage() {
           <motion.div
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 bg-[#141414]/80 rounded-full py-2 px-3 border border-[#292929]"
+            onClick={handleLogout}
+            className="flex items-center gap-2 bg-[#141414]/80 rounded-full py-2 px-3 border border-[#292929] cursor-pointer hover:bg-[#1A1A1A]/80 transition-colors"
           >
             <span className="text-sm font-medium text-amber-400">
               {userName ? userName : "Guest"}
             </span>
-            <UserCircle className="h-5 w-5 text-amber-400" />
+            <LogOut className="h-4 w-4 text-amber-400" />
           </motion.div>
         </div>
       </header>
 
       {/* Main content */}
-      <motion.main
-        className="relative z-10 flex-1 px-6 lg:px-10 pb-16 pt-10"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <main className="relative z-10 flex-1 px-6 lg:px-10 pb-16 pt-10 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
           <motion.h1
             className="text-4xl md:text-5xl font-black text-white mb-10 tracking-tight text-center"
@@ -223,77 +240,36 @@ export default function RecipesPage() {
             COFFEE <span className="text-amber-500">MENU</span>
           </motion.h1>
 
-          <div className="space-y-16">
-            {isLoadingCategories ? (
-              // Loading skeleton for categories
-              <div className="space-y-12">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="space-y-6">
-                    <div className="h-8 bg-gray-800 rounded w-48 animate-pulse"></div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {[1, 2, 3, 4].map((j) => (
-                        <div
-                          key={j}
-                          className="bg-[#141414]/50 aspect-square rounded-xl animate-pulse border border-[#222]"
-                        ></div>
-                      ))}
-                    </div>
+          {isLoadingCategories ? (
+            // Loading skeleton for categories
+            <div className="space-y-12">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="space-y-6">
+                  <div className="h-8 bg-gray-800 rounded w-48 animate-pulse"></div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((j) => (
+                      <div
+                        key={j}
+                        className="bg-[#141414]/50 aspect-square rounded-xl animate-pulse border border-[#222]"
+                      ></div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              // Display categories and their recipes
-              <>
-                {categories.map((category) => {
-                  const categoryRecipes = getRecipesByCategory(
-                    category.category_id
-                  );
-                  if (!categoryRecipes.length) return null;
-
-                  return (
-                    <motion.div
-                      key={category.category_id}
-                      variants={itemVariants}
-                      className="scroll-mt-8"
-                      id={`category-${category.category_id}`}
-                    >
-                      <motion.h2 className="text-2xl font-bold text-white mb-6">
-                        {category.name}
-                      </motion.h2>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {categoryRecipes.map((recipe: Recipe) => (
-                          <RecipeCard
-                            key={recipe.recipe_id}
-                            recipe={recipe}
-                            isAvailable={isRecipeAvailable(recipe.recipe_id)}
-                            onClick={() => handleRecipeSelect(recipe.recipe_id)}
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Display all recipes organized by category
+            <AllRecipesList
+              categories={categories}
+              recipes={recipes}
+              getRecipesByCategory={getRecipesByCategory}
+              isRecipeAvailable={isRecipeAvailable}
+              recipeIngredients={recipeIngredients}
+              ingredients={ingredients}
+            />
+          )}
         </div>
-      </motion.main>
-
-      {/* Logout button */}
-      <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        whileHover={{ scale: 1.05 }}
-        className="absolute bottom-8 right-8 z-10 text-gray-500 hover:text-amber-500 transition-colors"
-        onClick={() => {
-          localStorage.removeItem("userId");
-          localStorage.removeItem("userName");
-          router.push("/product/pages/login");
-        }}
-      >
-        <LogOut size={20} />
-      </motion.button>
+      </main>
     </div>
   );
 }

@@ -172,7 +172,7 @@ export default function MachineInventoryManagement() {
       const updatedMachine = updatedMachines.find(
         (m) => m.machine_id === selectedMachine
       );
-      setSelectedMachineData(updatedMachine);
+      setSelectedMachineData(updatedMachine || null);
 
       setIsUpdatingCleaningWater(false);
       toast({

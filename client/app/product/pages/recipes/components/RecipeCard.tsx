@@ -111,4 +111,4 @@ export function RecipeCard({
       )}
     </motion.div>
   );
-}
+} 
