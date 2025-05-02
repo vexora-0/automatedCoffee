@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useRecipeCategories } from "@/lib/api/hooks";
@@ -12,14 +12,27 @@ import useWebSocketStore from "@/app/product/stores/useWebSocketStore";
 import useMachineInventoryStore from "@/app/product/stores/useMachineInventoryStore";
 import useRecipeIngredientStore from "@/app/product/stores/useRecipeIngredientStore";
 import useIngredientStore from "@/app/product/stores/useIngredientStore";
-import { ingredientService, recipeIngredientService } from "@/lib/api/services";
+import { ingredientService, recipeIngredientService, recipeService } from "@/lib/api/services";
 import AllRecipesList from "./components/AllRecipesList";
+
+// Extend Window interface to include our custom property
+declare global {
+  interface Window {
+    _inventorySyncedFromWebsocket?: boolean;
+    _lastInventoryUpdate?: {
+      machineId: string;
+      count: number;
+      timestamp: number;
+    };
+  }
+}
 
 export default function RecipesPage() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [machineId, setMachineId] = useState<string | null>(null);
+  const [isInventoryEmpty, setIsInventoryEmpty] = useState(false);
 
   // Get categories from API
   const { categories, isLoading: isLoadingCategories } = useRecipeCategories();
@@ -75,25 +88,37 @@ export default function RecipesPage() {
   // Load recipe ingredients data from API
   useEffect(() => {
     const loadRecipeIngredients = async () => {
-      if (Object.keys(recipeIngredientStore.recipeIngredientMap).length === 0 && recipes.length > 0) {
+      const currentRecipeIngredients = Object.values(recipeIngredientStore.recipeIngredientMap);
+      
+      // Only load if we have recipes but no recipe ingredients
+      if (currentRecipeIngredients.length === 0 && recipes.length > 0) {
         try {
           console.log('[Recipes] Fetching recipe ingredients from API...');
+          recipeIngredientStore.setLoading(true);
+          
+          // Use only the service, skip direct fetch attempt
           const response = await recipeIngredientService.getAllRecipeIngredients();
           
           if (response.success && response.data) {
             console.log(`[Recipes] Loaded ${response.data.length} recipe ingredients from API`);
             recipeIngredientStore.setRecipeIngredients(response.data);
           } else {
-            console.warn('[Recipes] No recipe ingredients returned from API');
+            console.warn('[Recipes] Failed to load recipe ingredients:', response.message || 'Unknown error');
           }
         } catch (error) {
           console.error('[Recipes] Failed to fetch recipe ingredients:', error);
+        } finally {
+          recipeIngredientStore.setLoading(false);
         }
+      } else if (currentRecipeIngredients.length > 0) {
+        console.log(`[Recipes] Using ${currentRecipeIngredients.length} cached recipe ingredients`);
       }
     };
     
-    loadRecipeIngredients();
-  }, [recipes.length, recipeIngredientStore]);
+    if (isMounted && recipes.length > 0) {
+      loadRecipeIngredients();
+    }
+  }, [recipes.length, recipeIngredientStore, isMounted]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -102,67 +127,238 @@ export default function RecipesPage() {
   // Initialize WebSocket connection
   useEffect(() => {
     // Get user information from localStorage
-    const storedUserName = localStorage.getItem("userName");
-    const storedUserId = localStorage.getItem("userId");
+    const storedUserName = sessionStorage.getItem("userName");
+    const storedUserId = sessionStorage.getItem("userId");
     const storedMachineId = localStorage.getItem("machineId");
 
-    // If no user or machine ID is stored, redirect to the appropriate page
-    if (!storedUserId || !storedMachineId) {
-      router.push(
-        storedMachineId ? "/product/login" : "/product/auth"
-      );
+    // If no user ID is stored, redirect to the auth page
+    if (!storedUserId) {
+      router.push("/product/auth");
       return;
     }
 
-    setUserName(storedUserName);
-    setMachineId(storedMachineId);
+    // If no machine ID is stored, use a default or handle appropriately
+    if (!storedMachineId) {
+      console.log("[Recipes] No machine ID found, using default");
+      // You can set a default machine ID or handle it differently
+      // For now, we'll continue without redirecting
+    }
 
-    // Initialize WebSocket connection
-    webSocketStore.initSocket();
-  }, [router]);
+    setUserName(storedUserName);
+    setMachineId(storedMachineId || "default-machine");
+
+    // Initialize WebSocket connection if not already connected
+    if (!webSocketStore.isConnected) {
+      webSocketStore.initSocket();
+    }
+  }, [router, webSocketStore]);
 
   // Join machine room and request data when machineId is available
   useEffect(() => {
-    if (machineId) {
+    if (machineId && webSocketStore.isConnected) {
       console.log(`[Recipes] Connecting to machine: ${machineId}`);
       // Join machine room for real-time updates
       webSocketStore.joinMachineRoom(machineId);
 
       // Make explicit request for data
       webSocketStore.requestData(machineId);
+      
+      // Set up retry mechanism for inventory loading - only retry once after a longer delay
+      const retryTimer = setTimeout(() => {
+        const inventory = machineInventoryStore.getInventoryForMachine(machineId);
+        if (!inventory || inventory.length === 0) {
+          console.log('[Recipes] Initial data load timeout - trying one final request');
+          webSocketStore.requestData(machineId);
+        }
+      }, 5000); // Longer delay of 5 seconds
 
       // Cleanup on unmount
       return () => {
         console.log(`[Recipes] Disconnecting from machine: ${machineId}`);
         webSocketStore.leaveMachineRoom(machineId);
+        clearTimeout(retryTimer);
       };
     }
-  }, [machineId]);
+  }, [machineId, webSocketStore.isConnected]); // Only run when machineId or connection status changes
 
-  // Track when inventory is loaded
+  // Track when inventory is loaded - changed to prevent disconnecting/reconnecting
   useEffect(() => {
-    const inventory = machineInventoryStore.getInventoryForMachine(
-      machineId || ""
-    );
-    if (machineId && inventory && inventory.length > 0) {
-      console.log(`[Recipes] Inventory loaded with ${inventory.length} items`);
-      setInventoryLoaded(true);
+    // Add retry counter with maximum attempts
+    const maxRetries = 3;
+    let retryCount = 0;
+    let retryTimer: NodeJS.Timeout;
+
+    function checkInventory() {
+      // First, get inventory from the store
+      const inventory = machineInventoryStore.getInventoryForMachine(machineId || "");
+      
+      // Check if inventory exists in websocket store but not in inventory store
+      const wsInventory = machineId ? webSocketStore.machineInventories[machineId] : null;
+      
+      if (machineId) {
+        console.log(`[Recipes] Inventory loaded with ${inventory?.length || 0} items for machine ${machineId}`);
+        
+        // Check if we have a flag indicating successful inventory update
+        const lastUpdate = window._lastInventoryUpdate;
+        if (lastUpdate && lastUpdate.machineId === machineId && lastUpdate.count > 0 && (!inventory || inventory.length === 0)) {
+          console.log(`[Recipes] DETECTION MISMATCH: Last update recorded ${lastUpdate.count} items but store shows 0 - forcing direct store access`);
+          
+          // Force direct global state access which may differ from hook state
+          const globalStore = useMachineInventoryStore.getState();
+          const globalInventory = globalStore.inventoryArrayByMachineId?.[machineId] || [];
+          
+          if (globalInventory.length > 0) {
+            console.log(`[Recipes] RECOVERY: Found ${globalInventory.length} items in global state - using this data`);
+            
+            // Force a re-save of the data to ensure it persists
+            machineInventoryStore.setMachineInventory(machineId, [...globalInventory]);
+            
+            setIsInventoryEmpty(false);
+            setInventoryLoaded(true);
+            return;
+          }
+          
+          // If inventory is empty in store but exists in websocket store, sync them
+          if ((!inventory || inventory.length === 0) && wsInventory && wsInventory.length > 0) {
+            console.log(`[Recipes] Found inventory data in WebSocketStore (${wsInventory.length} items) but not in InventoryStore - syncing stores`);
+            
+            // Create a fresh copy to avoid reference issues and directly update the store
+            const wsCopy = wsInventory.map(item => ({...item}));
+            machineInventoryStore.setMachineInventory(machineId, wsCopy);
+            
+            // Mark as not empty since we found data
+            setIsInventoryEmpty(false);
+            setInventoryLoaded(true);
+            return;
+          }
+        }
+        
+        // Reset sync flag when inventory changes
+        if (inventory && inventory.length > 0) {
+          window._inventorySyncedFromWebsocket = false;
+          
+          // Log inventory for successful cases
+          console.log('[Recipes] INVENTORY PRESENT: Contents:', inventory.map(item => 
+            `${item.ingredient_id}: ${item.quantity} units`).join(', '));
+        }
+        
+        // Debug inventory contents
+        if (!inventory || inventory.length === 0) {
+          console.warn('[Recipes] WARNING: Machine inventory is EMPTY - this will cause all recipes to be unavailable');
+          setIsInventoryEmpty(true);
+          
+          // If inventory is empty and we haven't exceeded max retries, try again
+          if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`[Recipes] Empty inventory detected, requesting data again (attempt ${retryCount}/${maxRetries})`);
+            
+            // Clear any existing timer
+            if (retryTimer) clearTimeout(retryTimer);
+            
+            // Increase delay with each retry to avoid hammering server
+            const delay = 2000 + (retryCount * 1000);
+            retryTimer = setTimeout(() => {
+              webSocketStore.requestData(machineId);
+            }, delay);
+          } else if (retryCount === maxRetries) {
+            console.warn(`[Recipes] Maximum retry attempts (${maxRetries}) reached, giving up on inventory requests`);
+            
+            // As a last resort, force-use WebSocket data
+            if (wsInventory && wsInventory.length > 0) {
+              console.log(`[Recipes] LAST RESORT: Using ${wsInventory.length} items directly from WebSocketStore`);
+              setIsInventoryEmpty(false);
+            }
+          }
+        } else {
+          setIsInventoryEmpty(false);
+          
+          // Reset retry counter when we get data
+          retryCount = 0;
+        }
+        
+        setInventoryLoaded(true);
+      }
     }
-  }, [machineId, machineInventoryStore]);
+
+    // Run the initial check
+    checkInventory();
+
+    // Cleanup on unmount
+    return () => {
+      if (retryTimer) clearTimeout(retryTimer);
+      // Clear sync flag on unmount
+      window._inventorySyncedFromWebsocket = false;
+    };
+  }, [machineId, machineInventoryStore, webSocketStore]);
+
+  // Load recipe data from API if needed
+  useEffect(() => {
+    async function loadRecipes() {
+      // Check if we already have recipes
+      if (recipes.length === 0) {
+        console.log('[Recipes] No recipes loaded yet, initializing from API');
+        try {
+          // Replace direct fetch with recipeService
+          const response = await recipeService.getAllRecipes();
+          
+          if (response.success && response.data) {
+            console.log(`[Recipes] Loaded ${response.data.length} recipes from API`);
+            useRecipeStore.getState().setRecipes(response.data);
+          } else {
+            console.error('[Recipes] Failed to load recipes from API:', response.message || 'Unknown error');
+          }
+        } catch (error) {
+          console.error('[Recipes] Error loading recipes:', error);
+        }
+      } else {
+        console.log(`[Recipes] Using ${recipes.length} cached recipes`);
+      }
+    }
+    
+    if (isMounted) {
+      loadRecipes();
+    }
+  }, [isMounted, recipes.length]);
 
   // Compute recipe availability when we receive data updates
   useEffect(() => {
-    if (machineId && recipes.length > 0 && inventoryLoaded && recipeIngredients.length > 0) {
-      // Only compute availability when ALL necessary data is loaded
+    if (machineId && inventoryLoaded) {
+      const currentRecipes = useRecipeStore.getState().getAllRecipes();
+      const currentRecipeIngredients = Object.values(recipeIngredientStore.recipeIngredientMap);
+      
       console.log(
-        `[Recipes] Computing availability for ${recipes.length} recipes with ${recipeIngredients.length} ingredients and inventory loaded`
+        `[Recipes] Ready to compute availability: ${currentRecipes.length} recipes, ${ingredients.length} ingredients`
       );
-      recipeAvailabilityStore.computeAvailability(machineId);
+      
+      // Only compute availability when we have recipes and ingredients
+      if (currentRecipes.length > 0) {
+        console.log('[Recipes] Computing availability now');
+        
+        // Safety check - if inventory appears empty but we have _lastInventoryUpdate data,
+        // try one final recovery before computing availability
+        const inventory = machineInventoryStore.getInventoryForMachine(machineId);
+        const lastUpdate = window._lastInventoryUpdate;
+        
+        if ((!inventory || inventory.length === 0) && lastUpdate && lastUpdate.count > 0) {
+          console.log('[Recipes] AVAILABILITY RECOVERY: Detected missing inventory before computing availability');
+          
+          // Try to get inventory from WebSocket store as a last resort
+          const wsInventory = webSocketStore.machineInventories[machineId];
+          if (wsInventory && wsInventory.length > 0) {
+            console.log(`[Recipes] Using WebSocket inventory data (${wsInventory.length} items) for availability calculation`);
+            // Update the inventory store with a fresh copy
+            machineInventoryStore.setMachineInventory(machineId, [...wsInventory]);
+          }
+        }
+        
+        // Compute availability with whatever data we have
+        recipeAvailabilityStore.computeAvailability(machineId);
+      }
     }
-  }, [machineId, recipes.length, inventoryLoaded, recipeIngredients.length]);
+  }, [machineId, inventoryLoaded, recipes, recipeIngredients.length, ingredients.length]);
 
   const handleBackToLogin = () => {
-    router.push("/product/login");
+    router.push("/product/auth");
   };
 
   const handleLogout = () => {
@@ -261,6 +457,21 @@ export default function RecipesPage() {
           >
             COFFEE <span className="text-amber-500">MENU</span>
           </motion.h1>
+
+          {/* Empty Inventory Alert */}
+          {isInventoryEmpty && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 p-5 bg-amber-900/30 border border-amber-800 rounded-lg text-center"
+            >
+              <h3 className="text-xl font-bold text-amber-400 mb-2">Machine Needs Restocking</h3>
+              <p className="text-amber-200">
+                This coffee machine is out of ingredients and needs to be restocked. 
+                All recipes are currently unavailable.
+              </p>
+            </motion.div>
+          )}
 
           {isLoadingCategories ? (
             // Loading skeleton for categories

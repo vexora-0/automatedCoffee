@@ -199,7 +199,7 @@ export default function Home() {
                 </motion.div>
               </Link>
 
-              <Link href="/product/service">
+              <Link href="/product/auth/machine">
                 <motion.div
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}
@@ -207,7 +207,7 @@ export default function Home() {
                 >
                   <div>
                     <h4 className="font-semibold text-xl text-amber-500">
-                      Service
+                      Machine Access
                     </h4>
                     <p className="text-sm text-gray-400 mt-1">
                       Machine Service Access

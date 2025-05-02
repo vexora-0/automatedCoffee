@@ -57,7 +57,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         user_id: user.user_id,
         name: user.name,
         email: user.email,
-        age_group: user.age_group,
         role: user.role,
         created_at: user.created_at
       }
@@ -117,7 +116,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         user_id: user.user_id,
         name: user.name,
         email: user.email,
-        age_group: user.age_group,
         role: user.role,
         created_at: user.created_at
       }
@@ -154,7 +152,6 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
         user_id: user.user_id,
         name: user.name,
         email: user.email,
-        age_group: user.age_group,
         role: user.role,
         created_at: user.created_at
       }

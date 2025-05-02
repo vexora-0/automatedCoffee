@@ -10,7 +10,7 @@ export default function ProductLayout({
   children: React.ReactNode;
 }) {
   const [machineId, setMachineId] = useState<string | null>(null);
-  const { isConnected, joinMachineRoom, recipes, machineInventories } = useWebSocketStore();
+  const { isConnected, recipes, machineInventories } = useWebSocketStore();
   const { setMachineInventory } = useMachineInventoryStore();
 
   useEffect(() => {
@@ -19,12 +19,6 @@ export default function ProductLayout({
       setMachineId(storedMachineId);
     }
   }, []);
-
-  useEffect(() => {
-    if (machineId && isConnected) {
-      joinMachineRoom(machineId);
-    }
-  }, [machineId, isConnected, joinMachineRoom]);
 
   // Update machine inventory when WebSocket data changes
   useEffect(() => {

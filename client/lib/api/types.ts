@@ -14,8 +14,9 @@ export interface ApiResponse<T> {
 export interface User {
   user_id: string;
   name: string;
-  email: string;
-  age_group: string;
+  phone_number: string;
+  date_of_birth?: string; // Date represented as string in client
+  email?: string;
   role: 'customer' | 'admin';
   created_at: Date;
 }

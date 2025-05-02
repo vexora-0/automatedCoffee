@@ -5,7 +5,8 @@ import {
   createUser,
   updateUser,
   deleteUser,
-  getUserHistory
+  getUserHistory,
+  checkUserByPhone
 } from '../controllers/userController';
 
 const router = express.Router();
@@ -13,6 +14,9 @@ const router = express.Router();
 router.route('/')
   .get(getAllUsers)
   .post(createUser);
+
+router.route('/check-phone')
+  .post(checkUserByPhone);
 
 router.route('/:userId')
   .get(getUserById)

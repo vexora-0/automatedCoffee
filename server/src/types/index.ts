@@ -3,9 +3,10 @@ import { Document } from 'mongoose';
 export interface IUser extends Document {
   user_id: string;
   name: string;
-  email: string;
-  password: string;
-  age_group: string;
+  phone_number: string;
+  date_of_birth?: Date;
+  email?: string;
+  password?: string;
   role: 'customer' | 'admin';
   created_at: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;

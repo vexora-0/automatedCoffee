@@ -85,6 +85,12 @@ export const userService = {
     return response.data;
   },
 
+  // Check if user exists by phone number
+  checkUserByPhone: async (phoneData: { phone_number: string }): Promise<ApiResponse<User> & { exists: boolean }> => {
+    const response = await apiClient.post('/users/check-phone', phoneData);
+    return response.data;
+  },
+
   // Create new user
   createUser: async (userData: Partial<User>): Promise<ApiResponse<User>> => {
     const response = await apiClient.post('/users', userData);
@@ -120,8 +126,19 @@ export const machineService = {
 
   // Get machine by ID
   getMachineById: async (machineId: string): Promise<ApiResponse<Machine>> => {
-    const response = await apiClient.get(`/machines/${machineId}`);
-    return response.data;
+    try {
+      const response = await apiClient.get(`/machines/${machineId}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        return {
+          success: false,
+          message: 'Machine ID not found',
+          error: 'not_found'
+        };
+      }
+      throw error; // Re-throw other errors to be caught by the caller
+    }
   },
 
   // Create new machine

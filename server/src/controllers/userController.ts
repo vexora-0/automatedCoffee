@@ -47,18 +47,76 @@ export const getUserById = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
+// Check if user exists by phone number
+export const checkUserByPhone = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { phone_number } = req.body;
+    
+    if (!phone_number) {
+      res.status(400).json({
+        success: false,
+        message: 'Phone number is required'
+      });
+      return;
+    }
+
+    const user = await User.findOne({ phone_number });
+    
+    if (user) {
+      // User exists, return user data
+      res.status(200).json({
+        success: true,
+        exists: true,
+        data: user
+      });
+    } else {
+      // User doesn't exist
+      res.status(200).json({
+        success: true,
+        exists: false
+      });
+    }
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
 // Create new user
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, age_group, role } = req.body;
+    const { name, phone_number, date_of_birth, role } = req.body;
     
-    const user = await User.create({
+    // Check if phone number already exists
+    const existingUser = await User.findOne({ phone_number });
+    
+    if (existingUser) {
+      // If user already exists, return the existing user
+      res.status(200).json({
+        success: true,
+        data: existingUser
+      });
+      return;
+    }
+    
+    // Create new user if not found
+    const userData: any = {
       user_id: uuidv4(),
       name,
-      age_group,
-      role,
+      phone_number,
+      role: role || 'customer',
       created_at: new Date()
-    });
+    };
+
+    // Add date_of_birth if provided
+    if (date_of_birth) {
+      userData.date_of_birth = date_of_birth;
+    }
+
+    const user = await User.create(userData);
 
     // Create user history entry
     await UserHistory.create({
@@ -73,6 +131,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
       data: user
     });
   } catch (error: any) {
+    console.error('Create user error:', error);
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -84,7 +143,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 // Update user
 export const updateUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, age_group, role } = req.body;
+    const { name, phone_number, date_of_birth, role } = req.body;
     
     const user = await User.findOne({ user_id: req.params.userId });
 
@@ -96,9 +155,15 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (phone_number) updateData.phone_number = phone_number;
+    if (date_of_birth) updateData.date_of_birth = date_of_birth;
+    if (role) updateData.role = role;
+
     const updatedUser = await User.findOneAndUpdate(
       { user_id: req.params.userId },
-      { name, age_group, role },
+      updateData,
       { new: true, runValidators: true }
     );
 
