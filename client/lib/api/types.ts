@@ -5,12 +5,16 @@ export interface ApiResponse<T> {
   message?: string;
   error?: string;
   count?: number;
+  // For auth responses that contain token and user directly
+  token?: string;
+  user?: User;
 }
 
 // User Types
 export interface User {
   user_id: string;
   name: string;
+  email: string;
   age_group: string;
   role: 'customer' | 'admin';
   created_at: Date;
@@ -120,4 +124,24 @@ export interface Warning {
   status: 'active' | 'resolved';
   resolved_at?: Date;
   created_at: Date;
+}
+
+// Auth types
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+  age_group: string;
+  role?: 'customer' | 'admin';
+}
+
+// This represents the actual structure returned by the auth endpoints
+export interface AuthResponse {
+  token: string;
+  user: User;
 } 

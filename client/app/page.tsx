@@ -181,7 +181,7 @@ export default function Home() {
             </div>
 
             <div className="px-8 py-6 space-y-4">
-              <Link href="/admin/login">
+              <Link href="/dashboard/auth">
                 <motion.div
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}
@@ -189,35 +189,17 @@ export default function Home() {
                 >
                   <div>
                     <h4 className="font-semibold text-xl group-hover:text-amber-500 transition-colors">
-                      Login
+                      Dashboard Access
                     </h4>
                     <p className="text-sm text-gray-400 mt-1">
-                      Admin Dashboard Access
+                      Admin Dashboard Login
                     </p>
                   </div>
                   <ChevronRight className="text-amber-500 opacity-0 group-hover:opacity-100 transform translate-x-0 group-hover:translate-x-1 transition-all duration-300" />
                 </motion.div>
               </Link>
 
-              <Link href="/admin/signup">
-                <motion.div
-                  whileHover={{ x: 5 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="group flex items-center justify-between w-full py-5 px-6 bg-[#1A1A1A] hover:bg-gradient-to-r hover:from-amber-900/20 hover:to-[#1A1A1A] text-white rounded-xl transition-all duration-300"
-                >
-                  <div>
-                    <h4 className="font-semibold text-xl group-hover:text-amber-500 transition-colors">
-                      Sign Up
-                    </h4>
-                    <p className="text-sm text-gray-400 mt-1">
-                      Create Admin Account
-                    </p>
-                  </div>
-                  <ChevronRight className="text-amber-500 opacity-0 group-hover:opacity-100 transform translate-x-0 group-hover:translate-x-1 transition-all duration-300" />
-                </motion.div>
-              </Link>
-
-              <Link href="/product/auth">
+              <Link href="/product/service">
                 <motion.div
                   whileHover={{ x: 5 }}
                   whileTap={{ scale: 0.98 }}
@@ -225,10 +207,10 @@ export default function Home() {
                 >
                   <div>
                     <h4 className="font-semibold text-xl text-amber-500">
-                      Machine Access
+                      Service
                     </h4>
                     <p className="text-sm text-gray-400 mt-1">
-                      Connect to Coffee System
+                      Machine Service Access
                     </p>
                   </div>
                   <ChevronRight className="text-amber-500 opacity-80 group-hover:opacity-100 transform translate-x-0 group-hover:translate-x-1 transition-all duration-300" />

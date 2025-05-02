@@ -159,7 +159,7 @@ export default function RecipesPage() {
       );
       recipeAvailabilityStore.computeAvailability(machineId);
     }
-  }, [machineId, recipes.length, inventoryLoaded, recipeIngredients.length, recipeAvailabilityStore]);
+  }, [machineId, recipes.length, inventoryLoaded, recipeIngredients.length]);
 
   const handleBackToLogin = () => {
     router.push("/product/login");

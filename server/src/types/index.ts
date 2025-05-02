@@ -3,9 +3,12 @@ import { Document } from 'mongoose';
 export interface IUser extends Document {
   user_id: string;
   name: string;
+  email: string;
+  password: string;
   age_group: string;
   role: 'customer' | 'admin';
   created_at: Date;
+  matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
 export interface IUserHistory extends Document {

@@ -18,6 +18,7 @@ import ingredientRoutes from './routes/ingredientRoutes';
 import recipeRoutes from './routes/recipeRoutes';
 import orderRoutes from './routes/orderRoutes';
 import warningRoutes from './routes/warningRoutes';
+import authRoutes from './routes/authRoutes';
 
 // Import models for websocket updates
 import Recipe from './models/Recipe';
@@ -52,6 +53,7 @@ app.use(express.urlencoded({ extended: true }));
 const activeConnections = new Map();
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/machines', machineRoutes);
 app.use('/api/ingredients', ingredientRoutes);

@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // Define the API base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Create Axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -15,14 +15,16 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
-    // You can add auth token here if needed
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers = {
-    //     ...config.headers,
-    //     Authorization: `Bearer ${token}`,
-    //   };
-    // }
+    // Add auth token if available
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers = {
+          ...config.headers,
+          Authorization: `Bearer ${token}`,
+        };
+      }
+    }
     return config;
   },
   (error: AxiosError) => {
@@ -38,16 +40,18 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     // Handle specific error cases
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      console.error('API Error Response:', error.response.data);
-      console.error('API Error Status:', error.response.status);
-    } else if (error.request) {
-      // The request was made but no response was received
-      console.error('API Error Request:', error.request);
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('API Error Message:', error.message);
+      // Handle authentication errors
+      if (error.response.status === 401 || error.response.status === 403) {
+        // Avoid redirecting if we're already on the auth page or if the error was during authentication
+        const isAuthRequest = error.config?.url?.includes('/auth/');
+        const isAlreadyOnAuthPage = typeof window !== 'undefined' && window.location.pathname.includes('/dashboard/auth');
+        
+        if (!isAlreadyOnAuthPage && !isAuthRequest) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/dashboard/auth';
+        }
+      }
     }
     
     return Promise.reject(error);

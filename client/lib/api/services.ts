@@ -11,8 +11,65 @@ import {
   Order,
   Warning,
   ApiResponse,
-  RecipeIngredient
+  RecipeIngredient,
+  AuthResponse,
+  LoginCredentials,
+  RegisterData
 } from './types';
+
+// ===== AUTH SERVICES =====
+export const authService = {
+  // Login user
+  login: async (credentials: LoginCredentials): Promise<ApiResponse<AuthResponse>> => {
+    const response = await apiClient.post('/auth/login', credentials);
+    
+    // The server returns data directly in the response, not nested in a 'data' property
+    return response.data;
+  },
+
+  // Register new user
+  register: async (userData: RegisterData): Promise<ApiResponse<AuthResponse>> => {
+    const response = await apiClient.post('/auth/signup', userData);
+    
+    // The server returns data directly in the response, not nested in a 'data' property
+    return response.data;
+  },
+
+  // Get current user profile
+  getProfile: async (): Promise<ApiResponse<User>> => {
+    const response = await apiClient.get('/auth/profile');
+    return response.data;
+  },
+
+  // Logout user (client-side only)
+  logout: (): void => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+  },
+
+  // Check if user is authenticated
+  isAuthenticated: (): boolean => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      return !!token;
+    }
+    return false;
+  },
+
+  // Get current user from localStorage
+  getCurrentUser: (): User | null => {
+    if (typeof window !== 'undefined') {
+      const user = localStorage.getItem('user');
+      if (user) {
+        return JSON.parse(user);
+      }
+      return null;
+    }
+    return null;
+  }
+};
 
 // ===== USER SERVICES =====
 export const userService = {
