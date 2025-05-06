@@ -117,7 +117,7 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
     
     // Create new socket with conservative settings
     const socketInstance = io(socketUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['websocket'], // WebSocket only, no polling fallback
       reconnectionAttempts: 2,
       reconnectionDelay: RECONNECTION_DELAY_BASE,
       reconnectionDelayMax: 5000,
