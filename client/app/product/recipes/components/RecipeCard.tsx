@@ -40,7 +40,7 @@ export function RecipeCard({
       {/* Image container */}
       <div className="relative h-[60%] w-full overflow-hidden rounded-t-xl">
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent z-10" />
-        
+
         <Image
           src={recipe.image_url || "/placeholder-recipe.jpg"}
           alt={recipe.name}
@@ -52,19 +52,17 @@ export function RecipeCard({
             !isAvailable && "grayscale brightness-50"
           )}
         />
-        
+
         {/* Price tag */}
         <div className="absolute top-3 right-3 z-20">
-          <motion.div
-            className="rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5 border border-amber-500/30"
-          >
+          <motion.div className="rounded-full bg-black/60 backdrop-blur-sm px-3 py-1.5 border border-amber-500/30">
             <span className="text-sm font-medium text-amber-300">
               {formattedPrice}
             </span>
           </motion.div>
         </div>
       </div>
-      
+
       {/* Content area */}
       <div className="relative z-10 h-[40%] p-4 flex flex-col justify-between">
         <div>
@@ -76,16 +74,16 @@ export function RecipeCard({
               {recipe.category_id === "1" ? "Coffee" : "Specialty"}
             </p>
           </div>
-          
+
           <h3 className="text-lg font-bold text-white mb-1 group-hover:text-amber-300 transition-colors duration-200">
             {recipe.name}
           </h3>
-          
+
           <p className="text-sm text-gray-300 line-clamp-2">
             {recipe.description || "A delicious coffee recipe"}
           </p>
         </div>
-        
+
         {/* Bottom hint */}
         <div className="pt-2">
           <p className="text-xs text-amber-300/70 text-center">
@@ -106,9 +104,7 @@ export function RecipeCard({
               <AlertCircle className="h-6 w-6 text-red-400" />
             </div>
             <div className="space-y-1">
-              <h3 className="font-bold text-red-300">
-                Currently Unavailable
-              </h3>
+              <h3 className="font-bold text-red-300">Currently Unavailable</h3>
               <p className="text-sm text-gray-400">
                 This recipe cannot be prepared right now
               </p>
@@ -118,4 +114,4 @@ export function RecipeCard({
       )}
     </motion.div>
   );
-} 
+}

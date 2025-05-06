@@ -6,6 +6,7 @@ import RecipeIngredient from '../models/RecipeIngredient';
 import Ingredient from '../models/Ingredient';
 import Order from '../models/Order';
 import websocketService from '../services/websocketService';
+import MachineIngredientInventory from '../models/MachineIngredientInventory';
 
 // Helper function to emit recipe updates
 const emitRecipeUpdates = async () => {
@@ -491,6 +492,103 @@ export const deleteRecipe = async (req: Request, res: Response): Promise<void> =
       data: {}
     });
   } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// --- RECIPE AVAILABILITY ENDPOINT ---
+/**
+ * Get recipe availability for a machine
+ * Returns available/unavailable recipes and missing ingredients
+ * Emits via WebSocket as well
+ */
+export const getRecipeAvailabilityForMachine = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { machineId } = req.query;
+
+    if (!machineId) {
+      res.status(400).json({
+        success: false,
+        message: 'Machine ID is required'
+      });
+      return;
+    }
+
+    console.log(`[RecipeController] Computing availability for machine: ${machineId}`);
+
+    // Fetch all recipes
+    const recipes = await Recipe.find({}).lean();
+    
+    // Fetch all recipe ingredients
+    const recipeIngredients = await RecipeIngredient.find({}).lean();
+    
+    // Fetch machine inventory
+    const machineInventory = await MachineIngredientInventory.find({ 
+      machine_id: machineId 
+    }).lean();
+
+    console.log(`[RecipeController] Found ${recipes.length} recipes, ${recipeIngredients.length} recipe ingredients, ${machineInventory.length} inventory items`);
+
+    // Build inventory map for quick lookups
+    const inventoryMap: Record<string, number> = {};
+    machineInventory.forEach(item => {
+      inventoryMap[item.ingredient_id] = item.quantity;
+    });
+
+    // Organize recipe ingredients by recipe ID
+    const recipeIngredientsMap: Record<string, Array<any>> = {};
+    recipeIngredients.forEach(ri => {
+      if (!recipeIngredientsMap[ri.recipe_id]) {
+        recipeIngredientsMap[ri.recipe_id] = [];
+      }
+      recipeIngredientsMap[ri.recipe_id].push(ri);
+    });
+
+    // Calculate availability for each recipe
+    const availableRecipes: any[] = [];
+    const unavailableRecipes: any[] = [];
+    const missingIngredientsByRecipe: Record<string, string[]> = {};
+
+    recipes.forEach(recipe => {
+      const ingredients = recipeIngredientsMap[recipe.recipe_id] || [];
+      const missingIngredients: string[] = [];
+
+      // Check if all ingredients are available in sufficient quantity
+      ingredients.forEach(ri => {
+        const availableQuantity = inventoryMap[ri.ingredient_id] || 0;
+        
+        if (availableQuantity < ri.quantity) {
+          missingIngredients.push(ri.ingredient_id);
+        }
+      });
+
+      if (missingIngredients.length === 0) {
+        availableRecipes.push(recipe);
+      } else {
+        unavailableRecipes.push(recipe);
+        missingIngredientsByRecipe[recipe.recipe_id] = missingIngredients;
+      }
+    });
+
+    const result = {
+      availableRecipes,
+      unavailableRecipes,
+      missingIngredientsByRecipe
+    };
+
+    // Emit the result via WebSocket
+    websocketService.emitRecipeAvailabilityUpdate(machineId as string, result);
+
+    res.status(200).json({
+      success: true,
+      ...result
+    });
+  } catch (error: any) {
+    console.error('[RecipeController] Error computing availability:', error);
     res.status(500).json({
       success: false,
       message: 'Server Error',

@@ -9,7 +9,8 @@ import {
   deleteRecipe,
   createRecipeWithImage,
   updateRecipeImage,
-  getAllRecipeIngredients
+  getAllRecipeIngredients,
+  getRecipeAvailabilityForMachine
 } from '../controllers/recipeController';
 
 const router = express.Router();
@@ -35,10 +36,13 @@ router.route('/with-image')
 // Update recipe image
 router.route('/:recipeId/image')
   .put(updateRecipeImage);
+  router.route('/availability').get(getRecipeAvailabilityForMachine);
 
 router.route('/:recipeId')
   .get(getRecipeById)
   .put(updateRecipe)
   .delete(deleteRecipe);
+
+// Add recipe availability endpoint
 
 export default router; 

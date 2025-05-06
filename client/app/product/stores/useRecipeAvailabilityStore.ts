@@ -2,259 +2,145 @@
 import { create } from 'zustand';
 import { Recipe } from '@/lib/api/types';
 import { immer } from 'zustand/middleware/immer';
-import useRecipeStore from './useRecipeStore';
-import useRecipeIngredientStore from './useRecipeIngredientStore';
-import useMachineInventoryStore from './useMachineInventoryStore';
-import { memoize } from './utils';
 import { persist } from 'zustand/middleware';
 
+// Define custom window property
+declare global {
+  interface Window {
+    _recipeAvailabilityRequested?: boolean;
+  }
+}
+
+// Define interface for recipe availability data
+interface RecipeAvailabilityData {
+  availableRecipes: Recipe[];
+  unavailableRecipes: Recipe[];
+  missingIngredientsByRecipe: Record<string, string[]>;
+}
+
 interface RecipeAvailabilityStore {
-  // Cached availability information for O(1) lookups
-  availableRecipeIds: Set<string>;
-  unavailableRecipeIds: Set<string>;
-  // Added: Pre-built arrays for faster rendering
-  availableRecipeIdArray: string[];
-  unavailableRecipeIdArray: string[];
-  missingIngredientsByRecipeId: Record<string, string[]>;
-  
-  // Actions
-  computeAvailability: (machineId: string) => void;
-  // Added: Update single recipe availability for faster targeted updates
-  updateRecipeAvailability: (recipeId: string, machineId: string) => void;
-  // Added: Update availability for recipes affected by ingredient change
-  updateAvailabilityForIngredient: (ingredientId: string, machineId: string) => void;
-  resetAvailability: () => void;
-  
-  // Selectors (all constant-time operations)
+  availableRecipes: Recipe[];
+  unavailableRecipes: Recipe[];
+  missingIngredientsByRecipe: Record<string, string[]>;
+  fetchAvailability: (machineId: string) => Promise<void>;
+  subscribeToAvailability: (machineId: string) => void;
+  updateFromWebSocket: (machineId: string, data: RecipeAvailabilityData) => void;
   isRecipeAvailable: (recipeId: string) => boolean;
-  getAvailableRecipes: () => Recipe[];
-  getUnavailableRecipes: () => Recipe[];
   getMissingIngredients: (recipeId: string) => string[];
 }
 
-// Define the persisted state interface
-interface PersistedState {
-  availableRecipeIdArray: string[];
-  unavailableRecipeIdArray: string[];
-  missingIngredientsByRecipeId: Record<string, string[]>;
+// Define interface for persisted state
+interface PersistState {
+  availableRecipes: Recipe[];
+  unavailableRecipes: Recipe[];
+  missingIngredientsByRecipe: Record<string, string[]>;
 }
 
-// Removed: Debounce mechanism - simplify to avoid timing issues
+// Create the store with immer for easier state updates
 const useRecipeAvailabilityStore = create<RecipeAvailabilityStore>()(
   persist(
     immer((set, get) => ({
-      availableRecipeIds: new Set<string>(),
-      unavailableRecipeIds: new Set<string>(),
-      availableRecipeIdArray: [],
-      unavailableRecipeIdArray: [],
-      missingIngredientsByRecipeId: {},
+      availableRecipes: [],
+      unavailableRecipes: [],
+      missingIngredientsByRecipe: {},
 
-      // Main computation function - computes availability for all recipes
-      computeAvailability: (machineId) => {
-        set((state) => {
-          // Get all necessary stores
-          const recipeStore = useRecipeStore.getState();
-          const recipeIngredientStore = useRecipeIngredientStore.getState();
-          const machineInventoryStore = useMachineInventoryStore.getState();
+      fetchAvailability: async (machineId: string) => {
+        try {
+          console.log(`[RecipeAvailability] Fetching availability for machine: ${machineId}`);
           
-          // Get available ingredients
-          const availableInventory = machineInventoryStore.getInventoryForMachine(machineId);
+          // Use environment variable for API URL or fall back to localhost:5000
+          const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+          const response = await fetch(`${apiBaseUrl}/recipes/availability?machineId=${machineId}`);
           
-          // Exit early if no inventory available yet
-          if (!availableInventory || availableInventory.length === 0) {
-            return;
+          if (!response.ok) {
+            throw new Error(`API returned ${response.status}: ${response.statusText}`);
           }
           
-          const allRecipes = recipeStore.getAllRecipes();
+          const data = await response.json();
           
-          // Exit early if no recipes available yet
-          if (!allRecipes || allRecipes.length === 0) {
-            return;
-          }
-          
-          // Start fresh
-          state.availableRecipeIds = new Set<string>();
-          state.unavailableRecipeIds = new Set<string>();
-          state.availableRecipeIdArray = [];
-          state.unavailableRecipeIdArray = [];
-          state.missingIngredientsByRecipeId = {};
-          
-          // Go through every recipe
-          allRecipes.forEach(recipe => {
-            const recipeId = recipe.recipe_id;
-            const recipeIngredients = recipeIngredientStore.getIngredientsByRecipeId(recipeId);
-            
-            // Skip if recipe has no ingredients
-            if (!recipeIngredients || recipeIngredients.length === 0) {
-              state.availableRecipeIds.add(recipeId);
-              state.availableRecipeIdArray.push(recipeId);
-              return;
-            }
-            
-            // Check each ingredient
-            const missingIngredients: string[] = [];
-            
-            for (const ri of recipeIngredients) {
-              const hasEnough = machineInventoryStore.hasIngredientInStock(
-                machineId,
-                ri.ingredient_id,
-                ri.quantity
-              );
-              
-              if (!hasEnough) {
-                missingIngredients.push(ri.ingredient_id);
-              }
-            }
-            
-            // Store results
-            if (missingIngredients.length === 0) {
-              state.availableRecipeIds.add(recipeId);
-              state.availableRecipeIdArray.push(recipeId);
-            } else {
-              state.unavailableRecipeIds.add(recipeId);
-              state.unavailableRecipeIdArray.push(recipeId);
-              state.missingIngredientsByRecipeId[recipeId] = missingIngredients;
-            }
+          set((state) => {
+            state.availableRecipes = data.availableRecipes || [];
+            state.unavailableRecipes = data.unavailableRecipes || [];
+            state.missingIngredientsByRecipe = data.missingIngredientsByRecipe || {};
           });
-        });
+          
+          console.log('[RecipeAvailability] Updated availability from backend', data);
+        } catch (error) {
+          console.error('[RecipeAvailability] Error fetching availability:', error);
+          
+          // Don't clear state on error - keep previous state
+          // But do log the error
+        }
+      },
+
+      subscribeToAvailability: (machineId: string) => {
+        try {
+          // Use dynamic import() instead of require()
+          import('./useWebSocketStore').then((WebSocketStoreModule) => {
+            const WebSocketStore = WebSocketStoreModule.default;
+            const wsStore = WebSocketStore.getState();
+            
+            if (wsStore && wsStore.socket) {
+              console.log(`[RecipeAvailability] Subscribed to socket events for machine ${machineId}`);
+              
+              // Make sure we join the machine room to get updates
+              if (wsStore.joinMachineRoom) {
+                wsStore.joinMachineRoom(machineId);
+                
+                // Request initial data ONLY if not already done (prevent loops)
+                if (wsStore.requestData) {
+                  // Use a flag to prevent duplicate requests
+                  if (!window._recipeAvailabilityRequested) {
+                    window._recipeAvailabilityRequested = true;
+                    wsStore.requestData(machineId);
+                  }
+                }
+              }
+            } else {
+              console.warn('[RecipeAvailability] WebSocket not initialized, fallback to REST API');
+              get().fetchAvailability(machineId);
+            }
+          }).catch(error => {
+            console.error('[RecipeAvailability] Error importing WebSocketStore:', error);
+            get().fetchAvailability(machineId);
+          });
+        } catch (error) {
+          console.error('[RecipeAvailability] Error subscribing to availability:', error);
+          // Fallback to REST API
+          get().fetchAvailability(machineId);
+        }
       },
       
-      // Update a single recipe's availability - much faster than recomputing all
-      updateRecipeAvailability: (recipeId, machineId) => set((state) => {
-        const recipeIngredientStore = useRecipeIngredientStore.getState();
-        const machineInventoryStore = useMachineInventoryStore.getState();
-        const recipeStore = useRecipeStore.getState();
-        const recipe = recipeStore.getRecipeById(recipeId);
+      updateFromWebSocket: (machineId: string, data: RecipeAvailabilityData) => {
+        if (!machineId || !data) return;
         
-        const recipeIngredients = recipeIngredientStore.getIngredientsByRecipeId(recipeId);
-        
-        // Check each ingredient
-        const missingIngredients: string[] = [];
-        
-        for (const ri of recipeIngredients) {
-          const hasEnough = machineInventoryStore.hasIngredientInStock(
-            machineId,
-            ri.ingredient_id,
-            ri.quantity
-          );
-          
-          if (!hasEnough) {
-            missingIngredients.push(ri.ingredient_id);
-          }
-        }
-        
-        // Update sets and arrays
-        if (missingIngredients.length === 0) {
-          // Recipe is available
-          state.unavailableRecipeIds.delete(recipeId);
-          state.availableRecipeIds.add(recipeId);
-          delete state.missingIngredientsByRecipeId[recipeId];
-          
-          // Update arrays
-          const unavailableIndex = state.unavailableRecipeIdArray.indexOf(recipeId);
-          if (unavailableIndex >= 0) {
-            state.unavailableRecipeIdArray.splice(unavailableIndex, 1);
-          }
-          
-          if (!state.availableRecipeIdArray.includes(recipeId)) {
-            state.availableRecipeIdArray.push(recipeId);
-          }
-        } else {
-          // Recipe is unavailable
-          state.availableRecipeIds.delete(recipeId);
-          state.unavailableRecipeIds.add(recipeId);
-          state.missingIngredientsByRecipeId[recipeId] = missingIngredients;
-          
-          // Update arrays
-          const availableIndex = state.availableRecipeIdArray.indexOf(recipeId);
-          if (availableIndex >= 0) {
-            state.availableRecipeIdArray.splice(availableIndex, 1);
-          }
-          
-          if (!state.unavailableRecipeIdArray.includes(recipeId)) {
-            state.unavailableRecipeIdArray.push(recipeId);
-          }
-        }
-      }),
-      
-      // Update all recipes that use a specific ingredient
-      updateAvailabilityForIngredient: (ingredientId, machineId) => set(() => {
-        const recipeIngredientStore = useRecipeIngredientStore.getState();
-        
-        // Get all recipes that use this ingredient
-        const affectedRecipeIds = recipeIngredientStore.getRecipeIdsByIngredientId(ingredientId);
-        
-        // Update each affected recipe
-        affectedRecipeIds.forEach(recipeId => {
-          // Call the individual update function for each recipe
-          // Using nested mutation here which is safe within immer
-          get().updateRecipeAvailability(recipeId, machineId);
+        set((state) => {
+          state.availableRecipes = data.availableRecipes || [];
+          state.unavailableRecipes = data.unavailableRecipes || [];
+          state.missingIngredientsByRecipe = data.missingIngredientsByRecipe || {};
         });
-      }),
-      
-      resetAvailability: () => set((state) => {
-        state.availableRecipeIds = new Set<string>();
-        state.unavailableRecipeIds = new Set<string>();
-        state.availableRecipeIdArray = [];
-        state.unavailableRecipeIdArray = [];
-        state.missingIngredientsByRecipeId = {};
-      }),
-      
-      // O(1) lookups
-      isRecipeAvailable: (recipeId) => {
-        const isAvailable = get().availableRecipeIds.has(recipeId);
-        return isAvailable;
+        
+        console.log(`[RecipeAvailability] Updated from WebSocket: ${data.availableRecipes?.length || 0} available, ${data.unavailableRecipes?.length || 0} unavailable recipes`);
       },
-      
-      getAvailableRecipes: memoize<[], Recipe[]>(() => {
-        // O(a) where a = number of available recipes
-        const recipeStore = useRecipeStore.getState();
-        const { availableRecipeIdArray } = get();
-        
-        const recipes = availableRecipeIdArray.map(id => recipeStore.getRecipeById(id))
-          .filter(Boolean) as Recipe[]; // Filter out undefined values
-        
-        return recipes;
-      }),
-      
-      getUnavailableRecipes: memoize<[], Recipe[]>(() => {
-        // O(u) where u = number of unavailable recipes
-        const recipeStore = useRecipeStore.getState();
-        const { unavailableRecipeIdArray } = get();
-        
-        const recipes = unavailableRecipeIdArray.map(id => recipeStore.getRecipeById(id))
-          .filter(Boolean) as Recipe[]; // Filter out undefined values
-        
-        return recipes;
-      }),
-      
-      getMissingIngredients: (recipeId) => {
-        const missingIngredients = get().missingIngredientsByRecipeId[recipeId] || [];
-        return missingIngredients;
+
+      // Utility methods
+      isRecipeAvailable: (recipeId: string) => {
+        const state = get();
+        return state.availableRecipes.some((recipe) => recipe.recipe_id === recipeId);
+      },
+
+      getMissingIngredients: (recipeId: string) => {
+        const state = get();
+        return state.missingIngredientsByRecipe[recipeId] || [];
       }
     })),
     {
       name: 'recipe-availability-storage',
-      partialize: (state): PersistedState => ({
-        availableRecipeIdArray: Array.from(state.availableRecipeIds),
-        unavailableRecipeIdArray: Array.from(state.unavailableRecipeIds),
-        missingIngredientsByRecipeId: state.missingIngredientsByRecipeId
-      }),
-      // Custom merge function to handle Sets properly
-      merge: (persistedState: unknown, currentState: RecipeAvailabilityStore): RecipeAvailabilityStore => {
-        const state = persistedState as PersistedState;
-        const availableIds = new Set<string>(state.availableRecipeIdArray || []);
-        const unavailableIds = new Set<string>(state.unavailableRecipeIdArray || []);
-        
-        return {
-          ...currentState,
-          availableRecipeIds: availableIds,
-          unavailableRecipeIds: unavailableIds,
-          availableRecipeIdArray: Array.from(availableIds),
-          unavailableRecipeIdArray: Array.from(unavailableIds),
-          missingIngredientsByRecipeId: state.missingIngredientsByRecipeId || {}
-        };
-      }
+      partialize: (state) => ({
+        availableRecipes: state.availableRecipes,
+        unavailableRecipes: state.unavailableRecipes,
+        missingIngredientsByRecipe: state.missingIngredientsByRecipe
+      } as PersistState)
     }
   )
 );

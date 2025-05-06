@@ -8,6 +8,7 @@ import MachineIngredientInventory from '../models/MachineIngredientInventory';
 import RecipeIngredient from '../models/RecipeIngredient';
 import UserHistory from '../models/UserHistory';
 import Warning from '../models/Warning';
+import websocketService from '../services/websocketService';
 
 // Get all orders
 export const getAllOrders = async (req: Request, res: Response): Promise<void> => {
@@ -181,6 +182,50 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
       { machine_id },
       { $inc: { revenue_total: recipe.price } }
     );
+    
+    // --- Emit recipe availability update ---
+    // Fetch all recipes
+    const recipes = await Recipe.find({}).lean();
+    // Fetch all recipe ingredients
+    const allRecipeIngredients = await RecipeIngredient.find({}).lean();
+    // Fetch updated machine inventory
+    const updatedInventory = await MachineIngredientInventory.find({ machine_id }).lean();
+    // Build inventory map for quick lookup
+    const inventoryMap = {};
+    updatedInventory.forEach(item => {
+      inventoryMap[item.ingredient_id] = item.quantity;
+    });
+    // Build recipeId -> ingredients[] map
+    const recipeIngredientMap = {};
+    allRecipeIngredients.forEach(ri => {
+      if (!recipeIngredientMap[ri.recipe_id]) recipeIngredientMap[ri.recipe_id] = [];
+      recipeIngredientMap[ri.recipe_id].push({ ingredient_id: ri.ingredient_id, quantity: ri.quantity });
+    });
+    // Compute availability
+    const availableRecipes = [];
+    const unavailableRecipes = [];
+    const missingIngredientsByRecipe = {};
+    for (const r of recipes) {
+      const ingredients = recipeIngredientMap[r.recipe_id] || [];
+      const missing = [];
+      for (const ri of ingredients) {
+        if (!inventoryMap[ri.ingredient_id] || inventoryMap[ri.ingredient_id] < ri.quantity) {
+          missing.push(ri.ingredient_id);
+        }
+      }
+      if (missing.length === 0) {
+        availableRecipes.push(r);
+      } else {
+        unavailableRecipes.push(r);
+        missingIngredientsByRecipe[r.recipe_id] = missing;
+      }
+    }
+    websocketService.emitRecipeAvailabilityUpdate(machine_id, {
+      availableRecipes,
+      unavailableRecipes,
+      missingIngredientsByRecipe
+    });
+    // --- End emit recipe availability update ---
     
     // Create user history entry
     await UserHistory.create({

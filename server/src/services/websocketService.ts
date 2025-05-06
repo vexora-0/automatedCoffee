@@ -9,7 +9,8 @@ export enum WebSocketEvents {
   MACHINE_TEMPERATURE_UPDATE = 'machine-temperature-update',
   MACHINE_INVENTORY_UPDATE = 'machine-inventory-update',
   REQUEST_DATA = 'request-data',
-  ERROR = 'error'
+  ERROR = 'error',
+  RECIPE_AVAILABILITY_UPDATE = 'recipe-availability-update'
 }
 
 /**
@@ -100,6 +101,19 @@ export const websocketService = {
       {
         machine_id: machineId,
         inventory: inventory
+      }
+    );
+  },
+
+  /**
+   * Emit recipe availability update to specific machine room
+   */
+  emitRecipeAvailabilityUpdate: (machineId: string, availability: any) => {
+    io.to(`machine-${machineId}`).emit(
+      WebSocketEvents.RECIPE_AVAILABILITY_UPDATE,
+      {
+        machine_id: machineId,
+        ...availability
       }
     );
   }

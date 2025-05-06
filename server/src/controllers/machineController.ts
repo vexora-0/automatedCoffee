@@ -5,6 +5,8 @@ import MachineIngredientInventory from '../models/MachineIngredientInventory';
 import Warning from '../models/Warning';
 import websocketService from '../services/websocketService';
 import mongoose from 'mongoose';
+import Recipe from '../models/Recipe';
+import RecipeIngredient from '../models/RecipeIngredient';
 
 // Get all machines
 export const getAllMachines = async (req: Request, res: Response): Promise<void> => {
@@ -305,6 +307,48 @@ export const updateMachineInventory = async (req: Request, res: Response): Promi
     });
     
     websocketService.emitMachineInventoryUpdate(req.params.machineId, fullInventory);
+
+    // --- Emit recipe availability update ---
+    // Fetch all recipes
+    const recipes = await Recipe.find({}).lean();
+    // Fetch all recipe ingredients
+    const recipeIngredients = await RecipeIngredient.find({}).lean();
+    // Build inventory map for quick lookup
+    const inventoryMap = {};
+    fullInventory.forEach(item => {
+      inventoryMap[item.ingredient_id] = item.quantity;
+    });
+    // Build recipeId -> ingredients[] map
+    const recipeIngredientMap = {};
+    recipeIngredients.forEach(ri => {
+      if (!recipeIngredientMap[ri.recipe_id]) recipeIngredientMap[ri.recipe_id] = [];
+      recipeIngredientMap[ri.recipe_id].push({ ingredient_id: ri.ingredient_id, quantity: ri.quantity });
+    });
+    // Compute availability
+    const availableRecipes = [];
+    const unavailableRecipes = [];
+    const missingIngredientsByRecipe = {};
+    for (const recipe of recipes) {
+      const ingredients = recipeIngredientMap[recipe.recipe_id] || [];
+      const missing = [];
+      for (const ri of ingredients) {
+        if (!inventoryMap[ri.ingredient_id] || inventoryMap[ri.ingredient_id] < ri.quantity) {
+          missing.push(ri.ingredient_id);
+        }
+      }
+      if (missing.length === 0) {
+        availableRecipes.push(recipe);
+      } else {
+        unavailableRecipes.push(recipe);
+        missingIngredientsByRecipe[recipe.recipe_id] = missing;
+      }
+    }
+    websocketService.emitRecipeAvailabilityUpdate(req.params.machineId, {
+      availableRecipes,
+      unavailableRecipes,
+      missingIngredientsByRecipe
+    });
+    // --- End emit recipe availability update ---
 
     res.status(200).json({
       success: true,

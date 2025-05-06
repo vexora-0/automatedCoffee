@@ -42,8 +42,8 @@ export const useInitializeStores = (
     recipeIngredientStore.setRecipeIngredients(recipeIngredients);
     machineInventoryStore.setMachineInventory(machineId, machineInventory);
     
-    // Compute recipe availability based on current machine inventory
-    recipeAvailabilityStore.computeAvailability(machineId);
+    // Fetch recipe availability from backend
+    recipeAvailabilityStore.fetchAvailability(machineId);
     
     console.log('[Stores] All stores initialized');
   }, [
@@ -69,93 +69,29 @@ export const useInitializeStores = (
 };
 
 /**
- * Hook to update machine inventory and recompute recipe availability
+ * Hook to update machine inventory
  * Call this whenever inventory changes, e.g., via WebSocket updates
- * Now optimized to only update affected recipes
+ * Recipe availability is now handled by the backend
  */
 export const useUpdateMachineInventory = (
   machineId: string,
   machineInventory: MachineIngredientInventory[] | undefined
 ) => {
   const machineInventoryStore = useMachineInventoryStore();
-  const recipeAvailabilityStore = useRecipeAvailabilityStore();
   
   useEffect(() => {
     console.log(`[Stores] useUpdateMachineInventory called for machine: ${machineId}`);
     console.log(`[Stores] Has inventory data: ${Boolean(machineInventory)}, Items: ${machineInventory?.length || 0}`);
     
     if (machineInventory) {
-      // Track which ingredients were updated
-      const updatedIngredientIds = new Set<string>();
-      
-      // Get current inventory for comparison
-      const currentInventory = machineInventoryStore.getInventoryForMachine(machineId);
-      const currentInventoryMap: Record<string, MachineIngredientInventory> = {};
-      
-      console.log(`[Stores] Current inventory items: ${currentInventory.length}`);
-      
-      // Create lookup map of current inventory
-      currentInventory.forEach(item => {
-        currentInventoryMap[item.ingredient_id] = item;
-      });
-      
-      // Compare with new inventory to identify changes
-      machineInventory.forEach(item => {
-        const currentItem = currentInventoryMap[item.ingredient_id];
-        
-        // If quantity changed or item is new, mark as updated
-        if (!currentItem || currentItem.quantity !== item.quantity) {
-          console.log(`[Stores] Ingredient ${item.ingredient_id} changed: ${currentItem?.quantity || 'none'} -> ${item.quantity}`);
-          updatedIngredientIds.add(item.ingredient_id);
-        }
-      });
-      
-      console.log(`[Stores] Updated ingredients count: ${updatedIngredientIds.size}`);
-      
-      // Update machine inventory
+      // Update machine inventory in local store for UI purposes
       machineInventoryStore.setMachineInventory(machineId, machineInventory);
       
-      // If we have updated ingredients, only update affected recipes
-      if (updatedIngredientIds.size > 0) {
-        // For small updates, use targeted updates
-        if (updatedIngredientIds.size <= 5) {
-          console.log(`[Stores] Using targeted updates for ${updatedIngredientIds.size} ingredients`);
-          updatedIngredientIds.forEach(ingredientId => {
-            recipeAvailabilityStore.updateAvailabilityForIngredient(ingredientId, machineId);
-          });
-        } else {
-          // For larger updates, recompute all (might be faster than many individual updates)
-          console.log(`[Stores] Using full recompute for ${updatedIngredientIds.size} ingredients`);
-          recipeAvailabilityStore.computeAvailability(machineId);
-        }
-      } else {
-        console.log('[Stores] No ingredient quantities changed, skipping recipe availability update');
-      }
+      // Note: Recipe availability is now handled by backend via WebSocket events
+      // The backend will emit 'recipe-availability-update' events that the
+      // useRecipeAvailabilityStore will listen for
     } else {
       console.log('[Stores] No inventory data received, skipping update');
     }
-  }, [machineId, machineInventory, machineInventoryStore, recipeAvailabilityStore]);
-};
-
-/**
- * Hook to update a single ingredient's quantity and update affected recipes
- * For highly optimized individual inventory updates
- */
-export const useUpdateIngredientQuantity = (
-  machineId: string, 
-  ingredientId: string, 
-  quantity: number
-) => {
-  const machineInventoryStore = useMachineInventoryStore();
-  const recipeAvailabilityStore = useRecipeAvailabilityStore();
-  
-  useEffect(() => {
-    console.log(`[Stores] useUpdateIngredientQuantity: machine ${machineId}, ingredient ${ingredientId}, quantity ${quantity}`);
-    
-    // Update the specific ingredient
-    machineInventoryStore.updateIngredientQuantity(machineId, ingredientId, quantity);
-    
-    // Update only recipes affected by this ingredient
-    recipeAvailabilityStore.updateAvailabilityForIngredient(ingredientId, machineId);
-  }, [machineId, ingredientId, quantity, machineInventoryStore, recipeAvailabilityStore]);
+  }, [machineId, machineInventory, machineInventoryStore]);
 }; 
