@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useRecipeCategories } from "@/lib/api/hooks";
-import { ChevronLeft, Coffee, LogOut } from "lucide-react";
 import useRecipeStore from "@/app/product/stores/useRecipeStore";
 import useRecipeAvailabilityStore from "@/app/product/stores/useRecipeAvailabilityStore";
 import { useRecipes } from "@/app/product/stores/useRecipeStore";
@@ -17,6 +16,7 @@ import {
   recipeService,
 } from "@/lib/api/services";
 import AllRecipesList from "./components/AllRecipesList";
+import Image from "next/image";
 
 // Extend Window interface to include our custom property
 declare global {
@@ -33,7 +33,6 @@ declare global {
 export default function RecipesPage() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
-  const [userName, setUserName] = useState<string | null>(null);
   const [machineId, setMachineId] = useState<string | null>(null);
 
   // Get categories from API
@@ -165,7 +164,6 @@ export default function RecipesPage() {
   // Initialize WebSocket connection
   useEffect(() => {
     // Get user information from localStorage
-    const storedUserName = sessionStorage.getItem("userName");
     const storedUserId = sessionStorage.getItem("userId");
     const storedMachineId = localStorage.getItem("machineId");
 
@@ -181,8 +179,6 @@ export default function RecipesPage() {
       // You can set a default machine ID or handle it differently
       // For now, we'll continue without redirecting
     }
-
-    setUserName(storedUserName);
     setMachineId(storedMachineId || "default-machine");
 
     // Initialize WebSocket connection if not already connected
@@ -235,26 +231,13 @@ export default function RecipesPage() {
     }
   }, [availableRecipes, unavailableRecipes]);
 
-  const handleBackToLogin = () => {
-    router.push("/product/auth");
-  };
-
-  const handleLogout = () => {
-    // Clear local storage
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userName");
-
-    // Redirect to login
-    router.push("/product/login");
-  };
-
   if (!isMounted) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#F4EBDE] flex flex-col items-center justify-center">
         <div className="w-full max-w-md p-8">
           <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold text-white">
-              COFFEE <span className="text-amber-500">MENU</span>
+            <h2 className="text-2xl font-bold text-[#5F3023]">
+              COFFEE <span className="text-[#8A5738]">MENU</span>
             </h2>
           </div>
         </div>
@@ -263,15 +246,15 @@ export default function RecipesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-[#F4EBDE] flex flex-col relative overflow-hidden">
       {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0F0F0F] to-black opacity-80"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-[#F4EBDE] to-[#F4EBDE]/90 opacity-80"></div>
         <div className="absolute inset-0">
           {[...Array(40)].map((_, i) => (
             <div
               key={i}
-              className="absolute rounded-full bg-amber-900/5"
+              className="absolute rounded-full bg-[#DAB49D]/20"
               style={{
                 width: Math.random() * 4 + 2 + "px",
                 height: Math.random() * 4 + 2 + "px",
@@ -281,45 +264,26 @@ export default function RecipesPage() {
             ></div>
           ))}
         </div>
-        <div className="absolute top-0 w-full h-32 bg-gradient-to-b from-black to-transparent"></div>
-        <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-black to-transparent"></div>
+        <div className="absolute top-0 w-full h-32 bg-gradient-to-b from-[#F4EBDE] to-transparent"></div>
+        <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-[#F4EBDE] to-transparent"></div>
       </div>
 
       {/* Header */}
       <header className="relative z-10 pt-8 px-6 lg:px-10">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <motion.button
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            whileHover={{ x: -3 }}
-            onClick={handleBackToLogin}
-            className="flex items-center text-gray-400 hover:text-amber-500 transition-colors bg-transparent border-0"
-          >
-            <ChevronLeft size={20} />
-            <span className="ml-1 text-sm">Back</span>
-          </motion.button>
-
+        <div className="w-full flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center"
           >
-            <Coffee size={24} className="text-amber-500 mr-2" />
-            <span className="text-lg font-bold text-white tracking-tight">
-              FROTH<span className="text-amber-500">FILTER</span>
-            </span>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            onClick={handleLogout}
-            className="flex items-center gap-2 bg-[#141414]/80 rounded-full py-2 px-3 border border-[#292929] cursor-pointer hover:bg-[#1A1A1A]/80 transition-colors"
-          >
-            <span className="text-sm font-medium text-amber-400">
-              {userName ? userName : "Guest"}
-            </span>
-            <LogOut className="h-4 w-4 text-amber-400" />
+            <div className="w-32 h-12 relative">
+              <Image
+                src="/brownlogo.svg"
+                alt="Froth Filter Logo"
+                fill
+                style={{ objectFit: "contain" }}
+              />
+            </div>
           </motion.div>
         </div>
       </header>
@@ -327,26 +291,17 @@ export default function RecipesPage() {
       {/* Main content */}
       <main className="relative z-10 flex-1 px-6 lg:px-10 pb-16 pt-10 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
-          <motion.h1
-            className="text-4xl md:text-5xl font-black text-white mb-10 tracking-tight text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-          >
-            COFFEE <span className="text-amber-500">MENU</span>
-          </motion.h1>
-
           {isLoadingCategories ? (
             // Loading skeleton for categories
             <div className="space-y-12">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="space-y-6">
-                  <div className="h-8 bg-gray-800 rounded w-48 animate-pulse"></div>
+                  <div className="h-8 bg-[#DAB49D]/40 rounded w-48 animate-pulse"></div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     {[1, 2, 3, 4].map((j) => (
                       <div
                         key={j}
-                        className="bg-[#141414]/50 aspect-square rounded-xl animate-pulse border border-[#222]"
+                        className="bg-white/50 aspect-square rounded-xl animate-pulse border border-[#C28654]/30"
                       ></div>
                     ))}
                   </div>
