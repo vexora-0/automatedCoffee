@@ -602,7 +602,6 @@ export default function CustomerLoginPage() {
                 </Form>
               )}
             </div>
-
           </div>
         </motion.div>
       </div>
