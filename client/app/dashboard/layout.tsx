@@ -12,6 +12,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
+  
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
@@ -84,5 +85,14 @@ export default function DashboardLayout({
     );
   }
 
-  return <>{children}</>;
+  // Don't show the navbar on the auth page
+  if (pathname === "/dashboard/auth") {
+    return <>{children}</>;
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <main className="flex-1">{children}</main>
+    </div>
+  );
 } 
