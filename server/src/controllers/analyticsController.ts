@@ -51,13 +51,23 @@ export const getMachineSales = async (req: Request, res: Response): Promise<void
       filter.machine_id = machineId;
     }
     
-    const orders = await Order.find(filter)
-      .populate('recipe_id', 'name price category_id')
-      .lean();
+    // Use aggregation instead of populate to properly join with recipe_id
+    const orders = await Order.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'recipes',
+          localField: 'recipe_id',
+          foreignField: 'recipe_id',
+          as: 'recipe'
+        }
+      },
+      { $unwind: '$recipe' }
+    ]);
     
     // Calculate total sales amount
     const total = orders.reduce((sum, order: any) => {
-      return sum + (order.recipe_id?.price || 0);
+      return sum + (order.recipe?.price || 0);
     }, 0);
     
     // Group orders by hour for today's sales analysis
@@ -73,7 +83,7 @@ export const getMachineSales = async (req: Request, res: Response): Promise<void
         }
         
         salesByHour[hourString].units += 1;
-        salesByHour[hourString].amount += order.recipe_id?.price || 0;
+        salesByHour[hourString].amount += order.recipe?.price || 0;
       });
       
       res.status(200).json({
@@ -99,7 +109,7 @@ export const getMachineSales = async (req: Request, res: Response): Promise<void
         }
         
         salesByDay[day].units += 1;
-        salesByDay[day].amount += order.recipe_id?.price || 0;
+        salesByDay[day].amount += order.recipe?.price || 0;
       });
       
       res.status(200).json({
@@ -138,25 +148,39 @@ export const getSalesByProduct = async (req: Request, res: Response): Promise<vo
       filter.machine_id = machineId;
     }
     
-    // First get all orders
-    const orders = await Order.find(filter)
-      .populate({
-        path: 'recipe_id',
-        select: 'name price category_id',
-        populate: {
-          path: 'category_id',
-          model: 'RecipeCategory',
-          select: 'name'
+    // First get all orders with recipes using aggregation
+    const orders = await Order.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'recipes',
+          localField: 'recipe_id',
+          foreignField: 'recipe_id',
+          as: 'recipe'
         }
-      })
-      .lean();
+      },
+      { $unwind: '$recipe' },
+      {
+        $lookup: {
+          from: 'recipecategories',
+          localField: 'recipe.category_id',
+          foreignField: '_id', // Assuming category_id in Recipe is an ObjectId
+          as: 'category'
+        }
+      },
+      {
+        $unwind: {
+          path: '$category',
+          preserveNullAndEmptyArrays: true
+        }
+      }
+    ]);
     
     // Filter by category if specified
     let filteredOrders = orders;
     if (categoryId) {
       filteredOrders = orders.filter((order: any) => 
-        order.recipe_id?.category_id?._id === categoryId || 
-        order.recipe_id?.category_id?.id === categoryId
+        order.category?._id.toString() === categoryId.toString()
       );
     }
     
@@ -169,22 +193,21 @@ export const getSalesByProduct = async (req: Request, res: Response): Promise<vo
     } } = {};
     
     filteredOrders.forEach((order: any) => {
-      if (!order.recipe_id) return;
+      if (!order.recipe) return;
       
-      const { recipe_id } = order;
-      const productId = recipe_id._id.toString();
+      const productId = order.recipe_id;
       
       if (!productSales[productId]) {
         productSales[productId] = {
-          name: recipe_id.name,
+          name: order.recipe.name,
           units: 0,
           amount: 0,
-          category: recipe_id.category_id?.name || 'Uncategorized'
+          category: order.category?.name || 'Uncategorized'
         };
       }
       
       productSales[productId].units += 1;
-      productSales[productId].amount += recipe_id.price || 0;
+      productSales[productId].amount += order.recipe.price || 0;
     });
     
     // Convert to array and sort by units sold
@@ -220,17 +243,33 @@ export const getSalesByCategory = async (req: Request, res: Response): Promise<v
       filter.machine_id = machineId;
     }
     
-    const orders = await Order.find(filter)
-      .populate({
-        path: 'recipe_id',
-        select: 'name price category_id',
-        populate: {
-          path: 'category_id',
-          model: 'RecipeCategory',
-          select: 'name'
+    // Use aggregation for proper joining
+    const orders = await Order.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'recipes',
+          localField: 'recipe_id',
+          foreignField: 'recipe_id',
+          as: 'recipe'
         }
-      })
-      .lean();
+      },
+      { $unwind: '$recipe' },
+      {
+        $lookup: {
+          from: 'recipecategories',
+          localField: 'recipe.category_id',
+          foreignField: '_id', // Assuming category_id in Recipe is an ObjectId
+          as: 'category'
+        }
+      },
+      {
+        $unwind: {
+          path: '$category',
+          preserveNullAndEmptyArrays: true
+        }
+      }
+    ]);
     
     // Group orders by category
     const categorySales: { [categoryId: string]: { 
@@ -240,7 +279,7 @@ export const getSalesByCategory = async (req: Request, res: Response): Promise<v
     } } = {};
     
     orders.forEach((order: any) => {
-      if (!order.recipe_id || !order.recipe_id.category_id) {
+      if (!order.category) {
         // Handle products without a category
         if (!categorySales['uncategorized']) {
           categorySales['uncategorized'] = {
@@ -251,23 +290,22 @@ export const getSalesByCategory = async (req: Request, res: Response): Promise<v
         }
         
         categorySales['uncategorized'].units += 1;
-        categorySales['uncategorized'].amount += order.recipe_id?.price || 0;
+        categorySales['uncategorized'].amount += order.recipe?.price || 0;
         return;
       }
       
-      const { category_id } = order.recipe_id;
-      const categoryId = category_id._id.toString();
+      const categoryId = order.category._id.toString();
       
       if (!categorySales[categoryId]) {
         categorySales[categoryId] = {
-          name: category_id.name,
+          name: order.category.name,
           units: 0,
           amount: 0
         };
       }
       
       categorySales[categoryId].units += 1;
-      categorySales[categoryId].amount += order.recipe_id.price || 0;
+      categorySales[categoryId].amount += order.recipe.price || 0;
     });
     
     // Convert to array and sort by units sold
