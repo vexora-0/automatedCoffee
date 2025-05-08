@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRecipeCategories } from "@/lib/api/hooks";
+import { ChevronLeft, Coffee, LogOut } from "lucide-react";
 import useRecipeStore from "@/app/product/stores/useRecipeStore";
 import useRecipeAvailabilityStore from "@/app/product/stores/useRecipeAvailabilityStore";
 import { useRecipes } from "@/app/product/stores/useRecipeStore";
@@ -33,7 +34,9 @@ declare global {
 export default function RecipesPage() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
   const [machineId, setMachineId] = useState<string | null>(null);
+  const [scrollY, setScrollY] = useState(0);
 
   // Get categories from API
   const { categories, isLoading: isLoadingCategories } = useRecipeCategories();
@@ -61,6 +64,16 @@ export default function RecipesPage() {
 
   // Initialize WebSocket connection and handlers
   const webSocketStore = useWebSocketStore();
+
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Fetch recipe availability from backend and subscribe to updates
   useEffect(() => {
@@ -164,6 +177,7 @@ export default function RecipesPage() {
   // Initialize WebSocket connection
   useEffect(() => {
     // Get user information from localStorage
+    const storedUserName = sessionStorage.getItem("userName");
     const storedUserId = sessionStorage.getItem("userId");
     const storedMachineId = localStorage.getItem("machineId");
 
@@ -179,6 +193,8 @@ export default function RecipesPage() {
       // You can set a default machine ID or handle it differently
       // For now, we'll continue without redirecting
     }
+
+    setUserName(storedUserName);
     setMachineId(storedMachineId || "default-machine");
 
     // Initialize WebSocket connection if not already connected
@@ -231,13 +247,26 @@ export default function RecipesPage() {
     }
   }, [availableRecipes, unavailableRecipes]);
 
+  const handleBackToLogin = () => {
+    router.push("/product/auth");
+  };
+
+  const handleLogout = () => {
+    // Clear local storage
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userName");
+
+    // Redirect to login
+    router.push("/product/login");
+  };
+
   if (!isMounted) {
     return (
       <div className="min-h-screen bg-[#F4EBDE] flex flex-col items-center justify-center">
         <div className="w-full max-w-md p-8">
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold text-[#5F3023]">
-              COFFEE <span className="text-[#8A5738]">MENU</span>
+              COFFEE <span className="text-[#C28654]">MENU</span>
             </h2>
           </div>
         </div>
@@ -248,78 +277,128 @@ export default function RecipesPage() {
   return (
     <div className="min-h-screen bg-[#F4EBDE] flex flex-col relative overflow-hidden">
       {/* Background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#F4EBDE] to-[#F4EBDE]/90 opacity-80"></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D] opacity-90"></div>
+
+        {/* Coffee bean pattern */}
         <div className="absolute inset-0">
           {[...Array(40)].map((_, i) => (
-            <div
+            <motion.div
               key={i}
-              className="absolute rounded-full bg-[#DAB49D]/20"
+              className="absolute rounded-full bg-[#C28654]/10"
+              initial={{ opacity: 0.1, scale: 0.8 }}
+              animate={{
+                opacity: [0.1, 0.3, 0.1],
+                scale: [0.8, 1, 0.8],
+                rotate: [0, 20, 0],
+              }}
+              transition={{
+                duration: Math.random() * 8 + 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: Math.random() * 5,
+              }}
               style={{
-                width: Math.random() * 4 + 2 + "px",
-                height: Math.random() * 4 + 2 + "px",
+                width: Math.random() * 100 + 30 + "px",
+                height: Math.random() * 60 + 20 + "px",
                 top: Math.random() * 100 + "%",
                 left: Math.random() * 100 + "%",
               }}
-            ></div>
+            ></motion.div>
           ))}
         </div>
+
+        {/* Swirling coffee elements */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute w-[800px] h-[800px] rounded-full border-[15px] border-[#8A5738]/10 -top-[400px] -right-[400px]"></div>
+          <div className="absolute w-[600px] h-[600px] rounded-full border-[20px] border-[#C28654]/20 -bottom-[300px] -left-[300px]"></div>
+          <div className="absolute w-[400px] h-[400px] rounded-full border-[12px] border-[#5F3023]/10 top-[20%] -left-[200px]"></div>
+        </div>
+
         <div className="absolute top-0 w-full h-32 bg-gradient-to-b from-[#F4EBDE] to-transparent"></div>
         <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-[#F4EBDE] to-transparent"></div>
       </div>
 
       {/* Header */}
-      <header className="relative z-10 pt-8 px-6 lg:px-10">
-        <div className="w-full flex items-center justify-center">
+      <motion.header
+        className={`sticky top-0 z-20 pt-6 px-6 lg:px-10 backdrop-blur-md transition-all duration-300 ${
+          scrollY > 20
+            ? "bg-[#F4EBDE]/90 shadow-md shadow-[#C28654]/10"
+            : "bg-transparent"
+        }`}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <div className="w-full mx-auto flex items-center justify-center pb-4">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center"
+            transition={{ delay: 0.1 }}
+            className="flex items-center justify-center"
           >
-            <div className="w-32 h-12 relative">
-              <Image
-                src="/brownlogo.svg"
-                alt="Froth Filter Logo"
-                fill
-                style={{ objectFit: "contain" }}
+            {/* Use Image component for logo - Update with actual image */}
+            <div className="flex justify-center items-center">
+            <Image
+              src="/brownlogo.svg"
+              alt="Tagline"
+              className="w-1/2"
+              width={100}
+              height={100}
               />
             </div>
           </motion.div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Main content */}
-      <main className="relative z-10 flex-1 px-6 lg:px-10 pb-16 pt-10 overflow-y-auto">
-        <div className="max-w-6xl mx-auto">
-          {isLoadingCategories ? (
-            // Loading skeleton for categories
-            <div className="space-y-12">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="space-y-6">
-                  <div className="h-8 bg-[#DAB49D]/40 rounded w-48 animate-pulse"></div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {[1, 2, 3, 4].map((j) => (
-                      <div
-                        key={j}
-                        className="bg-white/50 aspect-square rounded-xl animate-pulse border border-[#C28654]/30"
-                      ></div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+      <main className="relative z-10 flex-1 px-6 lg:px-10 pb-16 pt-4 overflow-y-auto">
+        <AnimatePresence>
+          <motion.div
+            className="max-w-6xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <div className="flex justify-center items-center">
+            <Image
+              src="/tagline.svg"
+              alt="Tagline"
+              className="w-1/2"
+              width={100}
+              height={100}
+              />
             </div>
-          ) : (
-            // Display all recipes organized by category
-            <AllRecipesList
-              categories={categories}
-              recipes={recipes}
-              getRecipesByCategory={getRecipesByCategory}
-              isRecipeAvailable={isRecipeAvailable}
-              recipeIngredients={recipeIngredients}
-              ingredients={ingredients}
-            />
-          )}
-        </div>
+            {isLoadingCategories ? (
+              // Loading skeleton for categories
+              <div className="space-y-12">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="space-y-6">
+                    <div className="h-8 bg-[#DAB49D]/50 rounded w-48 animate-pulse"></div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {[1, 2, 3, 4].map((j) => (
+                        <div
+                          key={j}
+                          className="bg-[#DAB49D]/30 aspect-square rounded-xl animate-pulse border border-[#C28654]/20"
+                        ></div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Display all recipes organized by category
+              <AllRecipesList
+                categories={categories}
+                recipes={recipes}
+                getRecipesByCategory={getRecipesByCategory}
+                isRecipeAvailable={isRecipeAvailable}
+                recipeIngredients={recipeIngredients}
+                ingredients={ingredients}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );

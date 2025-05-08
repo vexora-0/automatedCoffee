@@ -17,102 +17,102 @@ export function RecipeCard({
   isAvailable = true,
   onClick,
 }: RecipeCardProps) {
-  const formattedPrice = recipe.price;
+  // Format price to show ₹ symbol
+  const formattedPrice = `₹${recipe.price}`;
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      whileHover={{ scale: 1.02 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
       transition={{
-        duration: 0.2,
+        duration: 0.3,
+        ease: "easeOut",
       }}
       onClick={onClick}
-      className={cn(
-        "group relative overflow-hidden rounded-xl cursor-pointer",
-        "bg-gradient-to-br from-[#8A5738] to-[#5F3023]",
-        "border border-[#C28654]/30 hover:border-[#C28654]/60",
-        "shadow-md hover:shadow-lg",
-        "transition-all duration-200 h-[320px]"
-      )}
+      className="relative h-[370px] w-full overflow-hidden cursor-pointer"
     >
-      {/* Image container */}
-      <div className="relative h-[60%] w-full overflow-hidden rounded-t-xl">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#5F3023]/50 to-transparent z-10" />
+      {/* Main card container */}
+      <div className="absolute inset-0 rounded-2xl overflow-hidden bg-white shadow-lg">
+        {/* Image section */}
+        <div className="h-[65%] relative overflow-hidden">
+          <Image
+            src={recipe.image_url || "/placeholder-recipe.jpg"}
+            alt={recipe.name}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className={cn(
+              "object-cover",
+              !isAvailable && "grayscale brightness-50"
+            )}
+          />
 
-        <Image
-          src={recipe.image_url || "/placeholder-recipe.jpg"}
-          alt={recipe.name}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          className={cn(
-            "object-cover transition-all duration-300",
-            "group-hover:scale-105",
-            !isAvailable && "grayscale brightness-50"
-          )}
-        />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/80 via-transparent to-transparent" />
 
-        {/* Price tag */}
-        <div className="absolute top-3 right-3 z-20">
-          <motion.div className="rounded-full bg-[#5F3023]/80 backdrop-blur-sm px-3 py-1.5 border border-[#C28654]/40">
-            <span className="text-sm font-medium text-[#F4EBDE]">
-              {formattedPrice}
-            </span>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Content area */}
-      <div className="relative z-10 h-[40%] p-4 flex flex-col justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="h-5 w-5 rounded-full bg-[#DAB49D]/60 flex items-center justify-center">
-              <Coffee className="h-3 w-3 text-[#F4EBDE]" />
+          {/* Price tag */}
+          <div className="absolute bottom-4 right-4 z-20">
+            <div className="px-3 py-1.5 rounded-full bg-[#5F3023] text-white font-bold shadow-lg flex items-center">
+              <span>{formattedPrice}</span>
             </div>
-            <p className="text-xs font-medium uppercase tracking-wider text-[#DAB49D]">
-              {recipe.category_id === "1" ? "Coffee" : "Specialty"}
-            </p>
           </div>
 
-          <h3 className="text-lg font-bold text-[#F4EBDE] mb-1 group-hover:text-[#DAB49D] transition-colors duration-200">
-            {recipe.name}
-          </h3>
-
-          <p className="text-sm text-[#F4EBDE]/80 line-clamp-2">
-            {recipe.description || "A delicious coffee recipe"}
-          </p>
+          {/* Coffee icon badge */}
+          <div className="absolute bottom-4 left-4 z-20">
+            <div className="w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center">
+              <Coffee className="h-4 w-4 text-[#5F3023]" />
+            </div>
+          </div>
         </div>
 
-        {/* Bottom hint */}
-        <div className="pt-2">
-          <p className="text-xs text-[#DAB49D] text-center">
-            Tap to view details
-          </p>
+        {/* Content section */}
+        <div className="h-[35%] p-5 bg-white relative">
+          {/* Static accent line */}
+          <div className="absolute top-0 left-8 right-8 h-[2px] bg-[#C28654]" />
+
+          <div className="flex flex-col h-full justify-between">
+            <div>
+              {/* Coffee name */}
+              <h3 className="text-xl font-bold text-[#5F3023]">
+                {recipe.name}
+              </h3>
+
+              {/* Description with no line clamp */}
+              <p className="text-sm text-[#8A5738]/80 mt-2 leading-relaxed overflow-hidden">
+                {recipe.description ||
+                  "A delicious coffee recipe crafted with premium-quality beans."}
+              </p>
+            </div>
+
+            {/* Simple card footer */}
+            <div className="mt-2 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#C28654]"></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-[#8A5738]"></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-[#5F3023]"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Overlay for unavailable items */}
       {!isAvailable && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#5F3023]/90 backdrop-blur-sm"
-        >
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm rounded-2xl border-2 border-red-200">
           <div className="flex flex-col items-center space-y-3 px-4 text-center">
-            <div className="rounded-full bg-[#C28654]/50 p-3 border border-[#F4EBDE]/30">
-              <AlertCircle className="h-6 w-6 text-[#F4EBDE]" />
+            <div className="rounded-full bg-red-50 p-3 shadow-lg border border-red-200">
+              <AlertCircle className="h-7 w-7 text-red-500" />
             </div>
             <div className="space-y-1">
-              <h3 className="font-bold text-[#F4EBDE]">
+              <h3 className="font-bold text-red-600 text-lg">
                 Currently Unavailable
               </h3>
-              <p className="text-sm text-[#DAB49D]">
+              <p className="text-sm text-red-500/80">
                 This recipe cannot be prepared right now
               </p>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
     </motion.div>
   );

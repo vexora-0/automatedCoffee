@@ -4,22 +4,38 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Recipe, RecipeIngredient, Ingredient } from "@/lib/api/types";
-import { orderService, recipeIngredientService } from "@/lib/api/services";
+import { orderService } from "@/lib/api/services";
 import { Button } from "@/components/ui/button";
-import {
-  X,
-  CreditCard,
-  Loader2,
-  ThumbsUp,
-  Coffee,
-  Sparkles,
-} from "lucide-react";
+import { X, ShoppingCart, Loader2, ThumbsUp, Coffee } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-// Interface for recipe details with ingredients
-interface RecipeDetails extends Recipe {
-  ingredients: RecipeIngredient[];
-}
+// Array of benefits/quotes for each category
+const COFFEE_QUOTES = [
+  "Coffee is a language in itself.",
+  "Life happens, coffee helps.",
+  "Behind every successful person is a substantial amount of coffee.",
+  "Coffee first. Schemes later.",
+  "Take life one sip at a time.",
+  "Coffee is the best medicine.",
+];
+
+const SPECIALTY_QUOTES = [
+  "Indulge in the extraordinary.",
+  "Elevate your everyday ritual.",
+  "For those who appreciate the finer things.",
+  "Exquisite taste, exceptional moments.",
+  "Crafted for connoisseurs.",
+  "Where passion meets perfection.",
+];
+
+const BENEFITS = [
+  "Rich in antioxidants",
+  "Boosts energy & focus",
+  "Improves physical performance",
+  "May help burn fat",
+  "Enhances cognitive function",
+  "May lower risk of type 2 diabetes",
+];
 
 interface RecipeDetailsDialogProps {
   recipe: Recipe | null;
@@ -34,56 +50,38 @@ export default function RecipeDetailsDialog({
   isOpen,
   onClose,
   recipeIngredients,
-  ingredients,
 }: RecipeDetailsDialogProps) {
   const router = useRouter();
   const [isOrdering, setIsOrdering] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [localRecipeIngredients, setLocalRecipeIngredients] = useState<
-    RecipeIngredient[]
-  >([]);
-  const [isLoadingIngredients, setIsLoadingIngredients] = useState(false);
-  const [activeTab, setActiveTab] = useState<"ingredients" | "details">(
-    "ingredients"
-  );
 
-  // Load recipe ingredients when dialog opens
+  // Generate random quote based on category
+  const getRandomQuote = () => {
+    if (!recipe) return "";
+
+    const quotes =
+      recipe.category_id === "1" ? COFFEE_QUOTES : SPECIALTY_QUOTES;
+    const randomIndex = Math.floor(Math.random() * quotes.length);
+    return quotes[randomIndex];
+  };
+
+  // Generate random benefit
+  const getRandomBenefit = () => {
+    const randomIndex = Math.floor(Math.random() * BENEFITS.length);
+    return BENEFITS[randomIndex];
+  };
+
+  // Memoize random quotes and benefits
+  const [randomQuote, setRandomQuote] = useState("");
+  const [randomBenefit, setRandomBenefit] = useState("");
+
   useEffect(() => {
-    if (!recipe || !isOpen) return;
-
-    const loadIngredients = async () => {
-      setIsLoadingIngredients(true);
-
-      // First try to get ingredients from props
-      const relevantIngredients = recipeIngredients.filter(
-        (ri) => ri.recipe_id === recipe.recipe_id
-      );
-
-      if (relevantIngredients.length > 0) {
-        setLocalRecipeIngredients(relevantIngredients);
-        setIsLoadingIngredients(false);
-        return;
-      }
-
-      // Fallback to API if no ingredients found in props
-      try {
-        const response =
-          await recipeIngredientService.getRecipeIngredientsByRecipeId(
-            recipe.recipe_id
-          );
-        if (response.success && response.data && response.data.length > 0) {
-          setLocalRecipeIngredients(response.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch recipe ingredients");
-      } finally {
-        setIsLoadingIngredients(false);
-      }
-    };
-
-    loadIngredients();
-  }, [recipe, isOpen, recipeIngredients]);
+    if (isOpen && recipe) {
+      setRandomQuote(getRandomQuote());
+      setRandomBenefit(getRandomBenefit());
+    }
+  }, [isOpen, recipe]);
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -147,25 +145,22 @@ export default function RecipeDetailsDialog({
     }
   };
 
-  // Process ingredients for this recipe
-  const recipeIngredientsList =
-    recipe &&
-    (localRecipeIngredients.length > 0
-      ? localRecipeIngredients
-      : recipeIngredients.filter((ri) => ri.recipe_id === recipe.recipe_id)
-    ).map((ri) => {
-      const ingredient = ingredients.find(
-        (i) => i.ingredient_id === ri.ingredient_id
-      );
-
-      return {
-        ...ri,
-        name: ingredient?.name || `Ingredient ${ri.ingredient_id.slice(0, 6)}`,
-        unit: ingredient?.unit || "",
-      };
-    });
-
   if (!recipe) return null;
+
+  // Find recipe ingredients for the current recipe (for quantity info only)
+  const currentRecipeIngredients = recipeIngredients.filter(
+    (ri) => ri.recipe_id === recipe.recipe_id
+  );
+
+  // Get coffee quantity - just check ingredient_id
+  const coffeeIngredient = currentRecipeIngredients.find((ri) =>
+    ri.ingredient_id.includes("coffee")
+  );
+
+  // Get milk quantity - just check ingredient_id
+  const milkIngredient = currentRecipeIngredients.find((ri) =>
+    ri.ingredient_id.includes("milk")
+  );
 
   return (
     <AnimatePresence>
@@ -176,260 +171,183 @@ export default function RecipeDetailsDialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 bg-[#5F3023]/50 backdrop-blur-lg"
             onClick={onClose}
           />
 
           {/* Dialog container */}
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="relative z-[55] w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl shadow-xl"
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.97, opacity: 0, y: 10 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="relative z-[55] w-full max-w-3xl max-h-[90vh] overflow-hidden rounded-2xl shadow-[0_20px_60px_-10px_rgba(95,48,35,0.3)]"
           >
             {/* Close button */}
             <motion.button
-              className="absolute top-4 right-4 z-[60] flex items-center justify-center w-9 h-9 rounded-full bg-[#5F3023]/80 text-[#F4EBDE] border border-[#DAB49D]/20 backdrop-blur-md hover:bg-[#DAB49D] hover:text-[#5F3023] transition-colors"
+              whileHover={{ scale: 1.1, backgroundColor: "#F4EBDE" }}
+              whileTap={{ scale: 0.95 }}
+              className="absolute top-4 right-4 z-[60] flex items-center justify-center w-8 h-8 rounded-full bg-[#F4EBDE] text-[#5F3023] border border-[#C28654]/30 shadow-md"
               onClick={onClose}
               aria-label="Close dialog"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </motion.button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 h-full bg-gradient-to-br from-[#8A5738] to-[#5F3023] border border-[#C28654]/30">
-              {/* Left column - Image and branding */}
-              <div className="relative flex flex-col">
-                {/* Image */}
-                <div className="relative h-64 md:h-72 overflow-hidden">
-                  <div className="absolute inset-0 bg-[#5F3023]/30 mix-blend-overlay z-10"></div>
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#5F3023]/50 via-transparent to-[#8A5738]/90 z-10" />
+            <div className="bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D] overflow-hidden flex flex-col md:flex-row">
+              {/* Left column - Image */}
+              <div className="relative h-[300px] md:h-auto md:w-1/2">
+                <div className="absolute inset-0 bg-[#5F3023]/20 mix-blend-overlay z-10"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-[#5F3023]/30 via-transparent to-[#5F3023]/10 z-10" />
 
-                  <Image
-                    src={recipe.image_url || "/placeholder-recipe.jpg"}
-                    alt={recipe.name}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
+                <Image
+                  src={recipe.image_url || "/placeholder-recipe.jpg"}
+                  alt={recipe.name}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
 
-                  {/* Recipe name overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 z-20 p-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-[#DAB49D]" />
-                        <p className="text-xs font-medium uppercase tracking-wider text-[#DAB49D]">
-                          Premium Recipe
-                        </p>
-                      </div>
-                      <h2 className="text-3xl font-bold text-[#F4EBDE]">
-                        {recipe.name}
-                      </h2>
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full bg-[#C28654]/40 flex items-center justify-center">
-                          <Coffee className="h-3 w-3 text-[#F4EBDE]" />
-                        </div>
-                        <p className="text-sm text-[#F4EBDE]/80">
-                          {recipe.description}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              {/* Right column - Content */}
+              <div className="relative md:w-1/2 p-6 md:p-8 flex flex-col">
+                {/* Decorative elements */}
+                <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-[#C28654]/10 -z-10"></div>
+                <div className="absolute right-1/2 top-1/3 w-12 h-12 rounded-full bg-[#8A5738]/5 -z-10"></div>
 
-                {/* Price card */}
-                <div className="bg-[#5F3023]/80 backdrop-blur-md p-6 border-t border-[#C28654]/30 flex-1 flex flex-col">
-                  <div className="flex justify-between items-center mb-8">
-                    <h3 className="text-lg font-medium text-[#F4EBDE]">
-                      Price
-                    </h3>
-                    <div className="bg-gradient-to-r from-[#C28654] to-[#8A5738] px-4 py-2 rounded-full">
-                      <span className="text-lg font-bold text-[#F4EBDE]">
-                        {formattedPrice}
-                      </span>
-                    </div>
-                  </div>
+                {/* Recipe name */}
+                <motion.h2
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, type: "spring", stiffness: 100 }}
+                  className="text-3xl font-bold text-[#5F3023] tracking-tight"
+                >
+                  {recipe.name}
+                </motion.h2>
 
-                  {/* Order button */}
-                  <div className="mt-auto">
-                    {errorMessage && (
-                      <div className="bg-red-950/30 border border-red-900/50 text-red-300 px-4 py-3 rounded-lg mb-4">
-                        <p className="text-sm font-medium">{errorMessage}</p>
+                {/* Quote */}
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="mt-2 italic text-[#8A5738] border-l-2 border-[#C28654]/40 pl-3 text-sm"
+                >
+                  &ldquo;{randomQuote}&rdquo;
+                </motion.div>
+
+                {/* Description */}
+                <motion.p
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-5 text-[#5F3023]/90"
+                >
+                  {recipe.description ||
+                    "A premium coffee creation crafted with care and precision."}
+                </motion.p>
+
+                {/* Quantity information */}
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="mt-4 flex flex-col gap-2"
+                >
+                  <div className="flex gap-x-4">
+                    {coffeeIngredient && (
+                      <div className="flex items-center gap-2 bg-[#C28654]/10 rounded-lg px-3 py-2">
+                        <Coffee className="h-4 w-4 text-[#5F3023]" />
+                        <span className="text-sm font-medium text-[#5F3023]">
+                          {coffeeIngredient.quantity} ml
+                        </span>
                       </div>
                     )}
 
+                    {milkIngredient && (
+                      <div className="flex items-center gap-2 bg-[#C28654]/10 rounded-lg px-3 py-2">
+                        <span className="h-4 w-4 flex items-center justify-center text-[#5F3023] font-bold">
+                          M
+                        </span>
+                        <span className="text-sm font-medium text-[#5F3023]">
+                          {milkIngredient.quantity} ml
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Random benefit */}
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  className="mt-4 bg-[#F4EBDE] border border-[#C28654]/20 rounded-lg p-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded-full bg-[#C28654]/30 flex items-center justify-center">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#5F3023]"></div>
+                    </div>
+                    <p className="text-sm text-[#8A5738]">{randomBenefit}</p>
+                  </div>
+                </motion.div>
+
+                {/* Price and order section */}
+                <div className="mt-auto pt-6">
+                  {errorMessage && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-red-100 border border-red-300 text-red-800 px-3 py-2 rounded-lg mb-4 text-sm"
+                    >
+                      <p>{errorMessage}</p>
+                    </motion.div>
+                  )}
+
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-[#5F3023]">
+                      Price
+                    </h3>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      className="bg-[#C28654]/90 px-4 py-2 rounded-full shadow-md"
+                    >
+                      <span className="text-lg font-bold text-[#F4EBDE]">
+                        {formattedPrice}
+                      </span>
+                    </motion.div>
+                  </div>
+
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
                     <Button
-                      className="w-full py-5 text-lg font-bold bg-gradient-to-r from-[#C28654] to-[#8A5738] hover:from-[#DAB49D] hover:to-[#C28654] text-[#F4EBDE] border-none"
+                      className="w-full py-5 text-lg font-bold bg-[#5F3023] hover:bg-[#8A5738] text-[#F4EBDE] border-none shadow-md hover:shadow-lg transition-all duration-300"
                       onClick={handlePlaceOrder}
                       disabled={isOrdering || showOrderSuccess}
                     >
                       {isOrdering ? (
-                        <>
-                          <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                        <motion.div
+                          className="flex items-center justify-center"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        >
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           Processing...
-                        </>
+                        </motion.div>
                       ) : (
-                        <>
-                          <CreditCard className="mr-2 h-6 w-6" />
+                        <motion.div
+                          className="flex items-center justify-center"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        >
+                          <ShoppingCart className="mr-2 h-5 w-5" />
                           Order Now
-                        </>
+                        </motion.div>
                       )}
                     </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right column - Tabs and details */}
-              <div className="bg-[#5F3023]/70 backdrop-blur-md border-l border-[#DAB49D]/10">
-                {/* Tabs */}
-                <div className="flex border-b border-[#DAB49D]/20">
-                  <button
-                    onClick={() => setActiveTab("ingredients")}
-                    className={`flex-1 py-4 text-center font-medium relative ${
-                      activeTab === "ingredients"
-                        ? "text-[#DAB49D]"
-                        : "text-[#F4EBDE]/70 hover:text-[#F4EBDE]"
-                    }`}
-                  >
-                    Ingredients
-                    {activeTab === "ingredients" && (
-                      <motion.div
-                        layoutId="activeTabIndicator"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#DAB49D]"
-                        transition={{ duration: 0.15 }}
-                      />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("details")}
-                    className={`flex-1 py-4 text-center font-medium relative ${
-                      activeTab === "details"
-                        ? "text-[#DAB49D]"
-                        : "text-[#F4EBDE]/70 hover:text-[#F4EBDE]"
-                    }`}
-                  >
-                    Details
-                    {activeTab === "details" && (
-                      <motion.div
-                        layoutId="activeTabIndicator"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#DAB49D]"
-                        transition={{ duration: 0.15 }}
-                      />
-                    )}
-                  </button>
-                </div>
-
-                {/* Tab content */}
-                <div className="p-6 overflow-y-auto max-h-[50vh]">
-                  <AnimatePresence mode="wait">
-                    {activeTab === "ingredients" && (
-                      <motion.div
-                        key="ingredients"
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        transition={{ duration: 0.15 }}
-                      >
-                        <h3 className="text-xl font-bold text-[#F4EBDE] mb-4">
-                          Recipe Ingredients
-                        </h3>
-
-                        {isLoadingIngredients ? (
-                          <div className="flex justify-center items-center h-40">
-                            <Loader2 className="h-8 w-8 text-[#DAB49D] animate-spin" />
-                          </div>
-                        ) : recipeIngredientsList &&
-                          recipeIngredientsList.length > 0 ? (
-                          <div className="grid grid-cols-1 gap-3">
-                            {recipeIngredientsList.map((ingredient, index) => (
-                              <div
-                                key={ingredient.ingredient_id}
-                                className="flex items-center gap-3 p-4 bg-[#5F3023]/60 rounded-lg border border-[#C28654]/20"
-                              >
-                                <div className="w-8 h-8 rounded-full bg-[#C28654]/30 flex items-center justify-center flex-shrink-0">
-                                  <div className="w-2 h-2 rounded-full bg-[#DAB49D]"></div>
-                                </div>
-                                <div className="flex-1">
-                                  <div className="text-[#F4EBDE] font-medium">
-                                    {ingredient.name}
-                                  </div>
-                                  <div className="text-sm text-[#DAB49D]">
-                                    {ingredient.quantity} {ingredient.unit}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="p-6 rounded-xl bg-[#5F3023]/50 border border-[#DAB49D]/10 text-center">
-                            <p className="text-[#F4EBDE]/70 italic">
-                              No ingredients information available
-                            </p>
-                          </div>
-                        )}
-                      </motion.div>
-                    )}
-
-                    {activeTab === "details" && (
-                      <motion.div
-                        key="details"
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
-                        transition={{ duration: 0.15 }}
-                        className="space-y-6"
-                      >
-                        <div>
-                          <h3 className="text-xl font-bold text-[#F4EBDE] mb-3">
-                            About this Recipe
-                          </h3>
-                          <p className="text-[#F4EBDE]/80">
-                            {recipe.description ||
-                              "A premium coffee creation crafted with care and precision."}
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-[#5F3023]/60 rounded-lg p-4 border border-[#DAB49D]/10">
-                            <h4 className="text-[#DAB49D] text-sm font-medium mb-1">
-                              Category
-                            </h4>
-                            <p className="text-[#F4EBDE] font-bold">
-                              {recipe.category_id === "1"
-                                ? "Coffee"
-                                : "Specialty"}
-                            </p>
-                          </div>
-
-                          <div className="bg-[#5F3023]/60 rounded-lg p-4 border border-[#DAB49D]/10">
-                            <h4 className="text-[#DAB49D] text-sm font-medium mb-1">
-                              Recipe ID
-                            </h4>
-                            <p className="text-[#F4EBDE] font-mono text-sm">
-                              {recipe.recipe_id.substring(0, 12)}...
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="bg-[#5F3023]/60 p-5 rounded-lg border border-[#C28654]/20">
-                          <div className="flex items-start gap-3">
-                            <Sparkles className="h-5 w-5 text-[#DAB49D] mt-1 flex-shrink-0" />
-                            <div>
-                              <h4 className="text-[#DAB49D] font-medium mb-1">
-                                Premium Experience
-                              </h4>
-                              <p className="text-[#F4EBDE]/80 text-sm">
-                                This recipe is crafted using our finest
-                                ingredients and brewing techniques to deliver an
-                                exceptional tasting experience.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  </motion.div>
                 </div>
               </div>
             </div>
@@ -441,29 +359,54 @@ export default function RecipeDetailsDialog({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ duration: 0.3 }}
                   className="absolute inset-0 z-[70] bg-[#5F3023]/90 backdrop-blur-md flex items-center justify-center"
                 >
-                  <div className="bg-gradient-to-b from-[#8A5738] to-[#5F3023] rounded-xl p-6 max-w-md w-full border border-[#C28654]/30">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500/30 to-green-700/20 flex items-center justify-center mb-6 mx-auto border border-green-500/30">
-                      <ThumbsUp className="h-7 w-7 text-green-400" />
-                    </div>
-                    <h3 className="text-xl font-bold text-[#F4EBDE] text-center mb-3">
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 30,
+                      delay: 0.1,
+                    }}
+                    className="bg-[#F4EBDE] rounded-xl p-8 max-w-md w-full border border-[#C28654]/30 shadow-2xl"
+                  >
+                    <motion.div
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{
+                        scale: [0.5, 1.1, 1],
+                        opacity: 1,
+                      }}
+                      transition={{ duration: 0.6, delay: 0.2 }}
+                      className="w-16 h-16 rounded-full bg-[#C28654]/30 flex items-center justify-center mb-6 mx-auto shadow-inner"
+                    >
+                      <ThumbsUp className="h-7 w-7 text-[#5F3023]" />
+                    </motion.div>
+                    <motion.h3
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="text-2xl font-bold text-[#5F3023] text-center mb-2"
+                    >
                       Order Successful!
-                    </h3>
-                    <p className="text-[#DAB49D] text-center mb-6">
+                    </motion.h3>
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="text-[#8A5738] text-center mb-6"
+                    >
                       Your {recipe.name} is being prepared.
-                    </p>
+                    </motion.p>
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: "100%" }}
-                      transition={{ duration: 2, ease: "linear" }}
-                      className="h-1 bg-gradient-to-r from-green-500 to-green-600 rounded-full mb-4"
+                      transition={{ duration: 2, ease: "easeInOut" }}
+                      className="h-1.5 bg-[#C28654] rounded-full mb-4"
                     />
-                    <p className="text-sm text-[#DAB49D]/70 text-center">
-                      Redirecting...
-                    </p>
-                  </div>
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
