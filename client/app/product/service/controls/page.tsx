@@ -1,190 +1,384 @@
 "use client";
 
-import { Settings, AlertCircle, Workflow, Thermometer, Cpu, Power } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
+import {
+  Loader2,
+  Zap,
+  Coffee,
+  Droplets,
+  Settings,
+  Play,
+  Thermometer,
+} from "lucide-react";
 
 export default function ControlsPage() {
+  const [processing, setProcessing] = useState<string | null>(null);
+  const [upLatch, setUpLatch] = useState(false);
+  const [downLatch, setDownLatch] = useState(false);
+
+  // MQTT connection would be initialized here in a real implementation
+  // For demo purposes, we'll simulate the MQTT communication
+
+  const sendMqttMessage = async (message: string) => {
+    setProcessing(message);
+    toast({
+      title: "Processing",
+      description: `Sending command: ${message}`,
+      className: "bg-zinc-900 border-zinc-800 text-white",
+    });
+
+    // Retry mechanism
+    let gotResponse = false;
+    let retries = 0;
+
+    while (!gotResponse && retries < 3) {
+      try {
+        // Simulate sending MQTT message
+        console.log(`Sending MQTT message: ${message}`);
+
+        // Simulate waiting for response
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        // Simulate response (in a real implementation, this would be an MQTT subscription)
+        // For demo purposes, randomly succeed or fail
+        const success = Math.random() > 0.3;
+
+        if (success) {
+          console.log(`Received "got" feedback for: ${message}`);
+          gotResponse = true;
+          toast({
+            title: "Success",
+            description: `Command ${message} acknowledged`,
+            className: "bg-zinc-900 border-zinc-800 text-emerald-400",
+          });
+
+          // Wait for "done" message (simulated)
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          toast({
+            title: "Completed",
+            description: `Command ${message} completed`,
+            className: "bg-zinc-900 border-zinc-800 text-emerald-400",
+          });
+        } else {
+          console.log(`No response for: ${message}, retry ${retries + 1}/3`);
+          retries++;
+        }
+      } catch (error) {
+        console.error(`Error sending MQTT message: ${error}`);
+        retries++;
+      }
+    }
+
+    if (!gotResponse) {
+      toast({
+        title: "Failed",
+        description: `Command ${message} failed after 3 retries`,
+        variant: "destructive",
+        className: "bg-zinc-900 border-zinc-800 text-red-400",
+      });
+    }
+
+    setProcessing(null);
+  };
+
+  // Handle toggle switches
+  const handleToggle = (type: "up" | "down", state: boolean) => {
+    if (type === "up") {
+      setUpLatch(state);
+      sendMqttMessage(state ? "up_on" : "up_off");
+    } else {
+      setDownLatch(state);
+      sendMqttMessage(state ? "down_on" : "down_off");
+    }
+  };
+
   return (
-    <div className="h-full">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white mb-2">Machine Controls</h1>
-        <p className="text-gray-400">
-          Advanced machine controls and configuration settings.
-        </p>
-      </div>
+    <div className="min-h-screen bg-zinc-950 text-zinc-200 p-6">
+      <h1 className="text-3xl font-bold mb-8 text-white tracking-tight">
+        Machine Controls
+      </h1>
 
-      <div className="bg-amber-900/30 border border-amber-800 text-amber-400 rounded-md p-4 mb-6 flex items-center">
-        <AlertCircle size={20} className="mr-2 flex-shrink-0" />
-        <p>
-          Machine controls will be implemented in the next iteration. This page is a placeholder.
-        </p>
-      </div>
+      {processing && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-zinc-900 p-6 rounded-xl shadow-2xl border border-zinc-800 w-full max-w-sm">
+            <div className="flex items-center space-x-4">
+              <div className="bg-zinc-800 p-3 rounded-full">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-lg">
+                  Processing Command
+                </h3>
+                <p className="text-zinc-400">{processing}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-[#141414] border border-gray-800 rounded-lg p-6 shadow-md">
-          <div className="flex items-center mb-4">
-            <div className="mr-4 p-3 bg-purple-900/20 rounded-full">
-              <Thermometer size={24} className="text-purple-500" />
-            </div>
-            <div>
-              <h3 className="font-medium text-white text-lg">Temperature Controls</h3>
-              <p className="text-gray-400 text-sm">Adjust brewing and milk steaming temperatures</p>
-            </div>
-          </div>
-          
-          <div className="opacity-60 pointer-events-none">
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Brewing Temperature</label>
-              <div className="flex items-center">
-                <input 
-                  type="range" 
-                  className="flex-1 appearance-none h-2 bg-[#1A1A1A] rounded-full" 
-                  min="85" 
-                  max="95" 
-                  disabled={true}
-                />
-                <span className="ml-3 text-gray-300 w-12 text-center">92°C</span>
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Milk Steaming Temperature</label>
-              <div className="flex items-center">
-                <input 
-                  type="range" 
-                  className="flex-1 appearance-none h-2 bg-[#1A1A1A] rounded-full" 
-                  min="60" 
-                  max="80" 
-                  disabled={true}
-                />
-                <span className="ml-3 text-gray-300 w-12 text-center">65°C</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-[#141414] border border-gray-800 rounded-lg p-6 shadow-md">
-          <div className="flex items-center mb-4">
-            <div className="mr-4 p-3 bg-cyan-900/20 rounded-full">
-              <Workflow size={24} className="text-cyan-500" />
-            </div>
-            <div>
-              <h3 className="font-medium text-white text-lg">Brewing Parameters</h3>
-              <p className="text-gray-400 text-sm">Adjust brewing pressure and flow rate</p>
-            </div>
-          </div>
-          
-          <div className="opacity-60 pointer-events-none">
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Brewing Pressure</label>
-              <div className="flex items-center">
-                <input 
-                  type="range" 
-                  className="flex-1 appearance-none h-2 bg-[#1A1A1A] rounded-full" 
-                  min="7" 
-                  max="10" 
-                  disabled={true}
-                />
-                <span className="ml-3 text-gray-300 w-12 text-center">9 bar</span>
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-400 mb-1">Flow Rate</label>
-              <div className="flex items-center">
-                <input 
-                  type="range" 
-                  className="flex-1 appearance-none h-2 bg-[#1A1A1A] rounded-full" 
-                  min="1" 
-                  max="5" 
-                  disabled={true}
-                />
-                <span className="ml-3 text-gray-300 w-12 text-center">3 g/s</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-[#141414] border border-gray-800 rounded-lg p-6 shadow-md">
-          <div className="flex items-center mb-4">
-            <div className="mr-4 p-3 bg-green-900/20 rounded-full">
-              <Cpu size={24} className="text-green-500" />
-            </div>
-            <div>
-              <h3 className="font-medium text-white text-lg">System Status</h3>
-              <p className="text-gray-400 text-sm">View system diagnostics and stats</p>
-            </div>
-          </div>
-          
-          <div className="space-y-3 text-gray-400 opacity-60">
-            <div className="flex justify-between items-center py-2 border-b border-gray-800">
-              <span>System Uptime</span>
-              <span className="text-gray-300">152 hrs</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-800">
-              <span>Software Version</span>
-              <span className="text-gray-300">v2.3.1</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-800">
-              <span>Beverages Prepared</span>
-              <span className="text-gray-300">1,245</span>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <span>Machine Status</span>
-              <span className="px-2 py-1 text-xs bg-green-900/30 text-green-400 rounded">Operational</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-[#141414] border border-gray-800 rounded-lg p-6 shadow-md">
-          <div className="flex items-center mb-4">
-            <div className="mr-4 p-3 bg-red-900/20 rounded-full">
-              <Power size={24} className="text-red-500" />
-            </div>
-            <div>
-              <h3 className="font-medium text-white text-lg">Power Management</h3>
-              <p className="text-gray-400 text-sm">Configure auto sleep and power options</p>
-            </div>
-          </div>
-          
-          <div className="opacity-60 pointer-events-none">
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-400 mb-2">Auto-Sleep Timer</label>
-              <select 
-                className="w-full bg-[#1A1A1A] border border-gray-800 text-gray-300 rounded-md p-2"
-                disabled={true}
-              >
-                <option>30 minutes</option>
-                <option>1 hour</option>
-                <option>2 hours</option>
-                <option>Never</option>
-              </select>
-            </div>
-            
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm text-gray-400">Eco Mode</span>
-              <div className="relative inline-block w-12 align-middle select-none">
-                <input 
-                  type="checkbox" 
-                  disabled={true}
-                  className="absolute block w-6 h-6 rounded-full bg-gray-700 appearance-none cursor-not-allowed"
-                />
-                <label 
-                  className="block overflow-hidden h-6 rounded-full bg-gray-800 cursor-not-allowed"
-                ></label>
-              </div>
-            </div>
-            
-            <button
-              disabled={true}
-              className="w-full py-3 text-center text-white bg-red-600 opacity-50 rounded cursor-not-allowed"
+      <div className="grid grid-cols-12 gap-6">
+        {/* Section 1 (Largest) */}
+        <div className="col-span-12 md:col-span-6 bg-zinc-900 rounded-xl p-6 border border-zinc-800 shadow-lg">
+          <h2 className="text-2xl font-semibold mb-5 text-white flex items-center">
+            <Settings className="mr-2 h-5 w-5 text-emerald-400" />
+            Brewing Controls
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("flushing")}
             >
-              Reboot Machine
-            </button>
+              <Droplets className="h-5 w-5 text-emerald-400" />
+              <span>Start Flush</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("main_brew-1")}
+            >
+              <Coffee className="h-5 w-5 text-emerald-400" />
+              <span>Coffee Brew</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("main_brew-2")}
+            >
+              <Coffee className="h-5 w-5 text-amber-400" />
+              <span>Tea Brew</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("intermideate_brew-1")}
+            >
+              <Coffee className="h-5 w-5 text-emerald-400 opacity-70" />
+              <span className="text-xs text-center">Intermediate Coffee</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("Intermideate_brew-2")}
+            >
+              <Coffee className="h-5 w-5 text-amber-400 opacity-70" />
+              <span className="text-xs text-center">Intermediate Tea</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("Subtank_fill-1")}
+            >
+              <Droplets className="h-5 w-5 text-emerald-400" />
+              <span className="text-xs text-center">Subtank Fill Coffee</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("subtank_fill-2")}
+            >
+              <Droplets className="h-5 w-5 text-amber-400" />
+              <span className="text-xs text-center">Subtank Fill Tea</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("Demo")}
+            >
+              <Play className="h-5 w-5 text-emerald-400" />
+              <span>Demo</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("Count_display")}
+            >
+              <Thermometer className="h-5 w-5 text-emerald-400" />
+              <span className="text-xs text-center">Display Temperature</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("programming")}
+            >
+              <Settings className="h-5 w-5 text-emerald-400" />
+              <span>Program</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Section 2 (Second largest) */}
+        <div className="col-span-12 md:col-span-4 bg-zinc-900 rounded-xl p-6 border border-zinc-800 shadow-lg">
+          <h2 className="text-2xl font-semibold mb-5 text-white flex items-center">
+            <Coffee className="mr-2 h-5 w-5 text-emerald-400" />
+            Brew Types
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-amber-400 text-zinc-300"
+              onClick={() => sendMqttMessage("black_tea")}
+            >
+              Black Tea
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-amber-400 text-zinc-300"
+              onClick={() => sendMqttMessage("strong_tea")}
+            >
+              Strong Tea
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-amber-400 text-zinc-300"
+              onClick={() => sendMqttMessage("light_tea")}
+            >
+              Light Tea
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-amber-400 text-zinc-300"
+              onClick={() => sendMqttMessage("hot_milk")}
+            >
+              Hot Milk
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-amber-400 text-zinc-300"
+              onClick={() => sendMqttMessage("tea_bag_tea")}
+            >
+              Tea Bag Tea
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-amber-400 text-zinc-300"
+              onClick={() => sendMqttMessage("tea_brew")}
+            >
+              Tea Brew
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-amber-400 text-zinc-300"
+              onClick={() => sendMqttMessage("flushing")}
+            >
+              Flushing
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              onClick={() => sendMqttMessage("coffee_brew")}
+            >
+              Coffee Brew
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-blue-400 text-zinc-300"
+              onClick={() => sendMqttMessage("hot_water")}
+            >
+              Hot Water
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              onClick={() => sendMqttMessage("light_coffee")}
+            >
+              Light Coffee
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              onClick={() => sendMqttMessage("strong_coffee")}
+            >
+              Strong Coffee
+            </Button>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              onClick={() => sendMqttMessage("black_coffee")}
+            >
+              Black Coffee
+            </Button>
+          </div>
+        </div>
+
+        {/* Section 3 (Smallest) */}
+        <div className="col-span-12 md:col-span-2 bg-zinc-900 rounded-xl p-6 border border-zinc-800 shadow-lg">
+          <h2 className="text-2xl font-semibold mb-5 text-white flex items-center">
+            <Zap className="mr-2 h-5 w-5 text-emerald-400" />
+            Controls
+          </h2>
+
+          {/* Row 1 */}
+          <div className="grid grid-cols-2 gap-3 mb-8">
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              onClick={() => sendMqttMessage("up")}
+            >
+              Up
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              onClick={() => sendMqttMessage("down")}
+            >
+              Down
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              onClick={() => sendMqttMessage("save")}
+            >
+              Save
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              onClick={() => sendMqttMessage("exit")}
+            >
+              Exit
+            </Button>
+          </div>
+
+          {/* Row 2 */}
+          <div className="space-y-4">
+            <div className="bg-zinc-800 rounded-lg p-3 flex items-center justify-between">
+              <span className="text-zinc-300">Up Latch</span>
+              <Button
+                size="sm"
+                className={`${
+                  upLatch
+                    ? "bg-emerald-500 hover:bg-emerald-600"
+                    : "bg-zinc-700 hover:bg-zinc-600"
+                } text-white min-w-[60px]`}
+                onClick={() => handleToggle("up", !upLatch)}
+              >
+                {upLatch ? "ON" : "OFF"}
+              </Button>
+            </div>
+            <div className="bg-zinc-800 rounded-lg p-3 flex items-center justify-between">
+              <span className="text-zinc-300">Down Latch</span>
+              <Button
+                size="sm"
+                className={`${
+                  downLatch
+                    ? "bg-emerald-500 hover:bg-emerald-600"
+                    : "bg-zinc-700 hover:bg-zinc-600"
+                } text-white min-w-[60px]`}
+                onClick={() => handleToggle("down", !downLatch)}
+              >
+                {downLatch ? "ON" : "OFF"}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+}
