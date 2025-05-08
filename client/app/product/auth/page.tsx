@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { userService } from "@/lib/api/services";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Form,
   FormControl,
@@ -27,6 +27,11 @@ import {
   Check,
   AlertCircle,
   Calendar,
+  Coffee,
+  CupSoda,
+  Smile,
+  Heart,
+  Sparkles,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
@@ -64,6 +69,15 @@ const userInfoFormSchema = z.object({
   ),
 });
 
+// Greeting messages for new users
+const NEW_USER_GREETINGS = [
+  "Looks like you're new here! Let's get to know you better.",
+  "First time? We'd love to know a bit about you!",
+  "Welcome to Froth Filter! Let's set up your profile.",
+  "Hey there! Seems like you're new. Tell us about yourself!",
+  "New coffee enthusiast? Let's personalize your experience!",
+];
+
 export default function CustomerLoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -74,6 +88,8 @@ export default function CustomerLoginPage() {
     type: "success" | "error";
     message: string;
   } | null>(null);
+  const [newUserGreeting, setNewUserGreeting] = useState("");
+  const [animatePhone, setAnimatePhone] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -95,6 +111,10 @@ export default function CustomerLoginPage() {
       // User is already logged in, redirect to recipes page
       router.push("/product/recipes");
     }
+
+    // Set random greeting for new users
+    const randomIndex = Math.floor(Math.random() * NEW_USER_GREETINGS.length);
+    setNewUserGreeting(NEW_USER_GREETINGS[randomIndex]);
   }, [router, isMounted]);
 
   // Define phone form with validation
@@ -117,6 +137,7 @@ export default function CustomerLoginPage() {
   const checkPhoneNumber = async (values: z.infer<typeof phoneFormSchema>) => {
     setIsLoading(true);
     setStatusMessage(null);
+    setAnimatePhone(true);
 
     try {
       // Check if user exists by phone number
@@ -139,16 +160,18 @@ export default function CustomerLoginPage() {
 
             // Navigate to recipe categories page
             router.push("/product/recipes");
-          }, 1000);
+          }, 1500);
         } else {
           // New user - proceed to collect name
           setPhoneNumber(values.phone_number);
-          setStep(2);
-          // Reset userInfoForm
-          userInfoForm.reset({
-            name: "",
-            date_of_birth: "",
-          });
+          setTimeout(() => {
+            setStep(2);
+            // Reset userInfoForm
+            userInfoForm.reset({
+              name: "",
+              date_of_birth: "",
+            });
+          }, 500);
         }
       } else {
         setStatusMessage({
@@ -164,6 +187,7 @@ export default function CustomerLoginPage() {
       });
     } finally {
       setIsLoading(false);
+      setTimeout(() => setAnimatePhone(false), 1000);
     }
   };
 
@@ -197,7 +221,7 @@ export default function CustomerLoginPage() {
 
           // Navigate to recipe categories page
           router.push("/product/recipes");
-        }, 1000);
+        }, 1500);
       } else {
         setStatusMessage({
           type: "error",
@@ -242,24 +266,47 @@ export default function CustomerLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4EBDE] flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Background elements */}
+    <div className="min-h-screen bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D]/50 flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D]/30 opacity-80"></div>
-        <div className="absolute inset-0">
-          {[...Array(40)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-[#C28654]/10"
-              style={{
-                width: Math.random() * 4 + 2 + "px",
-                height: Math.random() * 4 + 2 + "px",
-                top: Math.random() * 100 + "%",
-                left: Math.random() * 100 + "%",
-              }}
-            ></div>
-          ))}
-        </div>
+        {/* Coffee bean shapes floating in background */}
+        {[...Array(8)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full bg-[#8A5738]/5"
+            style={{
+              width: Math.random() * 120 + 80 + "px",
+              height: Math.random() * 120 + 80 + "px",
+              borderRadius: "40% 60% 70% 30% / 40% 50% 60% 50%",
+            }}
+            animate={{
+              x: [
+                Math.random() * 20 - 10,
+                Math.random() * 20 - 10,
+                Math.random() * 20 - 10,
+              ],
+              y: [
+                Math.random() * 20 - 10,
+                Math.random() * 20 - 10,
+                Math.random() * 20 - 10,
+              ],
+              rotate: [0, Math.random() * 10 - 5],
+              scale: [1, 1.05, 1],
+            }}
+            transition={{
+              duration: 8 + Math.random() * 7,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              opacity: 0.4,
+            }}
+          />
+        ))}
+
+        {/* Subtle gradient overlays */}
         <div className="absolute top-0 w-full h-32 bg-gradient-to-b from-[#F4EBDE] to-transparent"></div>
         <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-[#F4EBDE] to-transparent"></div>
       </div>
@@ -292,40 +339,63 @@ export default function CustomerLoginPage() {
       </motion.div>
 
       {/* Main content */}
-      <div className="relative z-10 w-full max-w-md px-6 mt-8 translate-y-8">
+      <AnimatePresence mode="wait">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          key={step}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          transition={{ duration: 0.5 }}
+          className="relative z-10 w-full max-w-md px-6 mt-8"
         >
-          <div className="bg-white/80 backdrop-blur-md rounded-2xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(194,134,84,0.3)] border border-[#DAB49D]">
-            <div className="px-8 pt-8 pb-6 border-b border-[#DAB49D]">
-              <div className="flex justify-center mb-6">
+          <div className="bg-white/90 backdrop-blur-md rounded-2xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(194,134,84,0.3)] border border-[#DAB49D]">
+            {/* Card header with icon */}
+            <div className="relative px-8 pt-10 pb-8 border-b border-[#DAB49D]/50 overflow-hidden">
+              {/* Decorative elements */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#C28654]/5 rounded-full transform translate-x-16 -translate-y-16"></div>
+              <div className="absolute bottom-0 left-0 w-16 h-16 bg-[#8A5738]/5 rounded-full transform -translate-x-8 translate-y-8"></div>
+
+              <div className="flex justify-center mb-6 relative">
                 <motion.div
-                  initial={{ scale: 0.9, rotate: -5 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{
-                    duration: 0.5,
-                    type: "spring",
-                    stiffness: 100,
-                  }}
-                  className="w-16 h-16 rounded-full bg-gradient-to-br from-[#C28654]/20 to-[#8A5738]/10 flex items-center justify-center"
+                  animate={
+                    animatePhone
+                      ? {
+                          scale: [1, 1.2, 0.8, 1],
+                          rotate: [0, -10, 10, 0],
+                        }
+                      : {}
+                  }
+                  transition={{ duration: 0.6 }}
+                  className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#C28654]/30 to-[#8A5738]/20 flex items-center justify-center shadow-lg relative overflow-hidden"
                 >
                   {step === 1 ? (
-                    <Phone size={32} className="text-[#8A5738]" />
+                    <Phone size={36} className="text-[#8A5738]" />
                   ) : (
-                    <User size={32} className="text-[#8A5738]" />
+                    <User size={36} className="text-[#8A5738]" />
                   )}
+
+                  {/* Animated rings */}
+                  <motion.div
+                    className="absolute inset-0 border-2 border-[#C28654]/20 rounded-2xl"
+                    animate={{ scale: [1, 1.2, 1.4], opacity: [1, 0.5, 0] }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatDelay: 1,
+                    }}
+                  />
                 </motion.div>
               </div>
+
               <motion.h2
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.4 }}
                 className="text-2xl font-bold text-[#5F3023] text-center"
               >
-                WELCOME
+                {step === 1 ? "WELCOME" : "ALMOST THERE!"}
               </motion.h2>
+
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -334,40 +404,47 @@ export default function CustomerLoginPage() {
               >
                 {step === 1
                   ? "Enter your phone number to continue"
-                  : "Tell us about yourself to complete signup"}
+                  : newUserGreeting}
               </motion.p>
             </div>
 
             <div className="p-8">
               {/* Status Message */}
-              {statusMessage && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  className="mb-4"
-                >
-                  <Alert
-                    variant={
-                      statusMessage.type === "success"
-                        ? "default"
-                        : "destructive"
-                    }
-                    className={`border ${
-                      statusMessage.type === "success"
-                        ? "border-green-800 bg-green-900/20 text-green-800"
-                        : "border-red-800 bg-red-900/20 text-red-800"
-                    }`}
+              <AnimatePresence>
+                {statusMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, y: -10 }}
+                    animate={{ opacity: 1, height: "auto", y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className="mb-6"
                   >
-                    {statusMessage.type === "success" ? (
-                      <Check className="h-4 w-4 mr-2" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4 mr-2" />
-                    )}
-                    <AlertDescription>{statusMessage.message}</AlertDescription>
-                  </Alert>
-                </motion.div>
-              )}
+                    <Alert
+                      variant={
+                        statusMessage.type === "success"
+                          ? "default"
+                          : "destructive"
+                      }
+                      className={`border ${
+                        statusMessage.type === "success"
+                          ? "border-green-800/30 bg-green-50 text-green-800"
+                          : "border-red-800/30 bg-red-50 text-red-800"
+                      }`}
+                    >
+                      {statusMessage.type === "success" ? (
+                        <Check className="h-4 w-4 mr-2" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                      )}
+                      <AlertDescription>
+                        {statusMessage.message}
+                      </AlertDescription>
+                    </Alert>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
+              {/* Phone number form */}
               {step === 1 ? (
                 <Form {...phoneForm}>
                   <form
@@ -384,14 +461,14 @@ export default function CustomerLoginPage() {
                         name="phone_number"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-[#5F3023]">
+                            <FormLabel className="text-[#5F3023] font-medium">
                               Your Phone Number
                             </FormLabel>
                             <div className="relative">
                               <FormControl>
                                 <Input
                                   placeholder="Enter your 10-digit number"
-                                  className="bg-white/80 border-[#DAB49D] focus:border-[#C28654] h-12 pl-12 text-[#5F3023]"
+                                  className="bg-white/80 border-[#DAB49D] focus:border-[#C28654] focus:ring-[#C28654]/30 h-14 pl-14 text-[#5F3023] text-lg rounded-xl shadow-sm"
                                   {...field}
                                   maxLength={10}
                                   type="tel"
@@ -399,15 +476,14 @@ export default function CustomerLoginPage() {
                                   pattern="[0-9]*"
                                 />
                               </FormControl>
-                              <Phone
-                                size={18}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8A5738]"
-                              />
+                              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#C28654]/20 flex items-center justify-center">
+                                <Phone size={14} className="text-[#8A5738]" />
+                              </div>
                             </div>
-                            <FormDescription className="text-[#8A5738]/70 text-xs">
+                            <FormDescription className="text-[#8A5738]/70 text-xs mt-2">
                               We&apos;ll use this to identify you
                             </FormDescription>
-                            <FormMessage className="text-red-600" />
+                            <FormMessage className="text-red-600 text-xs mt-1" />
                           </FormItem>
                         )}
                       />
@@ -425,7 +501,7 @@ export default function CustomerLoginPage() {
                       >
                         <Button
                           type="submit"
-                          className={`w-full h-12 text-base font-medium ${
+                          className={`w-full h-14 text-base font-medium rounded-xl ${
                             isLoading
                               ? "bg-[#C28654]/50 text-white"
                               : "bg-gradient-to-r from-[#8A5738] to-[#5F3023] hover:from-[#C28654] hover:to-[#8A5738] text-white"
@@ -454,7 +530,7 @@ export default function CustomerLoginPage() {
                           type="button"
                           variant="outline"
                           onClick={handleCancel}
-                          className="w-full border-[#DAB49D] text-[#8A5738] hover:text-[#5F3023] hover:bg-[#F4EBDE] h-12"
+                          className="w-full border-[#DAB49D] text-[#8A5738] hover:text-[#5F3023] hover:bg-[#F4EBDE] h-12 rounded-xl"
                           disabled={isLoading}
                         >
                           Cancel
@@ -470,91 +546,104 @@ export default function CustomerLoginPage() {
                     className="space-y-6"
                   >
                     {phoneNumber && (
-                      <div className="mb-6 p-3 bg-[#C28654]/10 border border-[#C28654]/30 rounded-md">
-                        <p className="text-sm text-[#8A5738]">
-                          <Phone size={14} className="inline mr-2" />
-                          Phone: {phoneNumber}
-                        </p>
-                      </div>
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 p-3 bg-[#C28654]/10 border border-[#C28654]/30 rounded-xl flex items-center"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-[#C28654]/20 flex items-center justify-center mr-3">
+                          <Phone size={14} className="text-[#8A5738]" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-[#8A5738]/70">
+                            Phone Number
+                          </p>
+                          <p className="text-sm text-[#5F3023] font-medium">
+                            {phoneNumber}
+                          </p>
+                        </div>
+                      </motion.div>
                     )}
 
+                    {/* Name field */}
                     <motion.div
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4, duration: 0.4 }}
+                      transition={{ delay: 0.2, duration: 0.4 }}
                     >
                       <FormField
                         control={userInfoForm.control}
                         name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-[#5F3023]">
+                            <FormLabel className="text-[#5F3023] font-medium">
                               Your Name
                             </FormLabel>
                             <div className="relative">
                               <FormControl>
                                 <Input
                                   placeholder="Enter your name"
-                                  className="bg-white/80 border-[#DAB49D] focus:border-[#C28654] h-12 pl-12 text-[#5F3023]"
+                                  className="bg-white/80 border-[#DAB49D] focus:border-[#C28654] focus:ring-[#C28654]/30 h-14 pl-14 text-[#5F3023] text-lg rounded-xl shadow-sm"
                                   {...field}
                                 />
                               </FormControl>
-                              <User
-                                size={18}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8A5738]"
-                              />
+                              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#C28654]/20 flex items-center justify-center">
+                                <User size={14} className="text-[#8A5738]" />
+                              </div>
                             </div>
-                            <FormDescription className="text-[#8A5738]/70 text-xs">
+                            <FormDescription className="text-[#8A5738]/70 text-xs mt-2">
                               This is how we&apos;ll address you
                             </FormDescription>
-                            <FormMessage className="text-red-600" />
+                            <FormMessage className="text-red-600 text-xs mt-1" />
                           </FormItem>
                         )}
                       />
                     </motion.div>
 
+                    {/* Date of birth field */}
                     <motion.div
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5, duration: 0.4 }}
+                      transition={{ delay: 0.3, duration: 0.4 }}
                     >
                       <FormField
                         control={userInfoForm.control}
                         name="date_of_birth"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-[#5F3023]">
+                            <FormLabel className="text-[#5F3023] font-medium">
                               Date of Birth
                             </FormLabel>
                             <div className="relative">
                               <FormControl>
                                 <Input
                                   type="date"
-                                  placeholder="YYYY-MM-DD"
-                                  className="bg-white/80 border-[#DAB49D] focus:border-[#C28654] h-12 pl-12 text-[#5F3023]"
+                                  className="bg-white/80 border-[#DAB49D] focus:border-[#C28654] focus:ring-[#C28654]/30 h-14 pl-14 text-[#5F3023] text-lg rounded-xl shadow-sm"
                                   {...field}
                                 />
                               </FormControl>
-                              <Calendar
-                                size={18}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8A5738]"
-                              />
+                              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#C28654]/20 flex items-center justify-center">
+                                <Calendar
+                                  size={14}
+                                  className="text-[#8A5738]"
+                                />
+                              </div>
                             </div>
-                            <FormDescription className="text-[#8A5738]/70 text-xs">
-                              Your date of birth helps us personalize your
-                              experience
+                            <FormDescription className="text-[#8A5738]/70 text-xs mt-2">
+                              For age verification and special offers
                             </FormDescription>
-                            <FormMessage className="text-red-600" />
+                            <FormMessage className="text-red-600 text-xs mt-1" />
                           </FormItem>
                         )}
                       />
                     </motion.div>
 
+                    {/* Buttons */}
                     <motion.div
                       className="flex flex-col space-y-3 pt-4"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6, duration: 0.4 }}
+                      transition={{ delay: 0.4, duration: 0.4 }}
                     >
                       <motion.div
                         whileHover={{ scale: 1.02 }}
@@ -562,7 +651,7 @@ export default function CustomerLoginPage() {
                       >
                         <Button
                           type="submit"
-                          className={`w-full h-12 text-base font-medium ${
+                          className={`w-full h-14 text-base font-medium rounded-xl ${
                             isLoading
                               ? "bg-[#C28654]/50 text-white"
                               : "bg-gradient-to-r from-[#8A5738] to-[#5F3023] hover:from-[#C28654] hover:to-[#8A5738] text-white"
@@ -590,8 +679,11 @@ export default function CustomerLoginPage() {
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={handleBack}
-                          className="w-full border-[#DAB49D] text-[#8A5738] hover:text-[#5F3023] hover:bg-[#F4EBDE] h-12"
+                          onClick={() => {
+                            setStep(1);
+                            setStatusMessage(null);
+                          }}
+                          className="w-full border-[#DAB49D] text-[#8A5738] hover:text-[#5F3023] hover:bg-[#F4EBDE] h-12 rounded-xl"
                           disabled={isLoading}
                         >
                           Back
@@ -603,22 +695,62 @@ export default function CustomerLoginPage() {
               )}
             </div>
           </div>
-        </motion.div>
-      </div>
 
-      {/* Decorative element at bottom */}
-      <motion.div
-        className="absolute bottom-12 left-1/2 -translate-x-1/2 w-16 h-px bg-gradient-to-r from-transparent via-[#C28654] to-transparent"
-        animate={{
-          width: ["4rem", "8rem", "4rem"],
-          opacity: [0.3, 0.8, 0.3],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          repeatType: "loop",
-        }}
-      />
+          {/* Decorative elements at bottom */}
+          <div className="mt-8 flex justify-center">
+            <motion.div
+              className="flex space-x-3 text-[#8A5738]/60"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              {step === 1 ? (
+                <>
+                  <Coffee size={16} />
+                  <CupSoda size={16} />
+                  <Heart size={16} />
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  <Coffee size={16} />
+                  <Smile size={16} />
+                </>
+              )}
+            </motion.div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Floating coffee beans */}
+      <div className="fixed inset-0 pointer-events-none">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{
+              y: Math.random() * 100 + 100,
+              x: Math.random() * window.innerWidth,
+              rotate: Math.random() * 180,
+              opacity: 0,
+            }}
+            animate={{
+              y: -100,
+              opacity: [0, 0.2, 0],
+              rotate: Math.random() * 360,
+            }}
+            transition={{
+              duration: 15 + Math.random() * 10,
+              delay: Math.random() * 5,
+              repeat: Infinity,
+              repeatType: "loop",
+            }}
+            className="absolute w-4 h-8 bg-[#5F3023]/10 rounded-full transform rotate-45"
+            style={{
+              left: `${Math.random() * 100}%`,
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }

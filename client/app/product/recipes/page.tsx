@@ -266,7 +266,9 @@ export default function RecipesPage() {
         <div className="w-full max-w-md p-8">
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold text-[#5F3023]">
-              COFFEE <span className="text-[#C28654]">MENU</span>
+            <span className="text-[#5F3023]">Filter it.</span>
+            <span className="text-[#8A5738]">Froth it.</span>
+            <span className="text-[#C28654]">Feel it.</span>
             </h2>
           </div>
         </div>

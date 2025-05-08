@@ -104,7 +104,7 @@ export default function RecipeDetailsDialog({
   const handlePlaceOrder = async () => {
     if (!recipe) return;
 
-    const userId = localStorage.getItem("userId");
+    const userId = sessionStorage.getItem("userId");
     const machineId = localStorage.getItem("machineId");
 
     if (!userId || !machineId) {
