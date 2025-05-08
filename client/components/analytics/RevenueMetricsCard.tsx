@@ -1,16 +1,23 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, ShoppingCart } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DollarSign, ShoppingCart } from "lucide-react";
+
+// Local Skeleton component since the import is missing
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={`animate-pulse bg-gray-200 rounded ${className || ""}`} />
+);
 
 interface RevenueMetricsCardProps {
   data: any;
   isLoading: boolean;
 }
 
-const RevenueMetricsCard: React.FC<RevenueMetricsCardProps> = ({ data, isLoading }) => {
+const RevenueMetricsCard: React.FC<RevenueMetricsCardProps> = ({
+  data,
+  isLoading,
+}) => {
   if (isLoading) {
     return (
       <Card>
@@ -46,7 +53,7 @@ const RevenueMetricsCard: React.FC<RevenueMetricsCardProps> = ({ data, isLoading
             Total revenue and orders
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 gap-4">
           <div className="flex items-center p-4 border rounded-lg">
             <div className="p-2 bg-primary/10 rounded-full mr-4">
@@ -55,23 +62,21 @@ const RevenueMetricsCard: React.FC<RevenueMetricsCardProps> = ({ data, isLoading
             <div>
               <p className="text-sm text-muted-foreground">Total Revenue</p>
               <h2 className="text-3xl font-bold">
-                ${data.total.revenue ? data.total.revenue.toFixed(2) : '0.00'}
+                ${data.total.revenue ? data.total.revenue.toFixed(2) : "0.00"}
               </h2>
             </div>
           </div>
-          
+
           <div className="flex items-center p-4 border rounded-lg">
             <div className="p-2 bg-green-500/10 rounded-full mr-4">
               <ShoppingCart className="h-5 w-5 text-green-500" />
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Orders</p>
-              <h2 className="text-3xl font-bold">
-                {data.total.orders || 0}
-              </h2>
+              <h2 className="text-3xl font-bold">{data.total.orders || 0}</h2>
             </div>
           </div>
-          
+
           {data.total.orders > 0 && (
             <div className="flex items-center justify-between p-2 text-sm">
               <span className="text-muted-foreground">Average Order Value</span>
@@ -86,4 +91,4 @@ const RevenueMetricsCard: React.FC<RevenueMetricsCardProps> = ({ data, isLoading
   );
 };
 
-export default RevenueMetricsCard; 
+export default RevenueMetricsCard;
