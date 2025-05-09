@@ -7,7 +7,7 @@ import {
   XCircle,
   Activity,
   Star,
-  DollarSign,
+  IndianRupee,
   Coffee,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -24,6 +24,14 @@ interface MachinePerformanceProps {
   machines: any[];
 }
 
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-IN', { 
+    style: 'currency', 
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(value);
+};
+
 const MachinePerformanceCard: React.FC<MachinePerformanceProps> = ({
   data,
   isLoading,
@@ -36,6 +44,29 @@ const MachinePerformanceCard: React.FC<MachinePerformanceProps> = ({
       ? machine.name || `Machine ${machine.machine_id}`
       : "All Machines";
   };
+
+  // Safe data access helpers
+  const getOrdersStats = () => {
+    if (!data) return { completed: 0, failed: 0, cancelled: 0, total: 0, rate: 0 };
+    return {
+      completed: data.ordersCompleted || 0,
+      failed: data.ordersFailed || 0,
+      cancelled: data.ordersCancelled || 0,
+      total: data.totalOrders || 0,
+      rate: data.successRate || 0
+    };
+  };
+
+  const getRatingStats = () => {
+    if (!data) return { average: 0, count: 0 };
+    return {
+      average: data.averageRating || 0,
+      count: data.ratingCount || 0
+    };
+  };
+
+  const orderStats = getOrdersStats();
+  const ratingStats = getRatingStats();
 
   return (
     <Card>
@@ -64,14 +95,14 @@ const MachinePerformanceCard: React.FC<MachinePerformanceProps> = ({
               <div className="flex flex-col items-center p-3 border rounded-lg">
                 <Coffee className="h-6 w-6 text-primary mb-1" />
                 <p className="text-sm text-muted-foreground">Total Orders</p>
-                <p className="text-2xl font-semibold">{data.totalOrders}</p>
+                <p className="text-2xl font-semibold">{orderStats.total}</p>
               </div>
 
               <div className="flex flex-col items-center p-3 border rounded-lg">
-                <DollarSign className="h-6 w-6 text-green-500 mb-1" />
+                <IndianRupee className="h-6 w-6 text-green-500 mb-1" />
                 <p className="text-sm text-muted-foreground">Revenue</p>
                 <p className="text-2xl font-semibold">
-                  ${data.totalRevenue.toFixed(2)}
+                  {formatCurrency(data.totalRevenue || 0)}
                 </p>
               </div>
             </div>
@@ -83,7 +114,7 @@ const MachinePerformanceCard: React.FC<MachinePerformanceProps> = ({
                   Completed
                 </span>
                 <span className="text-sm font-medium">
-                  {data.ordersCompleted}
+                  {orderStats.completed}
                 </span>
               </div>
 
@@ -92,7 +123,7 @@ const MachinePerformanceCard: React.FC<MachinePerformanceProps> = ({
                   <XCircle className="h-4 w-4 text-red-500" />
                   Failed
                 </span>
-                <span className="text-sm font-medium">{data.ordersFailed}</span>
+                <span className="text-sm font-medium">{orderStats.failed}</span>
               </div>
 
               <div className="flex justify-between items-center">
@@ -101,11 +132,11 @@ const MachinePerformanceCard: React.FC<MachinePerformanceProps> = ({
                   Success Rate
                 </span>
                 <span className="text-sm font-medium">
-                  {data.successRate.toFixed(1)}%
+                  {orderStats.rate.toFixed(1)}%
                 </span>
               </div>
 
-              <Progress value={data.successRate} className="h-2 mt-1" />
+              <Progress value={orderStats.rate} className="h-2 mt-1" />
             </div>
 
             <div className="pt-2 border-t">
@@ -115,18 +146,18 @@ const MachinePerformanceCard: React.FC<MachinePerformanceProps> = ({
                   Customer Rating
                 </span>
                 <span className="text-sm font-medium">
-                  {data.averageRating ? data.averageRating.toFixed(1) : "N/A"} /
-                  5{data.ratingCount > 0 && ` (${data.ratingCount} ratings)`}
+                  {ratingStats.average ? ratingStats.average.toFixed(1) : "N/A"} /
+                  5{ratingStats.count > 0 && ` (${ratingStats.count} ratings)`}
                 </span>
               </div>
 
-              {data.averageRating && (
+              {ratingStats.average > 0 && (
                 <div className="flex gap-1 mt-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
                       className={`h-4 w-4 ${
-                        star <= Math.round(data.averageRating)
+                        star <= Math.round(ratingStats.average)
                           ? "text-yellow-500 fill-yellow-500"
                           : "text-muted-foreground"
                       }`}

@@ -44,6 +44,16 @@ import {
   Ingredient,
   Machine,
 } from "@/lib/api/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import {
+  ArrowLeft,
+  Plus,
+  Pencil,
+  Droplet,
+} from "lucide-react";
 
 export default function MachineInventoryManagement() {
   const { machines, isLoading: machinesLoading } = useMachines();
@@ -247,48 +257,74 @@ export default function MachineInventoryManagement() {
     return Math.min(Math.max(percentage, 0), 100); // Ensure between 0-100
   };
 
+  // Add loading skeleton components
+  const MachineSkeleton = () => (
+    <div className="space-y-2">
+      {[1, 2, 3].map((i) => (
+        <Skeleton key={i} className="h-16 w-full" />
+      ))}
+    </div>
+  );
+
+  const InventorySkeleton = () => (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-1/3" />
+      <div className="space-y-2">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Machine Inventory Management</h1>
-          <p className="text-muted-foreground">
-            Manage ingredient inventory for each coffee machine
+    <div className="container mx-auto py-10 space-y-8">
+      <div className="flex justify-between items-center">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-bold tracking-tight">Machine Inventory</h1>
+          <p className="text-muted-foreground text-lg">
+            Manage and monitor your coffee machines
           </p>
         </div>
         <Link href="/dashboard">
-          <Button variant="outline">Back to Dashboard</Button>
+          <Button variant="outline" size="lg">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
         </Link>
       </div>
 
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-4 gap-8">
         {/* Left Panel - Machine List */}
-        <div className="col-span-1">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle>Machines</CardTitle>
-            </CardHeader>
-            <CardContent>
+        <Card className="col-span-1 border-none shadow-lg">
+          <CardHeader className="border-b bg-muted/50">
+            <CardTitle className="text-xl">Machines</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[calc(100vh-16rem)]">
               {machinesLoading ? (
-                <p>Loading machines...</p>
+                <div className="p-4">
+                  <MachineSkeleton />
+                </div>
               ) : machines.length === 0 ? (
-                <p>No machines found</p>
+                <div className="p-4 text-center text-muted-foreground">
+                  No machines found
+                </div>
               ) : (
-                <div className="space-y-2">
+                <div className="p-2">
                   {machines.map((machine) => (
                     <Button
                       key={machine.machine_id}
-                      variant={
-                        selectedMachine === machine.machine_id
-                          ? "default"
-                          : "outline"
-                      }
-                      className="w-full justify-start text-left"
+                      variant={selectedMachine === machine.machine_id ? "default" : "ghost"}
+                      className={cn(
+                        "w-full justify-start text-left p-4 mb-2 transition-all",
+                        selectedMachine === machine.machine_id && "bg-primary text-primary-foreground"
+                      )}
                       onClick={() => handleMachineSelect(machine.machine_id)}
                     >
                       <div className="flex flex-col items-start">
                         <span className="font-medium">{machine.location}</span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs opacity-70">
                           ID: {machine.machine_id}
                         </span>
                       </div>
@@ -296,91 +332,87 @@ export default function MachineInventoryManagement() {
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
 
         {/* Right Panel - Inventory Management */}
-        <div className="col-span-3">
-          <Card className="h-full">
-            <CardHeader>
-              <CardTitle>
-                {selectedMachine
-                  ? `Inventory for ${
-                      machines.find((m) => m.machine_id === selectedMachine)
-                        ?.location || "Selected Machine"
-                    }`
-                  : "Select a machine"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="inventory">
-                <TabsList>
-                  <TabsTrigger value="inventory">
-                    Inventory Management
-                  </TabsTrigger>
-                  <TabsTrigger value="cleaning">Cleaning Water</TabsTrigger>
-                </TabsList>
+        <Card className="col-span-3 border-none shadow-lg">
+          <CardHeader className="border-b bg-muted/50">
+            <CardTitle className="text-xl">
+              {selectedMachine
+                ? `Inventory for ${
+                    machines.find((m) => m.machine_id === selectedMachine)
+                      ?.location || "Selected Machine"
+                  }`
+                : "Select a machine"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Tabs defaultValue="inventory" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="inventory">Inventory Management</TabsTrigger>
+                <TabsTrigger value="cleaning">Cleaning Water</TabsTrigger>
+              </TabsList>
 
-                <TabsContent value="inventory" className="space-y-4 pt-4">
-                  <div className="flex justify-end space-x-2">
-                    <Dialog open={isAddingNew} onOpenChange={setIsAddingNew}>
-                      <DialogTrigger asChild>
-                        <Button disabled={!selectedMachine}>
-                          Add Ingredient
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Add New Ingredient</DialogTitle>
-                          <DialogDescription>
-                            Add a new ingredient to this machine&apos;s
-                            inventory
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div>
-                            <Label htmlFor="new-ingredient">Ingredient</Label>
-                            <Select
-                              value={newIngredientData.ingredient_id}
-                              onValueChange={(value) =>
-                                setNewIngredientData({
-                                  ...newIngredientData,
-                                  ingredient_id: value,
-                                })
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select an ingredient" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ingredientsLoading ? (
-                                  <SelectItem value="">
-                                    Loading ingredients...
-                                  </SelectItem>
-                                ) : (
-                                  ingredients
-                                    .filter(
-                                      (ingredient) =>
-                                        !inventory.some(
-                                          (inv) =>
-                                            inv.ingredient_id ===
-                                            ingredient.ingredient_id
-                                        )
-                                    )
-                                    .map((ingredient) => (
-                                      <SelectItem
-                                        key={ingredient.ingredient_id}
-                                        value={ingredient.ingredient_id}
-                                      >
-                                        {ingredient.name} ({ingredient.unit})
-                                      </SelectItem>
-                                    ))
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
+              <TabsContent value="inventory" className="space-y-6">
+                <div className="flex justify-end space-x-2">
+                  <Dialog open={isAddingNew} onOpenChange={setIsAddingNew}>
+                    <DialogTrigger asChild>
+                      <Button disabled={!selectedMachine} size="lg">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Ingredient
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Add New Ingredient</DialogTitle>
+                        <DialogDescription>
+                          Add a new ingredient to this machine's inventory
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="new-ingredient">Ingredient</Label>
+                          <Select
+                            value={newIngredientData.ingredient_id}
+                            onValueChange={(value) =>
+                              setNewIngredientData({
+                                ...newIngredientData,
+                                ingredient_id: value,
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an ingredient" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ingredientsLoading ? (
+                                <SelectItem value="">Loading ingredients...</SelectItem>
+                              ) : (
+                                ingredients
+                                  .filter(
+                                    (ingredient) =>
+                                      !inventory.some(
+                                        (inv) =>
+                                          inv.ingredient_id ===
+                                          ingredient.ingredient_id
+                                      )
+                                  )
+                                  .map((ingredient) => (
+                                    <SelectItem
+                                      key={ingredient.ingredient_id}
+                                      value={ingredient.ingredient_id}
+                                    >
+                                      {ingredient.name} ({ingredient.unit})
+                                    </SelectItem>
+                                  ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
                             <Label htmlFor="new-quantity">Quantity</Label>
                             <Input
                               id="new-quantity"
@@ -395,10 +427,8 @@ export default function MachineInventoryManagement() {
                               min={0}
                             />
                           </div>
-                          <div>
-                            <Label htmlFor="new-max-capacity">
-                              Max Capacity
-                            </Label>
+                          <div className="space-y-2">
+                            <Label htmlFor="new-max-capacity">Max Capacity</Label>
                             <Input
                               id="new-max-capacity"
                               type="number"
@@ -413,68 +443,68 @@ export default function MachineInventoryManagement() {
                             />
                           </div>
                         </div>
-                        <DialogFooter>
-                          <Button
-                            variant="outline"
-                            onClick={() => setIsAddingNew(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button onClick={handleAddIngredient}>
-                            Add Ingredient
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-
-                    <Dialog open={isUpdating} onOpenChange={setIsUpdating}>
-                      <DialogTrigger asChild>
-                        <Button disabled={!selectedMachine}>
-                          Update Inventory
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsAddingNew(false)}
+                        >
+                          Cancel
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Update Inventory</DialogTitle>
-                          <DialogDescription>
-                            Update the ingredient quantity for this machine
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div>
-                            <Label htmlFor="ingredient">Ingredient</Label>
-                            <Select
-                              value={updateData.ingredient_id}
-                              onValueChange={(value) =>
-                                setUpdateData({
-                                  ...updateData,
-                                  ingredient_id: value,
-                                })
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select an ingredient" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ingredientsLoading ? (
-                                  <SelectItem value="">
-                                    Loading ingredients...
+                        <Button onClick={handleAddIngredient}>
+                          Add Ingredient
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog open={isUpdating} onOpenChange={setIsUpdating}>
+                    <DialogTrigger asChild>
+                      <Button disabled={!selectedMachine} size="lg">
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Update Inventory
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Update Inventory</DialogTitle>
+                        <DialogDescription>
+                          Update the ingredient quantity for this machine
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="ingredient">Ingredient</Label>
+                          <Select
+                            value={updateData.ingredient_id}
+                            onValueChange={(value) =>
+                              setUpdateData({
+                                ...updateData,
+                                ingredient_id: value,
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an ingredient" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ingredientsLoading ? (
+                                <SelectItem value="">Loading ingredients...</SelectItem>
+                              ) : (
+                                inventory.map((item) => (
+                                  <SelectItem
+                                    key={item.ingredient_id}
+                                    value={item.ingredient_id}
+                                  >
+                                    {getIngredientName(item)} ({getIngredientUnit(item)})
                                   </SelectItem>
-                                ) : (
-                                  inventory.map((item) => (
-                                    <SelectItem
-                                      key={item.ingredient_id}
-                                      value={item.ingredient_id}
-                                    >
-                                      {getIngredientName(item)} (
-                                      {getIngredientUnit(item)})
-                                    </SelectItem>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
                             <Label htmlFor="quantity">Quantity</Label>
                             <Input
                               id="quantity"
@@ -489,7 +519,7 @@ export default function MachineInventoryManagement() {
                               min={0}
                             />
                           </div>
-                          <div>
+                          <div className="space-y-2">
                             <Label htmlFor="max-capacity">Max Capacity</Label>
                             <Input
                               id="max-capacity"
@@ -505,28 +535,34 @@ export default function MachineInventoryManagement() {
                             />
                           </div>
                         </div>
-                        <DialogFooter>
-                          <Button
-                            variant="outline"
-                            onClick={() => setIsUpdating(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button onClick={handleUpdateInventory}>
-                            Update
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsUpdating(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button onClick={handleUpdateInventory}>
+                          Update
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
 
-                  {inventoryLoading ? (
-                    <p>Loading inventory...</p>
-                  ) : !selectedMachine ? (
-                    <p>Select a machine to view its inventory</p>
-                  ) : inventory.length === 0 ? (
-                    <p>No ingredients found for this machine</p>
-                  ) : (
+                {inventoryLoading ? (
+                  <InventorySkeleton />
+                ) : !selectedMachine ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Select a machine to view its inventory
+                  </div>
+                ) : inventory.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    No ingredients found for this machine
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -545,7 +581,7 @@ export default function MachineInventoryManagement() {
                               {getIngredientName(item)}
                             </TableCell>
                             <TableCell>
-                              <div className="flex flex-col space-y-1">
+                              <div className="flex flex-col space-y-2">
                                 <div className="flex justify-between text-xs">
                                   <span>{item.quantity}</span>
                                   <span>{item.max_capacity || "Unknown"}</span>
@@ -560,7 +596,9 @@ export default function MachineInventoryManagement() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              {item.max_capacity || "Not set"}
+                              <Badge variant="outline">
+                                {item.max_capacity || "Not set"}
+                              </Badge>
                             </TableCell>
                             <TableCell>{getIngredientUnit(item)}</TableCell>
                             <TableCell>
@@ -568,7 +606,7 @@ export default function MachineInventoryManagement() {
                             </TableCell>
                             <TableCell className="text-right">
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => {
                                   setUpdateData({
@@ -579,140 +617,132 @@ export default function MachineInventoryManagement() {
                                   setIsUpdating(true);
                                 }}
                               >
-                                Edit
+                                <Pencil className="h-4 w-4" />
                               </Button>
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
-                  )}
-                </TabsContent>
+                  </div>
+                )}
+              </TabsContent>
 
-                <TabsContent value="cleaning" className="space-y-4 pt-4">
-                  {!selectedMachine ? (
-                    <p>Select a machine to manage cleaning water</p>
-                  ) : (
-                    <>
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h3 className="text-lg font-medium">
-                            Cleaning Water Level
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            Manage the cleaning water level for this machine
-                          </p>
-                        </div>
-                        <Button
-                          onClick={() => setIsUpdatingCleaningWater(true)}
-                          disabled={!selectedMachine}
-                        >
-                          Update Cleaning Water
-                        </Button>
+              <TabsContent value="cleaning" className="space-y-6">
+                {!selectedMachine ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Select a machine to manage cleaning water
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <div className="space-y-1">
+                        <h3 className="text-lg font-medium">Cleaning Water Level</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Manage the cleaning water level for this machine
+                        </p>
                       </div>
-
-                      <Card>
-                        <CardContent className="pt-6">
-                          <div className="space-y-4">
-                            <div className="flex flex-col space-y-1">
-                              <div className="flex justify-between">
-                                <span className="font-medium">
-                                  Current Level:
-                                </span>
-                                <span>
-                                  {selectedMachineData?.cleaning_water_ml || 0}{" "}
-                                  ml
-                                </span>
-                              </div>
-                              <Progress
-                                value={Math.min(
-                                  (selectedMachineData?.cleaning_water_ml ||
-                                    0) / 10,
-                                  100
-                                )}
-                                className="h-2"
-                              />
-                            </div>
-
-                            <div className="space-y-1">
-                              <div className="flex justify-between">
-                                <span className="font-medium">
-                                  Last Regular Service:
-                                </span>
-                                <span>
-                                  {selectedMachineData?.last_regular_service
-                                    ? new Date(
-                                        selectedMachineData.last_regular_service
-                                      ).toLocaleDateString()
-                                    : "N/A"}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="font-medium">
-                                  Last Deep Service:
-                                </span>
-                                <span>
-                                  {selectedMachineData?.last_deep_service
-                                    ? new Date(
-                                        selectedMachineData.last_deep_service
-                                      ).toLocaleDateString()
-                                    : "N/A"}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Dialog
-                        open={isUpdatingCleaningWater}
-                        onOpenChange={setIsUpdatingCleaningWater}
+                      <Button
+                        onClick={() => setIsUpdatingCleaningWater(true)}
+                        disabled={!selectedMachine}
+                        size="lg"
                       >
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Update Cleaning Water</DialogTitle>
-                            <DialogDescription>
-                              Update the cleaning water level for this machine
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            <div>
-                              <Label htmlFor="cleaning-water">
-                                Cleaning Water (ml)
-                              </Label>
-                              <Input
-                                id="cleaning-water"
-                                type="number"
-                                value={cleaningWaterLevel}
-                                onChange={(e) =>
-                                  setCleaningWaterLevel(
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                min={0}
-                              />
+                        <Droplet className="mr-2 h-4 w-4" />
+                        Update Cleaning Water
+                      </Button>
+                    </div>
+
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="font-medium">Current Level:</span>
+                              <Badge variant="secondary">
+                                {selectedMachineData?.cleaning_water_ml || 0} ml
+                              </Badge>
+                            </div>
+                            <Progress
+                              value={Math.min(
+                                (selectedMachineData?.cleaning_water_ml || 0) / 10,
+                                100
+                              )}
+                              className="h-2"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Last Regular Service</Label>
+                              <div className="text-sm">
+                                {selectedMachineData?.last_regular_service
+                                  ? new Date(
+                                      selectedMachineData.last_regular_service
+                                    ).toLocaleDateString()
+                                  : "N/A"}
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Last Deep Service</Label>
+                              <div className="text-sm">
+                                {selectedMachineData?.last_deep_service
+                                  ? new Date(
+                                      selectedMachineData.last_deep_service
+                                    ).toLocaleDateString()
+                                  : "N/A"}
+                              </div>
                             </div>
                           </div>
-                          <DialogFooter>
-                            <Button
-                              variant="outline"
-                              onClick={() => setIsUpdatingCleaningWater(false)}
-                            >
-                              Cancel
-                            </Button>
-                            <Button onClick={handleUpdateCleaningWater}>
-                              Update
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Dialog
+                      open={isUpdatingCleaningWater}
+                      onOpenChange={setIsUpdatingCleaningWater}
+                    >
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Update Cleaning Water</DialogTitle>
+                          <DialogDescription>
+                            Update the cleaning water level for this machine
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="cleaning-water">Cleaning Water (ml)</Label>
+                            <Input
+                              id="cleaning-water"
+                              type="number"
+                              value={cleaningWaterLevel}
+                              onChange={(e) =>
+                                setCleaningWaterLevel(
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              min={0}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsUpdatingCleaningWater(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button onClick={handleUpdateCleaningWater}>
+                            Update
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

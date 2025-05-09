@@ -314,12 +314,12 @@ export const updateMachineInventory = async (req: Request, res: Response): Promi
     // Fetch all recipe ingredients
     const recipeIngredients = await RecipeIngredient.find({}).lean();
     // Build inventory map for quick lookup
-    const inventoryMap = {};
+    const inventoryMap: Record<string, number> = {};
     fullInventory.forEach(item => {
       inventoryMap[item.ingredient_id] = item.quantity;
     });
     // Build recipeId -> ingredients[] map
-    const recipeIngredientMap = {};
+    const recipeIngredientMap: Record<string, Array<{ingredient_id: string, quantity: number}>> = {};
     recipeIngredients.forEach(ri => {
       if (!recipeIngredientMap[ri.recipe_id]) recipeIngredientMap[ri.recipe_id] = [];
       recipeIngredientMap[ri.recipe_id].push({ ingredient_id: ri.ingredient_id, quantity: ri.quantity });
@@ -327,7 +327,7 @@ export const updateMachineInventory = async (req: Request, res: Response): Promi
     // Compute availability
     const availableRecipes = [];
     const unavailableRecipes = [];
-    const missingIngredientsByRecipe = {};
+    const missingIngredientsByRecipe: Record<string, string[]> = {};
     for (const recipe of recipes) {
       const ingredients = recipeIngredientMap[recipe.recipe_id] || [];
       const missing = [];

@@ -17,286 +17,19 @@ import {
 import type { DateRange as DayPickerDateRange } from "react-day-picker";
 
 // Import custom chart components
-import CategorySalesChart from "@/components/analytics/CategorySalesChart";
-import MachinePerformanceCard from "@/components/analytics/MachinePerformanceCard";
-import ProductSalesChart from "@/components/analytics/ProductSalesChart";
-import RevenueMetricsCard from "@/components/analytics/RevenueMetricsCard";
-import SalesChart from "@/components/analytics/SalesChart";
-import SalesOverTimeChart from "@/components/analytics/SalesOverTimeChart";
+import CategorySalesChart from "@/app/dashboard/analytics/components/CategorySalesChart";
+import MachinePerformanceCard from "@/app/dashboard/analytics/components/MachinePerformanceCard";
+import ProductSalesChart from "@/app/dashboard/analytics/components/ProductSalesChart";
+import RevenueMetricsCard from "@/app/dashboard/analytics/components/RevenueMetricsCard";
+import SalesChart from "@/app/dashboard/analytics/components/SalesChart";
+import SalesOverTimeChart from "@/app/dashboard/analytics/components/SalesOverTimeChart";
 
-// Local UI component implementations since the imports are failing
-// These would normally be imported from your component library
-const Card = ({
-  className = "",
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={`rounded-lg border bg-white text-card-foreground shadow-sm ${className}`}
-    {...props}
-  >
-    {children}
-  </div>
-);
-
-const CardHeader = ({
-  className = "",
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={`flex flex-col space-y-1.5 p-6 ${className}`} {...props}>
-    {children}
-  </div>
-);
-
-const CardTitle = ({
-  className = "",
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLHeadingElement>) => (
-  <h3
-    className={`text-xl font-semibold leading-none tracking-tight ${className}`}
-    {...props}
-  >
-    {children}
-  </h3>
-);
-
-const CardDescription = ({
-  className = "",
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLParagraphElement>) => (
-  <p className={`text-sm text-muted-foreground ${className}`} {...props}>
-    {children}
-  </p>
-);
-
-const CardContent = ({
-  className = "",
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={`p-6 pt-0 ${className}`} {...props}>
-    {children}
-  </div>
-);
-
-const Tabs = ({
-  value,
-  onValueChange: _onValueChange,
-  className = "",
-  children,
-}: {
-  value: string;
-  onValueChange: (value: string) => void;
-  className?: string;
-  children: React.ReactNode;
-}) => (
-  <div className={`${className}`} data-state={value}>
-    {children}
-  </div>
-);
-
-const TabsList = ({
-  className = "",
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={`inline-flex h-12 items-center justify-center rounded-lg bg-gray-100 p-1 text-slate-700 ${className}`}
-    {...props}
-  >
-    {children}
-  </div>
-);
-
-const TabsTrigger = ({
-  value,
-  currentValue = "",
-  onClick = () => {},
-  className = "",
-  children,
-}: {
-  value: string;
-  currentValue?: string;
-  onClick?: () => void;
-  className?: string;
-  children: React.ReactNode;
-}) => (
-  <button
-    className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 ${
-      currentValue === value
-        ? "bg-white text-slate-900 shadow-sm"
-        : "hover:bg-gray-200"
-    } ${className}`}
-    onClick={onClick}
-  >
-    {children}
-  </button>
-);
-
-const TabsContent = ({
-  value,
-  currentValue = "",
-  className = "",
-  children,
-}: {
-  value: string;
-  currentValue?: string;
-  className?: string;
-  children: React.ReactNode;
-}) => (
-  <div
-    className={`mt-4 focus-visible:outline-none ${className}`}
-    style={{ display: currentValue === value ? "block" : "none" }}
-  >
-    {children}
-  </div>
-);
-
-const Select = ({
-  value: _value,
-  onValueChange,
-  children,
-}: {
-  value: string;
-  onValueChange: (value: string) => void;
-  children: React.ReactNode;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="relative">
-      <div onClick={() => setIsOpen(!isOpen)}>{children}</div>
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1">
-          {React.Children.map(children, (child) => {
-            if (React.isValidElement(child) && child.type === SelectContent) {
-              return React.cloneElement(
-                child as React.ReactElement<SelectContentProps>,
-                {
-                  closeDropdown: () => setIsOpen(false),
-                  onValueChange,
-                }
-              );
-            }
-            return child;
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const SelectTrigger = ({
-  className = "",
-  children,
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={`flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground cursor-pointer ${className}`}
-  >
-    {children}
-    <span className="ml-1">▼</span>
-  </div>
-);
-
-const SelectValue = ({
-  placeholder,
-  value,
-}: {
-  placeholder: string;
-  value?: string;
-}) => <span className="text-sm">{value || placeholder}</span>;
-
-interface SelectContentProps {
-  children: React.ReactNode;
-  closeDropdown?: () => void;
-  onValueChange?: (value: string) => void;
-}
-
-const SelectContent = ({
-  children,
-  closeDropdown,
-  onValueChange,
-}: SelectContentProps) => (
-  <div className="min-w-[8rem] overflow-hidden rounded-md border bg-white text-gray-800 shadow-md">
-    {React.Children.map(children, (child) => {
-      if (React.isValidElement(child) && child.type === SelectItem) {
-        return React.cloneElement(
-          child as React.ReactElement<SelectItemProps>,
-          {
-            onClick: () => {
-              const childProps = (child as React.ReactElement<SelectItemProps>)
-                .props;
-              if (onValueChange && childProps?.value) {
-                onValueChange(childProps.value);
-              }
-              if (closeDropdown) {
-                closeDropdown();
-              }
-            },
-          }
-        );
-      }
-      return child;
-    })}
-  </div>
-);
-
-interface SelectItemProps extends React.HTMLAttributes<HTMLDivElement> {
-  value: string;
-  onClick?: () => void;
-}
-
-const SelectItem = ({
-  value: _value,
-  onClick,
-  className = "",
-  children,
-}: SelectItemProps) => (
-  <div
-    className={`relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-3 text-sm outline-none hover:bg-gray-100 ${className}`}
-    onClick={onClick}
-  >
-    {children}
-  </div>
-);
-
-const Alert = ({
-  variant = "default",
-  className = "",
-  children,
-}: {
-  variant?: "default" | "destructive";
-} & React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={`relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground ${
-      variant === "destructive"
-        ? "border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive"
-        : ""
-    } ${className}`}
-  >
-    {children}
-  </div>
-);
-
-const AlertDescription = ({
-  className = "",
-  children,
-}: React.HTMLAttributes<HTMLParagraphElement>) => (
-  <p className={`text-sm [&_p]:leading-relaxed ${className}`}>{children}</p>
-);
-
-const Skeleton = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={`animate-pulse bg-gray-200 rounded ${className}`}
-    {...props}
-  />
-);
+// Import UI components properly instead of local implementations
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // DatePicker improved implementation
 interface DatePickerProps {
@@ -334,7 +67,14 @@ const DatePickerWithRange = ({
   );
 };
 
-// Helper functions to format data for chart components
+// Add this interface definition
+interface CategorySalesData {
+  name: string;
+  units: number;
+  amount: number;
+}
+
+// Update the return type
 const formatCategorySalesData = (data: CategorySales[] | any) => {
   // Ensure data is an array
   if (!data || !Array.isArray(data)) return [];
@@ -343,9 +83,9 @@ const formatCategorySalesData = (data: CategorySales[] | any) => {
     if (!category) return { name: "Unknown", units: 0, amount: 0 };
 
     return {
-      name: category.name || "Other",
-      units: category.unitsSold || 0,
-      amount: category.revenue || 0,
+      name: category.name || category.categoryName || "Other",
+      units: category.units || category.totalSold || 0,
+      amount: category.amount || category.totalRevenue || 0,
     };
   });
 };
@@ -360,9 +100,9 @@ const formatProductSalesData = (data: Product[] | any) => {
 
     return {
       name: product.name || "Unknown",
-      units: product.unitsSold || 0,
-      amount: product.revenue || 0,
-      category: product.category || "Other",
+      units: product.totalSold || product.unitsSold || 0,
+      amount: product.totalRevenue || product.revenue || 0,
+      category: product.categoryName || product.category || "Other",
     };
   });
 };
@@ -488,8 +228,14 @@ const PopularProductsTable = ({ products }: { products: Product[] }) => (
         {products.map((product, idx) => (
           <tr key={idx} className="border-t">
             <td className="py-3 px-2">{product.name || "Unknown Product"}</td>
-            <td className="py-3 px-2">{product.unitsSold || 0}</td>
-            <td className="py-3 px-2">₹{(product.revenue || 0).toFixed(2)}</td>
+            <td className="py-3 px-2">{product.totalSold || product.unitsSold || 0}</td>
+            <td className="py-3 px-2">
+              {new Intl.NumberFormat('en-IN', { 
+                style: 'currency', 
+                currency: 'INR',
+                maximumFractionDigits: 0
+              }).format(product.totalRevenue || product.revenue || 0)}
+            </td>
           </tr>
         ))}
       </tbody>
@@ -497,7 +243,7 @@ const PopularProductsTable = ({ products }: { products: Product[] }) => (
   </div>
 );
 
-// Real API service with fetch implementation and fallback mock data
+// Real API service with fetch implementation and no fallback mock data
 const apiService = {
   async get<T>(
     url: string,
@@ -529,143 +275,19 @@ const apiService = {
 
       const result = await response.json();
       return { success: true, data: result as T };
-    } catch (_error) {
-      // Return fallback mock data when API fails
-      return { success: false, data: generateMockData<T>(url) };
+    } catch (error) {
+      console.error("API request failed:", error);
+      return { success: false, data: {} as T };
     }
   },
 };
 
-// Function to generate fallback mock data when API fails
-function generateMockData<T>(url: string): T {
-  if (url.includes("/machines")) {
-    const mockMachines = [
-      { machine_id: "m1", name: "Coffee Machine 1" },
-      { machine_id: "m2", name: "Coffee Machine 2" },
-      { machine_id: "m3", name: "Coffee Machine 3" },
-    ];
-    return mockMachines as unknown as T;
-  }
-
-  if (url.includes("/sales/machine/") || url.includes("/sales/machines")) {
-    const mockSales = {
-      hourly: Array.from({ length: 12 }, (_, i) => ({
-        time: `${i + 8}:00`,
-        units: Math.floor(Math.random() * 20) + 5,
-        revenue: Math.floor(Math.random() * 2000) + 500,
-      })),
-      daily: Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        return {
-          date: format(date, "yyyy-MM-dd"),
-          units: Math.floor(Math.random() * 100) + 30,
-          revenue: Math.floor(Math.random() * 10000) + 2000,
-        };
-      }),
-    };
-    return mockSales as unknown as T;
-  }
-
-  if (url.includes("/sales/product")) {
-    const mockProducts = Array.from({ length: 8 }, (_, i) => ({
-      id: `p${i + 1}`,
-      name: [
-        "Espresso",
-        "Latte",
-        "Cappuccino",
-        "Americano",
-        "Mocha",
-        "Flat White",
-        "Cold Brew",
-        "Macchiato",
-      ][i],
-      unitsSold: Math.floor(Math.random() * 200) + 50,
-      revenue: Math.floor(Math.random() * 20000) + 5000,
-      category: [
-        "Coffee",
-        "Coffee",
-        "Coffee",
-        "Coffee",
-        "Coffee",
-        "Coffee",
-        "Cold Drinks",
-        "Coffee",
-      ][i],
-    }));
-    return mockProducts as unknown as T;
-  }
-
-  if (url.includes("/sales/category")) {
-    const mockCategories = [
-      { name: "Coffee", unitsSold: 1250, revenue: 62500 },
-      { name: "Cold Drinks", unitsSold: 480, revenue: 28800 },
-      { name: "Tea", unitsSold: 320, revenue: 16000 },
-      { name: "Snacks", unitsSold: 180, revenue: 9000 },
-    ];
-    return mockCategories as unknown as T;
-  }
-
-  if (url.includes("/revenue")) {
-    const mockRevenue = {
-      timeSeriesData: Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        return {
-          date: format(date, "yyyy-MM-dd"),
-          revenue: Math.floor(Math.random() * 25000) + 8000,
-        };
-      }),
-      total: {
-        revenue: 156000,
-        orders: 450,
-      },
-      average: 350,
-    };
-    return mockRevenue as unknown as T;
-  }
-
-  if (url.includes("/products/popular")) {
-    const mockPopular = Array.from({ length: 5 }, (_, i) => ({
-      id: `p${i + 1}`,
-      name: ["Espresso", "Latte", "Cappuccino", "Americano", "Mocha"][i],
-      unitsSold: Math.floor(Math.random() * 200) + 50,
-      revenue: Math.floor(Math.random() * 20000) + 5000,
-      category: "Coffee",
-    }));
-    return mockPopular as unknown as T;
-  }
-
-  if (url.includes("/sales/time")) {
-    const mockTimeData = Array.from({ length: 24 }, (_, i) => ({
-      time: `${i}:00`,
-      units: Math.floor(Math.random() * 30) + 5,
-      revenue: Math.floor(Math.random() * 3000) + 500,
-    }));
-    return mockTimeData as unknown as T;
-  }
-
-  if (url.includes("/performance/machine/")) {
-    const mockPerformance = {
-      ordersCompleted: 320,
-      ordersFailed: 12,
-      ordersCancelled: 10,
-      totalOrders: 342,
-      successRate: 93.5,
-      totalRevenue: 12580,
-      averageRating: 4.7,
-      ratingCount: 105,
-    };
-    return mockPerformance as unknown as T;
-  }
-
-  return {} as T;
-}
-
-// Type definitions with improved typing
+// Improve type definitions with more specific typing
 interface Machine {
   machine_id: string;
   name: string;
+  location?: string;
+  status?: string;
 }
 
 interface Product {
@@ -674,12 +296,18 @@ interface Product {
   unitsSold?: number;
   revenue?: number;
   category?: string;
+  // Add backend fields for mapping
+  totalSold?: number;
+  totalRevenue?: number;
+  categoryName?: string;
+  _id?: string;
 }
 
 interface CategorySales {
   name: string;
-  unitsSold: number;
-  revenue: number;
+  units: number;
+  amount: number;
+  category?: string;
 }
 
 interface SalesDataPoint {
@@ -687,6 +315,7 @@ interface SalesDataPoint {
   date?: string;
   units: number;
   revenue: number;
+  orders?: number;
 }
 
 interface SalesData {
@@ -702,7 +331,8 @@ interface RevenueTimePoint {
   date: string;
   revenue: number;
   orders?: number;
-  units?: number; // Added units property to make it compatible with SalesDataPoint
+  units?: number; 
+  timeInterval?: string; // Added for compatibility with formatTimeSeriesData
 }
 
 interface RevenueData {
@@ -728,15 +358,30 @@ interface QueryParams {
   machineId?: string;
   interval?: string;
   limit?: number;
-  [key: string]: unknown; // Add index signature for string keys
+  [key: string]: unknown; 
 }
 
-// Helper functions with improved error handling
+// Improved error handling for API calls
+const safelyFetchData = async <T,>(fetchFn: () => Promise<T>, fallback: T): Promise<T> => {
+  try {
+    return await fetchFn();
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    return fallback;
+  }
+};
+
+// Improved helpers with better error handling
 const getRevenue = (
   total: number | { revenue: number; orders: number } | undefined
-): number => {
-  if (!total) return 0;
-  return typeof total === "number" ? total : total.revenue;
+): string => {
+  if (!total) return "₹0";
+  const value = typeof total === "number" ? total : total.revenue;
+  return new Intl.NumberFormat('en-IN', { 
+    style: 'currency', 
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(value);
 };
 
 const getOrders = (
@@ -746,17 +391,27 @@ const getOrders = (
   return typeof total === "object" ? total.orders : 0;
 };
 
-const getAverageOrderValue = (data: RevenueData | null): number => {
-  if (!data) return 0;
-  if (data.average !== undefined) return data.average;
+const getAverageOrderValue = (data: RevenueData | null): string => {
+  if (!data) return "₹0";
+  if (data.average !== undefined) {
+    return new Intl.NumberFormat('en-IN', { 
+      style: 'currency', 
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(data.average);
+  }
 
   const total = data.total;
-  if (!total) return 0;
+  if (!total) return "₹0";
 
   if (typeof total === "object" && total.orders > 0) {
-    return total.revenue / total.orders;
+    return new Intl.NumberFormat('en-IN', { 
+      style: 'currency', 
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(total.revenue / total.orders);
   }
-  return 0;
+  return "₹0";
 };
 
 // Analytics components
@@ -872,7 +527,7 @@ export default function AnalyticsPage() {
       try {
         const dateParams = getDateParams();
 
-        // Fetch all data in parallel
+        // Fetch all data in parallel with safe error handling
         const [
           salesResponse,
           productResponse,
@@ -882,13 +537,13 @@ export default function AnalyticsPage() {
           timeSeriesResponse,
           performanceResponse,
         ] = await Promise.all([
-          fetchSalesData(dateParams),
-          fetchProductSalesData(dateParams),
-          fetchCategorySalesData(dateParams),
-          fetchRevenueData(dateParams),
-          fetchPopularProductsData(dateParams),
-          fetchSalesOverTimeData(dateParams),
-          fetchMachinePerformanceData(dateParams),
+          safelyFetchData(() => fetchSalesData(dateParams), null),
+          safelyFetchData(() => fetchProductSalesData(dateParams), []),
+          safelyFetchData(() => fetchCategorySalesData(dateParams), []),
+          safelyFetchData(() => fetchRevenueData(dateParams), null),
+          safelyFetchData(() => fetchPopularProductsData(dateParams), []),
+          safelyFetchData(() => fetchSalesOverTimeData(dateParams), []),
+          safelyFetchData(() => fetchMachinePerformanceData(dateParams), null),
         ]);
 
         // Set state with the fetched data
@@ -900,21 +555,18 @@ export default function AnalyticsPage() {
         setSalesOverTime(timeSeriesResponse);
         setMachinePerformance(performanceResponse);
 
-        // If we're using fallback data, show a gentle message to the user
-        if (
-          !salesResponse ||
-          !productResponse ||
-          !categoryResponse ||
-          !revenueResponse
-        ) {
-          setError(
-            "Some data couldn't be loaded from the server. Displaying demo data."
-          );
+        // Check for zero-value data
+        const foundZeroValues = 
+          (!salesResponse || (salesResponse.total?.units === 0)) &&
+          productResponse.every(p => (!p.totalSold || p.totalSold === 0) && (!p.unitsSold || p.unitsSold === 0)) &&
+          categoryResponse.every(c => !c.units || c.units === 0);
+          
+        if (foundZeroValues) {
+          setError("Your analytics dashboard is ready but showing zero values. This could be because there are no completed orders yet or the order data is missing values.");
         }
-      } catch (_error) {
-        setError(
-          "Unable to load analytics data. Using demo data for visualization purposes."
-        );
+      } catch (error) {
+        console.error("Error in fetchAnalyticsData:", error);
+        setError("Failed to load analytics data. Please check your network connection and try again.");
       } finally {
         setIsLoading(false);
       }
@@ -985,21 +637,55 @@ export default function AnalyticsPage() {
   const fetchProductSalesData = async (
     params: QueryParams
   ): Promise<Product[]> => {
-    const response = await apiService.get<{ data: Product[] }>(
-      "/analytics/sales/product",
-      { params }
-    );
-    return response.success ? response.data.data : [];
+    try {
+      const response = await apiService.get<{ data: any[] }>(
+        "/analytics/sales/product",
+        { params }
+      );
+      
+      if (response.success && Array.isArray(response.data.data)) {
+        // Properly map fields from backend to frontend
+        return response.data.data.map(item => ({
+          id: item._id || "",
+          name: item.name || "Unknown Product",
+          unitsSold: item.unitsSold || 0,
+          revenue: item.revenue || 0, 
+          category: item.category || "Other",
+          // Add the backend fields too
+          totalSold: item.totalSold || 0,
+          totalRevenue: item.totalRevenue || 0,
+          categoryName: item.categoryName || "Other"
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching product sales data:", error);
+      return [];
+    }
   };
 
   const fetchCategorySalesData = async (
     params: QueryParams
   ): Promise<CategorySales[]> => {
-    const response = await apiService.get<{ data: CategorySales[] }>(
-      "/analytics/sales/category",
-      { params }
-    );
-    return response.success ? response.data.data : [];
+    try {
+      const response = await apiService.get<{ data: any[] }>(
+        "/analytics/sales/category",
+        { params }
+      );
+      
+      if (response.success && Array.isArray(response.data.data)) {
+        // Properly map fields from backend to frontend
+        return response.data.data.map(item => ({
+          name: item.categoryName || item.name || "Other",
+          units: item.totalSold || item.units || 0,
+          amount: item.totalRevenue || item.amount || 0
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching category sales data:", error);
+      return [];
+    }
   };
 
   const fetchRevenueData = async (
@@ -1027,11 +713,27 @@ export default function AnalyticsPage() {
     params: QueryParams
   ): Promise<Product[]> => {
     params.limit = 10;
-    const response = await apiService.get<{ data: Product[] }>(
-      "/analytics/products/popular",
-      { params }
-    );
-    return response.success ? response.data.data : [];
+    try {
+      const response = await apiService.get<{ data: any[] }>(
+        "/analytics/products/popular",
+        { params }
+      );
+      
+      if (response.success && Array.isArray(response.data.data)) {
+        // Properly map fields from backend to frontend
+        return response.data.data.map(item => ({
+          id: item._id || "",
+          name: item.name || "Unknown Product",
+          totalSold: item.totalSold || 0,
+          totalRevenue: item.totalRevenue || 0,
+          categoryName: item.categoryName || "Other"
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching popular products:", error);
+      return [];
+    }
   };
 
   const fetchSalesOverTimeData = async (
@@ -1097,9 +799,7 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               title="Total Revenue"
-              value={`₹${getRevenue(revenueData?.total).toLocaleString(
-                "en-IN"
-              )}`}
+              value={getRevenue(revenueData?.total)}
               trend="up"
               trendValue={revenueData ? "+12% from last period" : "0%"}
               icon={<CreditCard className="h-4 w-4 text-blue-600" />}
@@ -1117,9 +817,7 @@ export default function AnalyticsPage() {
             />
             <StatCard
               title="Average Order Value"
-              value={`₹${getAverageOrderValue(revenueData).toLocaleString(
-                "en-IN"
-              )}`}
+              value={getAverageOrderValue(revenueData)}
               trend="neutral"
               trendValue="+2% from last period"
               icon={<LineChart className="h-4 w-4 text-amber-600" />}
@@ -1137,43 +835,47 @@ export default function AnalyticsPage() {
         </CardContent>
       </Card>
 
-      {/* Filters Section */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-white p-4 rounded-lg shadow-sm">
-        <div className="font-medium">Filter Analytics Data</div>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Select value={selectedMachine} onValueChange={setSelectedMachine}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select Machine" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Machines</SelectItem>
-              {Array.isArray(machines) &&
-                machines.map((machine) => (
-                  <SelectItem
-                    key={machine.machine_id}
-                    value={machine.machine_id}
-                  >
-                    {machine.name || `Machine ${machine.machine_id}`}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+      {/* Filters Section - Update with proper components */}
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-white p-6 rounded-lg shadow-sm">
+        <div className="font-medium text-lg">Filter Analytics Data</div>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div>
+            <Select value={selectedMachine} onValueChange={setSelectedMachine}>
+              <SelectTrigger className="w-full sm:w-[200px] bg-white">
+                <SelectValue placeholder="Select Machine" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Machines</SelectItem>
+                {Array.isArray(machines) &&
+                  machines.map((machine) => (
+                    <SelectItem
+                      key={machine.machine_id}
+                      value={machine.machine_id}
+                    >
+                      {machine.name || `Machine ${machine.machine_id}`}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          <Select value={timeFrame} onValueChange={setTimeFrame}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Time Period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="7days">Last 7 Days</SelectItem>
-              <SelectItem value="30days">Last 30 Days</SelectItem>
-              <SelectItem value="custom">Custom Range</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <Select value={timeFrame} onValueChange={setTimeFrame}>
+              <SelectTrigger className="w-full sm:w-[200px] bg-white">
+                <SelectValue placeholder="Time Period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="7days">Last 7 Days</SelectItem>
+                <SelectItem value="30days">Last 30 Days</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {timeFrame === "custom" && (
             <DatePickerWithRange
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto border rounded-md p-2 bg-white"
               date={dateRange}
               onDateChange={(date) => {
                 if (date.from && date.to) {
@@ -1188,22 +890,23 @@ export default function AnalyticsPage() {
       {error && (
         <Alert
           variant="destructive"
-          className="mb-6 bg-red-50 border-red-200 text-red-800"
+          className="mb-6 bg-blue-50 border border-blue-200 text-blue-800"
         >
-          <AlertDescription>{error}</AlertDescription>
+          <div className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <AlertDescription className="text-sm font-medium">{error}</AlertDescription>
+          </div>
         </Alert>
       )}
 
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-6"
-      >
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full md:w-auto">
-          <TabsTrigger
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
+          <TabsTrigger 
             value="sales"
-            currentValue={activeTab}
-            onClick={() => setActiveTab("sales")}
             className="flex items-center gap-2"
           >
             <LineChart className="h-4 w-4" />
@@ -1211,8 +914,6 @@ export default function AnalyticsPage() {
           </TabsTrigger>
           <TabsTrigger
             value="products"
-            currentValue={activeTab}
-            onClick={() => setActiveTab("products")}
             className="flex items-center gap-2"
           >
             <Package className="h-4 w-4" />
@@ -1220,8 +921,6 @@ export default function AnalyticsPage() {
           </TabsTrigger>
           <TabsTrigger
             value="performance"
-            currentValue={activeTab}
-            onClick={() => setActiveTab("performance")}
             className="flex items-center gap-2"
           >
             <TrendingUp className="h-4 w-4" />
@@ -1229,8 +928,6 @@ export default function AnalyticsPage() {
           </TabsTrigger>
           <TabsTrigger
             value="trends"
-            currentValue={activeTab}
-            onClick={() => setActiveTab("trends")}
             className="flex items-center gap-2"
           >
             <Clock className="h-4 w-4" />
@@ -1241,7 +938,6 @@ export default function AnalyticsPage() {
         {/* Sales Analytics Tab */}
         <TabsContent
           value="sales"
-          currentValue={activeTab}
           className="space-y-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1294,7 +990,6 @@ export default function AnalyticsPage() {
         {/* Product Analytics Tab */}
         <TabsContent
           value="products"
-          currentValue={activeTab}
           className="space-y-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1377,7 +1072,6 @@ export default function AnalyticsPage() {
         {/* Performance Tab */}
         <TabsContent
           value="performance"
-          currentValue={activeTab}
           className="space-y-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1418,7 +1112,6 @@ export default function AnalyticsPage() {
         {/* Time Trends Tab */}
         <TabsContent
           value="trends"
-          currentValue={activeTab}
           className="space-y-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

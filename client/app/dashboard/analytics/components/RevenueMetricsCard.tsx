@@ -14,6 +14,14 @@ interface RevenueMetricsCardProps {
   isLoading: boolean;
 }
 
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-IN', { 
+    style: 'currency', 
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(value);
+};
+
 const RevenueMetricsCard: React.FC<RevenueMetricsCardProps> = ({
   data,
   isLoading,
@@ -32,7 +40,7 @@ const RevenueMetricsCard: React.FC<RevenueMetricsCardProps> = ({
     );
   }
 
-  if (!data) {
+  if (!data || !data.total) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -43,6 +51,10 @@ const RevenueMetricsCard: React.FC<RevenueMetricsCardProps> = ({
       </Card>
     );
   }
+
+  const totalRevenue = data.total.revenue || 0;
+  const totalOrders = data.total.orders || 0;
+  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
   return (
     <Card>
@@ -62,7 +74,7 @@ const RevenueMetricsCard: React.FC<RevenueMetricsCardProps> = ({
             <div>
               <p className="text-sm text-muted-foreground">Total Revenue</p>
               <h2 className="text-3xl font-bold">
-                ${data.total.revenue ? data.total.revenue.toFixed(2) : "0.00"}
+                {formatCurrency(totalRevenue)}
               </h2>
             </div>
           </div>
@@ -73,15 +85,15 @@ const RevenueMetricsCard: React.FC<RevenueMetricsCardProps> = ({
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Orders</p>
-              <h2 className="text-3xl font-bold">{data.total.orders || 0}</h2>
+              <h2 className="text-3xl font-bold">{totalOrders}</h2>
             </div>
           </div>
 
-          {data.total.orders > 0 && (
+          {totalOrders > 0 && (
             <div className="flex items-center justify-between p-2 text-sm">
               <span className="text-muted-foreground">Average Order Value</span>
               <span className="font-medium">
-                ${(data.total.revenue / data.total.orders).toFixed(2)}
+                {formatCurrency(averageOrderValue)}
               </span>
             </div>
           )}

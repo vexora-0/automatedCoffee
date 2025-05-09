@@ -54,25 +54,48 @@ const formatTimeInterval = (timeInterval: string, timeFrame: string) => {
   return timeInterval;
 };
 
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-IN', { 
+    style: 'currency', 
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(value);
+};
+
 const CustomTooltip = ({ active, payload, label, dataKey }: any) => {
   if (active && payload && payload.length) {
     // Determine the right label based on the dataKey
     let valueLabel = "Value";
     let valuePrefix = "";
+    const value = payload[0].value || 0;
 
     if (dataKey === "units") {
       valueLabel = "Units Sold";
+      return (
+        <div className="bg-background border border-border p-3 rounded-md shadow-md">
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-sm text-primary">
+            {valueLabel}: {value}
+          </p>
+        </div>
+      );
     } else if (dataKey === "amount" || dataKey === "revenue") {
       valueLabel = dataKey === "amount" ? "Sales Amount" : "Revenue";
-      valuePrefix = "$";
+      return (
+        <div className="bg-background border border-border p-3 rounded-md shadow-md">
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-sm text-primary">
+            {valueLabel}: {formatCurrency(value)}
+          </p>
+        </div>
+      );
     }
 
     return (
       <div className="bg-background border border-border p-3 rounded-md shadow-md">
         <p className="text-sm font-medium">{label}</p>
         <p className="text-sm text-primary">
-          {valueLabel}: {valuePrefix}
-          {payload[0].value.toFixed(2)}
+          {valueLabel}: {value}
         </p>
       </div>
     );
@@ -102,7 +125,26 @@ const SalesOverTimeChart: React.FC<SalesOverTimeChartProps> = ({
       return (item as any)[dataKey] || 0;
     })
   );
-  const yAxisMax = Math.ceil(maxValue * 1.2); // Add 20% buffer
+  
+  // Always set a minimum value to make chart visible
+  const yAxisMax = Math.max(5, Math.ceil(maxValue * 1.2)); // At least 5 or 120% of max
+
+  // Only consider empty if ALL values are zero
+  const hasAnyData = formattedData.some(item => {
+    const value = (item as any)[dataKey];
+    return value !== undefined && value > 0;
+  });
+
+  if (formattedData.length === 0) {
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center">
+        <p className="text-gray-500">No data for this time period</p>
+      </div>
+    );
+  }
+
+  // Even if all values are zero, still show the chart
+  // This prevents "no data" messages when data technically exists
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -130,9 +172,12 @@ const SalesOverTimeChart: React.FC<SalesOverTimeChartProps> = ({
           type="monotone"
           dataKey={dataKey}
           stroke={color}
-          strokeWidth={2}
-          dot={{ r: 4, strokeWidth: 2 }}
-          activeDot={{ r: 6, strokeWidth: 2 }}
+          strokeWidth={3}
+          dot={{ r: 6, strokeWidth: 2, fill: "white", strokeOpacity: 1 }}
+          activeDot={{ r: 8, strokeWidth: 2 }}
+          isAnimationActive={true}
+          fill={color}
+          fillOpacity={0.2}
         />
         <ReferenceLine y={0} stroke="#e5e7eb" yAxisId="main" />
       </LineChart>

@@ -144,6 +144,7 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
       user_id,
       machine_id,
       recipe_id,
+      bill: recipe.price,
       ordered_at: new Date(),
       status: 'processing'
     });
@@ -180,7 +181,7 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
     // Update machine revenue
     await Machine.findOneAndUpdate(
       { machine_id },
-      { $inc: { revenue_total: recipe.price } }
+      { $inc: { revenue_total: order.bill } }
     );
     
     // --- Emit recipe availability update ---
@@ -191,12 +192,12 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
     // Fetch updated machine inventory
     const updatedInventory = await MachineIngredientInventory.find({ machine_id }).lean();
     // Build inventory map for quick lookup
-    const inventoryMap = {};
+    const inventoryMap: Record<string, number> = {};
     updatedInventory.forEach(item => {
       inventoryMap[item.ingredient_id] = item.quantity;
     });
     // Build recipeId -> ingredients[] map
-    const recipeIngredientMap = {};
+    const recipeIngredientMap: Record<string, Array<{ingredient_id: string, quantity: number}>> = {};
     allRecipeIngredients.forEach(ri => {
       if (!recipeIngredientMap[ri.recipe_id]) recipeIngredientMap[ri.recipe_id] = [];
       recipeIngredientMap[ri.recipe_id].push({ ingredient_id: ri.ingredient_id, quantity: ri.quantity });
@@ -204,7 +205,7 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
     // Compute availability
     const availableRecipes = [];
     const unavailableRecipes = [];
-    const missingIngredientsByRecipe = {};
+    const missingIngredientsByRecipe: Record<string, string[]> = {};
     for (const r of recipes) {
       const ingredients = recipeIngredientMap[r.recipe_id] || [];
       const missing = [];
@@ -238,7 +239,10 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
     // Complete the order (in a real system, this would happen after preparation)
     await Order.findOneAndUpdate(
       { order_id: order.order_id },
-      { status: 'completed' }
+      { 
+        status: 'completed',
+        bill: recipe.price 
+      }
     );
 
     res.status(201).json({

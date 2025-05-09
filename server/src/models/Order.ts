@@ -24,6 +24,11 @@ const orderSchema: Schema = new Schema({
     ref: 'Recipe',
     required: true
   },
+  bill: {
+    type: Number,
+    required: true,
+    default: 0
+  },
   ordered_at: {
     type: Date,
     default: Date.now
