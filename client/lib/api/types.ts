@@ -109,6 +109,7 @@ export interface Order {
   user_id: string;
   machine_id: string;
   recipe_id: string;
+  bill: number;
   ordered_at: Date;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   rating: number | null;
