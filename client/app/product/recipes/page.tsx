@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRecipeCategories } from "@/lib/api/hooks";
-import { ChevronLeft, Coffee, LogOut } from "lucide-react";
 import useRecipeStore from "@/app/product/stores/useRecipeStore";
 import useRecipeAvailabilityStore from "@/app/product/stores/useRecipeAvailabilityStore";
 import { useRecipes } from "@/app/product/stores/useRecipeStore";
@@ -34,7 +33,6 @@ declare global {
 export default function RecipesPage() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
-  const [userName, setUserName] = useState<string | null>(null);
   const [machineId, setMachineId] = useState<string | null>(null);
   const [scrollY, setScrollY] = useState(0);
 
@@ -177,7 +175,6 @@ export default function RecipesPage() {
   // Initialize WebSocket connection
   useEffect(() => {
     // Get user information from localStorage
-    const storedUserName = sessionStorage.getItem("userName");
     const storedUserId = sessionStorage.getItem("userId");
     const storedMachineId = localStorage.getItem("machineId");
 
@@ -194,7 +191,6 @@ export default function RecipesPage() {
       // For now, we'll continue without redirecting
     }
 
-    setUserName(storedUserName);
     setMachineId(storedMachineId || "default-machine");
 
     // Initialize WebSocket connection if not already connected
@@ -247,18 +243,19 @@ export default function RecipesPage() {
     }
   }, [availableRecipes, unavailableRecipes]);
 
-  const handleBackToLogin = () => {
-    router.push("/product/auth");
-  };
+  // Unused functions kept for future reference
+  // const handleBackToLogin = () => {
+  //   router.push("/product/auth");
+  // };
 
-  const handleLogout = () => {
-    // Clear local storage
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userName");
+  // const handleLogout = () => {
+  //   // Clear user data
+  //   sessionStorage.removeItem("userId");
+  //   sessionStorage.removeItem("userName");
 
-    // Redirect to login
-    router.push("/product/login");
-  };
+  //   // Redirect to auth page
+  //   router.push("/product/auth");
+  // };
 
   if (!isMounted) {
     return (
@@ -266,9 +263,9 @@ export default function RecipesPage() {
         <div className="w-full max-w-md p-8">
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold text-[#5F3023]">
-            <span className="text-[#5F3023]">Filter it.</span>
-            <span className="text-[#8A5738]">Froth it.</span>
-            <span className="text-[#C28654]">Feel it.</span>
+              <span className="text-[#5F3023]">Filter it.</span>
+              <span className="text-[#8A5738]">Froth it.</span>
+              <span className="text-[#C28654]">Feel it.</span>
             </h2>
           </div>
         </div>
@@ -341,12 +338,12 @@ export default function RecipesPage() {
           >
             {/* Use Image component for logo - Update with actual image */}
             <div className="flex justify-center items-center">
-            <Image
-              src="/brownlogo.svg"
-              alt="Tagline"
-              className="w-1/2"
-              width={100}
-              height={100}
+              <Image
+                src="/brownlogo.svg"
+                alt="Tagline"
+                className="w-1/2"
+                width={100}
+                height={100}
               />
             </div>
           </motion.div>
@@ -363,12 +360,12 @@ export default function RecipesPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <div className="flex justify-center items-center">
-            <Image
-              src="/tagline.svg"
-              alt="Tagline"
-              className="w-1/2"
-              width={100}
-              height={100}
+              <Image
+                src="/tagline.svg"
+                alt="Tagline"
+                className="w-1/2"
+                width={100}
+                height={100}
               />
             </div>
             {isLoadingCategories ? (
@@ -392,7 +389,6 @@ export default function RecipesPage() {
               // Display all recipes organized by category
               <AllRecipesList
                 categories={categories}
-                recipes={recipes}
                 getRecipesByCategory={getRecipesByCategory}
                 isRecipeAvailable={isRecipeAvailable}
                 recipeIngredients={recipeIngredients}

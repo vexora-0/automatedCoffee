@@ -10,7 +10,7 @@ export default function ProductLayout({
   children: React.ReactNode;
 }) {
   const [machineId, setMachineId] = useState<string | null>(null);
-  const { isConnected, recipes, machineInventories } = useWebSocketStore();
+  const { machineInventories } = useWebSocketStore();
   const { setMachineInventory } = useMachineInventoryStore();
 
   useEffect(() => {

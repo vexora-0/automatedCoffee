@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -70,7 +70,7 @@ const PREPARATION_STEPS = [
   },
 ];
 
-export default function SuccessPage() {
+function SuccessPageContent() {
   const searchParams = useSearchParams();
   const recipeName = searchParams.get("recipe") || "Coffee";
   const price = searchParams.get("price") || "0";
@@ -628,5 +628,23 @@ export default function SuccessPage() {
             ))}
       </div>
     </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D]/50 flex flex-col items-center justify-center p-4">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="w-12 h-12 rounded-full bg-amber-500/20 mb-4"></div>
+            <div className="h-6 w-48 bg-amber-500/20 rounded mb-2"></div>
+            <div className="h-4 w-32 bg-amber-500/20 rounded"></div>
+          </div>
+        </div>
+      }
+    >
+      <SuccessPageContent />
+    </Suspense>
   );
 }

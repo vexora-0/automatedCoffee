@@ -12,7 +12,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
@@ -31,11 +31,11 @@ export default function DashboardLayout({
       }
 
       // Check localStorage for token and user data
-      const tokenFromStorage = localStorage.getItem('token');
-      const userFromStorage = localStorage.getItem('user');
-      
+      localStorage.getItem("token");
+      localStorage.getItem("user");
+
       const isAuthenticated = authService.isAuthenticated();
-      
+
       if (!isAuthenticated) {
         // Redirect to auth page if not authenticated
         router.push("/dashboard/auth");
@@ -43,11 +43,11 @@ export default function DashboardLayout({
         // Verify token is valid by getting the profile
         try {
           // Only attempt to verify the token if it exists
-          const token = localStorage.getItem('token');
-          
+          const token = localStorage.getItem("token");
+
           if (token) {
             const result = await authService.getProfile();
-            
+
             if (result.success) {
               setAuthChecked(true);
               setIsLoading(false);
@@ -59,7 +59,7 @@ export default function DashboardLayout({
             authService.logout();
             router.push("/dashboard/auth");
           }
-        } catch (error) {
+        } catch (_) {
           // Token is invalid, clear it and redirect to auth
           authService.logout();
           router.push("/dashboard/auth");
@@ -95,4 +95,4 @@ export default function DashboardLayout({
       <main className="flex-1">{children}</main>
     </div>
   );
-} 
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   RecipeCategory,
@@ -13,7 +13,6 @@ import RecipeDetailsDialog from "./RecipeDetailsDialog";
 
 interface AllRecipesListProps {
   categories: RecipeCategory[];
-  recipes: Recipe[];
   getRecipesByCategory: (categoryId: string) => Recipe[];
   isRecipeAvailable: (recipeId: string) => boolean;
   recipeIngredients: RecipeIngredient[];
@@ -22,7 +21,6 @@ interface AllRecipesListProps {
 
 export default function AllRecipesList({
   categories,
-  recipes,
   getRecipesByCategory,
   isRecipeAvailable,
   recipeIngredients,

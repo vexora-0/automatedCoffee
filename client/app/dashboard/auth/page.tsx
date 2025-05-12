@@ -4,7 +4,14 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, Coffee, Loader2, Lock, ChevronLeft, UserPlus } from "lucide-react";
+import {
+  AlertCircle,
+  Coffee,
+  Loader2,
+  Lock,
+  ChevronLeft,
+  UserPlus,
+} from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -16,11 +23,11 @@ export default function DashboardAuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isMounted, setIsMounted] = useState(false);
-  
+
   // Login form state
   const [loginForm, setLoginForm] = useState({
     email: "",
-    password: ""
+    password: "",
   });
 
   // Signup form state
@@ -29,18 +36,18 @@ export default function DashboardAuthPage() {
     email: "",
     password: "",
     confirmPassword: "",
-    age_group: "adult" // default value
+    age_group: "adult", // default value
   });
 
   useEffect(() => {
     setIsMounted(true);
-    
+
     // Check if we're already logged in and redirect to dashboard if that's the case
     if (authService.isAuthenticated()) {
       const currentPath = window.location.pathname;
       // Only redirect if we're on the auth page and a token exists
-      if (currentPath === '/dashboard/auth') {
-        router.push('/dashboard');
+      if (currentPath === "/dashboard/auth") {
+        router.push("/dashboard");
       }
     }
   }, [router]);
@@ -58,38 +65,49 @@ export default function DashboardAuthPage() {
       });
 
       if (!response.success) {
-        throw new Error(response.message || 'Login failed');
+        throw new Error(response.message || "Login failed");
       }
 
       // Type assertion to match actual API response structure
       const authResponse = response as unknown as {
         success: boolean;
         token: string;
-        user: any;
+        user: {
+          id: string;
+          name: string;
+          email: string;
+          role: string;
+        };
         message?: string;
       };
 
       // Store token and user data in localStorage
-      localStorage.setItem('token', authResponse.token);
-      localStorage.setItem('user', JSON.stringify(authResponse.user));
-      
+      localStorage.setItem("token", authResponse.token);
+      localStorage.setItem("user", JSON.stringify(authResponse.user));
+
       // Force a small delay to ensure localStorage is updated
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       // Use direct page navigation instead of Next.js router for a complete page reload
-      window.location.href = '/dashboard';
-      
-    } catch (err: any) {
-      console.error('Login error:', err);
-      
+      window.location.href = "/dashboard";
+    } catch (err: unknown) {
+      console.error("Login error:", err);
+      const error = err as {
+        response?: {
+          status?: number;
+          data?: { message?: string; error?: string };
+        };
+        message?: string;
+      };
+
       // Handle common error cases with user-friendly messages
-      if (err.response?.status === 401) {
+      if (error.response?.status === 401) {
         setError("Invalid email or password. Please check your credentials.");
-      } else if (err.message) {
+      } else if (error.message) {
         // Show a user-friendly message instead of the technical error
         setError("Login failed. Please check your email and password.");
       } else {
-        setError('Authentication failed. Please try again.');
+        setError("Authentication failed. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -98,7 +116,7 @@ export default function DashboardAuthPage() {
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (signupForm.password !== signupForm.confirmPassword) {
       setError("Passwords do not match");
@@ -110,7 +128,7 @@ export default function DashboardAuthPage() {
       setError("Password must be at least 6 characters long");
       return;
     }
-    
+
     setIsLoading(true);
     setError("");
 
@@ -121,46 +139,71 @@ export default function DashboardAuthPage() {
         email: signupForm.email,
         password: signupForm.password,
         age_group: signupForm.age_group,
-        role: 'admin' // Default to admin for dashboard
+        role: "admin", // Default to admin for dashboard
       });
 
       if (!response.success) {
-        throw new Error(response.message || 'Registration failed');
+        throw new Error(response.message || "Registration failed");
       }
 
       // Type assertion to match actual API response structure
       const authResponse = response as unknown as {
         success: boolean;
         token: string;
-        user: any;
+        user: {
+          id: string;
+          name: string;
+          email: string;
+          role: string;
+        };
         message?: string;
       };
 
       // Store token and user data in localStorage
-      localStorage.setItem('token', authResponse.token);
-      localStorage.setItem('user', JSON.stringify(authResponse.user));
-      
+      localStorage.setItem("token", authResponse.token);
+      localStorage.setItem("user", JSON.stringify(authResponse.user));
+
       // Force a small delay to ensure localStorage is updated
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       // Use direct page navigation instead of Next.js router for a complete page reload
-      window.location.href = '/dashboard';
-      
-    } catch (err: any) {
-      console.error('Signup error:', err);
-      
+      window.location.href = "/dashboard";
+    } catch (err: unknown) {
+      console.error("Signup error:", err);
+
+      const error = err as {
+        response?: {
+          status?: number;
+          data?: { message?: string; error?: string };
+        };
+        message?: string;
+      };
+
       // Handle common error cases with user-friendly messages
-      if (err.response?.status === 400 && err.response?.data?.message?.includes('exists')) {
-        setError("This email is already registered. Please use a different email or login instead.");
-      } else if (err.response?.data?.error?.includes('password') && err.response?.data?.error?.includes('shorter')) {
+      if (
+        error.response?.status === 400 &&
+        error.response?.data?.message?.includes("exists")
+      ) {
+        setError(
+          "This email is already registered. Please use a different email or login instead."
+        );
+      } else if (
+        error.response?.data?.error?.includes("password") &&
+        error.response?.data?.error?.includes("shorter")
+      ) {
         setError("Password must be at least 6 characters long.");
-      } else if (err.response?.data?.error?.includes('email') && err.response?.data?.error?.includes('valid')) {
+      } else if (
+        error.response?.data?.error?.includes("email") &&
+        error.response?.data?.error?.includes("valid")
+      ) {
         setError("Please enter a valid email address.");
-      } else if (err.message) {
+      } else if (error.message) {
         // Show a user-friendly message instead of the technical error
-        setError("Registration failed. Please check your information and try again.");
+        setError(
+          "Registration failed. Please check your information and try again."
+        );
       } else {
-        setError('Registration failed. Please try again.');
+        setError("Registration failed. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -168,11 +211,11 @@ export default function DashboardAuthPage() {
   };
 
   const updateLoginForm = (field: string, value: string) => {
-    setLoginForm(prev => ({ ...prev, [field]: value }));
+    setLoginForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const updateSignupForm = (field: string, value: string) => {
-    setSignupForm(prev => ({ ...prev, [field]: value }));
+    setSignupForm((prev) => ({ ...prev, [field]: value }));
   };
 
   // Only render animations after component has mounted on the client
@@ -289,14 +332,20 @@ export default function DashboardAuthPage() {
 
               <Tabs defaultValue="login" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 bg-[#1A1A1A] rounded-none border-b border-[#292929]">
-                  <TabsTrigger value="login" className="data-[state=active]:bg-[#232323] data-[state=active]:text-amber-500">
+                  <TabsTrigger
+                    value="login"
+                    className="data-[state=active]:bg-[#232323] data-[state=active]:text-amber-500"
+                  >
                     Login
                   </TabsTrigger>
-                  <TabsTrigger value="signup" className="data-[state=active]:bg-[#232323] data-[state=active]:text-amber-500">
+                  <TabsTrigger
+                    value="signup"
+                    className="data-[state=active]:bg-[#232323] data-[state=active]:text-amber-500"
+                  >
                     Sign Up
                   </TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="login" className="p-8">
                   <form onSubmit={handleLoginSubmit} className="space-y-6">
                     <div className="space-y-2">
@@ -308,7 +357,9 @@ export default function DashboardAuthPage() {
                           type="email"
                           placeholder="Enter your email"
                           value={loginForm.email}
-                          onChange={(e) => updateLoginForm('email', e.target.value)}
+                          onChange={(e) =>
+                            updateLoginForm("email", e.target.value)
+                          }
                           className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-12 pl-12 text-white"
                           required
                           disabled={isLoading}
@@ -319,7 +370,7 @@ export default function DashboardAuthPage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-300">
                         Password
@@ -329,7 +380,9 @@ export default function DashboardAuthPage() {
                           type="password"
                           placeholder="Enter your password"
                           value={loginForm.password}
-                          onChange={(e) => updateLoginForm('password', e.target.value)}
+                          onChange={(e) =>
+                            updateLoginForm("password", e.target.value)
+                          }
                           className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-12 pl-12 text-white"
                           required
                           disabled={isLoading}
@@ -352,7 +405,9 @@ export default function DashboardAuthPage() {
                             ? "bg-amber-800/20 text-amber-300/80"
                             : "bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white"
                         }`}
-                        disabled={isLoading || !loginForm.email || !loginForm.password}
+                        disabled={
+                          isLoading || !loginForm.email || !loginForm.password
+                        }
                       >
                         {isLoading ? (
                           <div className="flex items-center justify-center">
@@ -366,7 +421,7 @@ export default function DashboardAuthPage() {
                     </motion.div>
                   </form>
                 </TabsContent>
-                
+
                 <TabsContent value="signup" className="p-8">
                   <form onSubmit={handleSignupSubmit} className="space-y-6">
                     <div className="space-y-2">
@@ -378,7 +433,9 @@ export default function DashboardAuthPage() {
                           type="text"
                           placeholder="Enter your full name"
                           value={signupForm.name}
-                          onChange={(e) => updateSignupForm('name', e.target.value)}
+                          onChange={(e) =>
+                            updateSignupForm("name", e.target.value)
+                          }
                           className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-12 pl-12 text-white"
                           required
                           disabled={isLoading}
@@ -389,7 +446,7 @@ export default function DashboardAuthPage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-300">
                         Email
@@ -399,7 +456,9 @@ export default function DashboardAuthPage() {
                           type="email"
                           placeholder="Enter your email"
                           value={signupForm.email}
-                          onChange={(e) => updateSignupForm('email', e.target.value)}
+                          onChange={(e) =>
+                            updateSignupForm("email", e.target.value)
+                          }
                           className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-12 pl-12 text-white"
                           required
                           disabled={isLoading}
@@ -410,7 +469,7 @@ export default function DashboardAuthPage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-300">
                         Password
@@ -420,7 +479,9 @@ export default function DashboardAuthPage() {
                           type="password"
                           placeholder="Create a password"
                           value={signupForm.password}
-                          onChange={(e) => updateSignupForm('password', e.target.value)}
+                          onChange={(e) =>
+                            updateSignupForm("password", e.target.value)
+                          }
                           className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-12 pl-12 text-white"
                           required
                           disabled={isLoading}
@@ -431,7 +492,7 @@ export default function DashboardAuthPage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-300">
                         Confirm Password
@@ -441,7 +502,9 @@ export default function DashboardAuthPage() {
                           type="password"
                           placeholder="Confirm your password"
                           value={signupForm.confirmPassword}
-                          onChange={(e) => updateSignupForm('confirmPassword', e.target.value)}
+                          onChange={(e) =>
+                            updateSignupForm("confirmPassword", e.target.value)
+                          }
                           className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-12 pl-12 text-white"
                           required
                           disabled={isLoading}
@@ -452,14 +515,16 @@ export default function DashboardAuthPage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-300">
                         Age Group
                       </label>
                       <select
                         value={signupForm.age_group}
-                        onChange={(e) => updateSignupForm('age_group', e.target.value)}
+                        onChange={(e) =>
+                          updateSignupForm("age_group", e.target.value)
+                        }
                         className="w-full bg-[#1A1A1A] border border-[#333] focus:border-amber-600/50 h-12 px-4 text-white rounded-md"
                         disabled={isLoading}
                       >
@@ -479,7 +544,13 @@ export default function DashboardAuthPage() {
                             ? "bg-amber-800/20 text-amber-300/80"
                             : "bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white"
                         }`}
-                        disabled={isLoading || !signupForm.name || !signupForm.email || !signupForm.password || !signupForm.confirmPassword}
+                        disabled={
+                          isLoading ||
+                          !signupForm.name ||
+                          !signupForm.email ||
+                          !signupForm.password ||
+                          !signupForm.confirmPassword
+                        }
                       >
                         {isLoading ? (
                           <div className="flex items-center justify-center">
@@ -533,4 +604,4 @@ export default function DashboardAuthPage() {
       </motion.div>
     </div>
   );
-} 
+}

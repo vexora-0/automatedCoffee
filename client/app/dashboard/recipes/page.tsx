@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -603,8 +603,9 @@ export default function RecipesManagement() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will permanently delete the recipe "
-                                {recipe.name}". This action cannot be undone.
+                                This will permanently delete the recipe &quot;
+                                {recipe.name}&quot;. This action cannot be
+                                undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

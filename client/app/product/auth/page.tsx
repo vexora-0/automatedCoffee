@@ -155,11 +155,13 @@ export default function CustomerLoginPage() {
 
           // Existing user - store user info and redirect
           setTimeout(() => {
-            sessionStorage.setItem("userId", response.data.user_id);
-            sessionStorage.setItem("userName", response.data.name);
+            if (response.data) {
+              sessionStorage.setItem("userId", response.data.user_id);
+              sessionStorage.setItem("userName", response.data.name);
 
-            // Navigate to recipe categories page
-            router.push("/product/recipes");
+              // Navigate to recipe categories page
+              router.push("/product/recipes");
+            }
           }, 1500);
         } else {
           // New user - proceed to collect name
@@ -216,11 +218,13 @@ export default function CustomerLoginPage() {
 
         // Store user info in session storage
         setTimeout(() => {
-          sessionStorage.setItem("userId", response.data.user_id);
-          sessionStorage.setItem("userName", response.data.name);
+          if (response.data) {
+            sessionStorage.setItem("userId", response.data.user_id);
+            sessionStorage.setItem("userName", response.data.name);
 
-          // Navigate to recipe categories page
-          router.push("/product/recipes");
+            // Navigate to recipe categories page
+            router.push("/product/recipes");
+          }
         }, 1500);
       } else {
         setStatusMessage({
@@ -278,6 +282,9 @@ export default function CustomerLoginPage() {
               width: Math.random() * 120 + 80 + "px",
               height: Math.random() * 120 + 80 + "px",
               borderRadius: "40% 60% 70% 30% / 40% 50% 60% 50%",
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              opacity: 0.4,
             }}
             animate={{
               x: [
@@ -297,11 +304,6 @@ export default function CustomerLoginPage() {
               duration: 8 + Math.random() * 7,
               repeat: Infinity,
               repeatType: "reverse",
-            }}
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              opacity: 0.4,
             }}
           />
         ))}
