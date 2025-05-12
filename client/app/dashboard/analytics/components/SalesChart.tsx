@@ -46,6 +46,14 @@ const formatDailyData = (
   }));
 };
 
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-IN', { 
+    style: 'currency', 
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(value);
+};
+
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     // Add checks to prevent accessing undefined properties
@@ -67,7 +75,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="bg-background border border-border p-3 rounded-md shadow-md">
         <p className="text-sm font-medium">{label}</p>
         <p className="text-sm text-primary">Units: {units}</p>
-        <p className="text-sm text-green-500">Amount: ${amount.toFixed(2)}</p>
+        <p className="text-sm text-green-500">Amount: {formatCurrency(amount)}</p>
       </div>
     );
   }
@@ -85,7 +93,20 @@ const SalesChart: React.FC<SalesChartProps> = ({ data, timeFrame }) => {
 
   // Find the max units to set a reasonable Y-axis max
   const maxUnits = Math.max(...formattedData.map((item) => item.units));
-  const yAxisMax = Math.ceil(maxUnits * 1.2); // Add 20% buffer
+  
+  // Always set a minimum value to make chart visible
+  const yAxisMax = Math.max(5, Math.ceil(maxUnits * 1.2)); // At least 5 or 120% of max
+
+  // Check if there's actual data to display - only truly empty if ALL values are 0
+  const hasData = formattedData.some(item => item.units > 0 || item.amount > 0);
+
+  if (formattedData.length === 0) {
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center">
+        <p className="text-gray-500">No sales data for this time period</p>
+      </div>
+    );
+  }
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -122,15 +143,21 @@ const SalesChart: React.FC<SalesChartProps> = ({ data, timeFrame }) => {
           radius={[4, 4, 0, 0]}
           barSize={timeFrame === "today" ? 10 : 20}
           name="Units"
+          fillOpacity={1.0}
+          stroke="#2563EB"
+          strokeWidth={1}
         />
-        {/* Hidden bar just to make amount available in tooltip */}
+        {/* Make amount data visible in a separate bar */}
         <Bar
           yAxisId="right"
           dataKey="amount"
-          fill="transparent"
-          radius={[0, 0, 0, 0]}
-          barSize={0}
+          fill="#10B981"
+          radius={[4, 4, 0, 0]}
+          barSize={timeFrame === "today" ? 5 : 10}
           name="Amount"
+          fillOpacity={0.9}
+          stroke="#059669"
+          strokeWidth={1}
         />
         <ReferenceLine y={0} stroke="#e5e7eb" yAxisId="left" />
       </BarChart>

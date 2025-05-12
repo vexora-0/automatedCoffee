@@ -38,6 +38,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { useIngredients } from "@/lib/api/hooks";
 import { ingredientService } from "@/lib/api/services";
 import { Ingredient } from "@/lib/api/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Plus, Pencil, Trash2 } from "lucide-react";
 
 export default function IngredientsManagement() {
   const { ingredients, isLoading, mutate } = useIngredients();
@@ -129,24 +132,42 @@ export default function IngredientsManagement() {
     }
   };
 
+  // Loading skeleton component
+  const IngredientsSkeleton = () => (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-1/3" />
+      <div className="space-y-2">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-16 w-full" />
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Ingredient Management</h1>
-          <p className="text-muted-foreground">
-            Create and manage ingredients for your recipes
+    <div className="container mx-auto py-10 space-y-8">
+      <div className="flex justify-between items-center">
+        <div className="space-y-1">
+          <h1 className="text-4xl font-bold tracking-tight">Ingredients</h1>
+          <p className="text-muted-foreground text-lg">
+            Manage your coffee ingredients
           </p>
         </div>
         <div className="flex space-x-2">
           <Link href="/dashboard">
-            <Button variant="outline">Back to Dashboard</Button>
+            <Button variant="outline" size="lg">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
           </Link>
           <Dialog open={isCreating} onOpenChange={setIsCreating}>
             <DialogTrigger asChild>
-              <Button>Add New Ingredient</Button>
+              <Button size="lg">
+                <Plus className="mr-2 h-4 w-4" />
+                Add New Ingredient
+              </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Create New Ingredient</DialogTitle>
                 <DialogDescription>
@@ -154,29 +175,23 @@ export default function IngredientsManagement() {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name
-                  </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
                   <Input
                     id="name"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="col-span-3"
                     placeholder="e.g. Milk"
                   />
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="unit" className="text-right">
-                    Unit
-                  </Label>
+                <div className="space-y-2">
+                  <Label htmlFor="unit">Unit</Label>
                   <Input
                     id="unit"
                     name="unit"
                     value={formData.unit}
                     onChange={handleInputChange}
-                    className="col-span-3"
                     placeholder="e.g. ml"
                   />
                 </div>
@@ -192,108 +207,110 @@ export default function IngredientsManagement() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ingredients</CardTitle>
+      <Card className="border-none shadow-lg">
+        <CardHeader className="border-b bg-muted/50">
+          <CardTitle className="text-xl">Ingredients List</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           {isLoading ? (
-            <p>Loading ingredients...</p>
+            <IngredientsSkeleton />
           ) : ingredients.length === 0 ? (
-            <p>
+            <div className="text-center py-12 text-muted-foreground">
               No ingredients found. Create your first ingredient to get started.
-            </p>
+            </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ingredients.map((ingredient) => (
-                  <TableRow key={ingredient.ingredient_id}>
-                    <TableCell>{ingredient.name}</TableCell>
-                    <TableCell>{ingredient.unit}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditIngredient(ingredient)}
-                        >
-                          Edit
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm">
-                              Delete
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete the ingredient.
-                                This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() =>
-                                  handleDeleteIngredient(
-                                    ingredient.ingredient_id
-                                  )
-                                }
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Unit</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {ingredients.map((ingredient) => (
+                    <TableRow key={ingredient.ingredient_id}>
+                      <TableCell className="font-medium">
+                        {ingredient.name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{ingredient.unit}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditIngredient(ingredient)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete the ingredient "
+                                  {ingredient.name}". This action cannot be
+                                  undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() =>
+                                    handleDeleteIngredient(
+                                      ingredient.ingredient_id
+                                    )
+                                  }
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Edit Dialog */}
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Ingredient</DialogTitle>
             <DialogDescription>Update the ingredient details</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-name" className="text-right">
-                Name
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Name</Label>
               <Input
                 id="edit-name"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="col-span-3"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-unit" className="text-right">
-                Unit
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="edit-unit">Unit</Label>
               <Input
                 id="edit-unit"
                 name="unit"
                 value={formData.unit}
                 onChange={handleInputChange}
-                className="col-span-3"
               />
             </div>
           </div>

@@ -37,13 +37,21 @@ const COLORS = [
   '#06B6D4', // cyan
 ];
 
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-IN', { 
+    style: 'currency', 
+    currency: 'INR',
+    maximumFractionDigits: 0
+  }).format(value);
+};
+
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-background border border-border p-3 rounded-md shadow-md">
         <p className="text-sm font-medium">{label}</p>
         <p className="text-sm text-primary">Units: {payload[0].value}</p>
-        <p className="text-sm text-green-500">Amount: ${payload[0].payload.amount.toFixed(2)}</p>
+        <p className="text-sm text-green-500">Amount: {formatCurrency(payload[0].payload.amount)}</p>
         <p className="text-xs text-muted-foreground">Category: {payload[0].payload.category}</p>
       </div>
     );
@@ -53,10 +61,21 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const ProductSalesChart: React.FC<ProductSalesChartProps> = ({ data }) => {
-  if (!data || data.length === 0) return null;
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-full w-full flex flex-col items-center justify-center">
+        <p className="text-gray-500">No product sales data available</p>
+      </div>
+    );
+  }
   
-  // Sort data by units sold (descending)
-  const sortedData = [...data].sort((a, b) => b.units - a.units);
+  // Always display the actual data values, even if they're zero
+  const sortedData = [...data].sort((a, b) => (b.units || 0) - (a.units || 0));
+  
+  // Set a reasonable domain for better visualization
+  const maxUnits = Math.max(...sortedData.map(item => item.units || 0));
+  // If all values are zero, set a small domain
+  const xAxisMax = maxUnits > 0 ? Math.ceil(maxUnits * 1.2) : 5;
   
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -70,7 +89,7 @@ const ProductSalesChart: React.FC<ProductSalesChartProps> = ({ data }) => {
           type="number" 
           tick={{ fontSize: 12 }}
           tickLine={false}
-          domain={[0, 'dataMax']}
+          domain={[0, xAxisMax]}
         />
         <YAxis 
           type="category" 
@@ -85,9 +104,18 @@ const ProductSalesChart: React.FC<ProductSalesChartProps> = ({ data }) => {
           fill="#8884d8" 
           radius={[0, 4, 4, 0]}
           barSize={15}
+          stroke="#fff"
+          strokeWidth={1}
+          minPointSize={2} // Ensure tiny bars are still visible
         >
           {sortedData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            <Cell 
+              key={`cell-${index}`} 
+              fill={COLORS[index % COLORS.length]} 
+              fillOpacity={1.0}
+              stroke={COLORS[index % COLORS.length]}
+              strokeWidth={1}
+            />
           ))}
         </Bar>
       </BarChart>

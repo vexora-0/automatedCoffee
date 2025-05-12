@@ -67,7 +67,7 @@ export const getMachineSales = async (req: Request, res: Response): Promise<void
     
     // Calculate total sales amount
     const total = orders.reduce((sum, order: any) => {
-      return sum + (order.recipe?.price || 0);
+      return sum + (order.bill || 0);
     }, 0);
     
     // Group orders by hour for today's sales analysis
@@ -83,7 +83,7 @@ export const getMachineSales = async (req: Request, res: Response): Promise<void
         }
         
         salesByHour[hourString].units += 1;
-        salesByHour[hourString].amount += order.recipe?.price || 0;
+        salesByHour[hourString].amount += order.bill || 0;
       });
       
       res.status(200).json({
@@ -109,7 +109,7 @@ export const getMachineSales = async (req: Request, res: Response): Promise<void
         }
         
         salesByDay[day].units += 1;
-        salesByDay[day].amount += order.recipe?.price || 0;
+        salesByDay[day].amount += order.bill || 0;
       });
       
       res.status(200).json({
@@ -207,7 +207,7 @@ export const getSalesByProduct = async (req: Request, res: Response): Promise<vo
       }
       
       productSales[productId].units += 1;
-      productSales[productId].amount += order.recipe.price || 0;
+      productSales[productId].amount += order.bill || 0;
     });
     
     // Convert to array and sort by units sold
@@ -243,78 +243,124 @@ export const getSalesByCategory = async (req: Request, res: Response): Promise<v
       filter.machine_id = machineId;
     }
     
-    // Use aggregation for proper joining
-    const orders = await Order.aggregate([
-      { $match: filter },
-      {
-        $lookup: {
-          from: 'recipes',
-          localField: 'recipe_id',
-          foreignField: 'recipe_id',
-          as: 'recipe'
-        }
-      },
-      { $unwind: '$recipe' },
-      {
-        $lookup: {
-          from: 'recipecategories',
-          localField: 'recipe.category_id',
-          foreignField: '_id', // Assuming category_id in Recipe is an ObjectId
-          as: 'category'
-        }
-      },
-      {
-        $unwind: {
-          path: '$category',
-          preserveNullAndEmptyArrays: true
-        }
-      }
-    ]);
+    // Check if we have any completed orders
+    const completedCount = await Order.countDocuments(filter);
     
-    // Group orders by category
-    const categorySales: { [categoryId: string]: { 
-      name: string, 
-      units: number, 
-      amount: number 
-    } } = {};
-    
-    orders.forEach((order: any) => {
-      if (!order.category) {
-        // Handle products without a category
-        if (!categorySales['uncategorized']) {
-          categorySales['uncategorized'] = {
-            name: 'Uncategorized',
+    if (completedCount > 0) {
+      // We have orders, use real order data
+      // Fetch all recipe categories first to ensure proper category names
+      const allCategories = await RecipeCategory.find().lean();
+      const categoryMap: Record<string, string> = {};
+      allCategories.forEach(cat => {
+        if (cat._id) categoryMap[cat._id.toString()] = cat.name;
+      });
+      
+      // Use aggregation for proper joining
+      const orders = await Order.aggregate([
+        { $match: filter },
+        {
+          $lookup: {
+            from: 'recipes',
+            localField: 'recipe_id',
+            foreignField: 'recipe_id',
+            as: 'recipe'
+          }
+        },
+        { $unwind: '$recipe' },
+        {
+          $lookup: {
+            from: 'recipecategories',
+            localField: 'recipe.category_id',
+            foreignField: '_id', // Assuming category_id in Recipe is an ObjectId
+            as: 'category'
+          }
+        },
+        {
+          $unwind: {
+            path: '$category',
+            preserveNullAndEmptyArrays: true
+          }
+        }
+      ]);
+      
+      // Group orders by category
+      const categorySales: { [categoryId: string]: { 
+        name: string, 
+        units: number, 
+        amount: number 
+      } } = {};
+      
+      orders.forEach((order: any) => {
+        // Use category ID if available
+        let categoryId;
+        let categoryName;
+        
+        if (order.category && order.category._id) {
+          categoryId = order.category._id.toString();
+          categoryName = order.category.name || categoryMap[categoryId] || 'Coffee';
+        } else if (order.recipe && order.recipe.category_id) {
+          // If category not loaded but we have recipe.category_id
+          categoryId = order.recipe.category_id.toString();
+          categoryName = categoryMap[categoryId] || 'Coffee';
+        } else {
+          // No category info at all
+          categoryId = 'coffee';
+          categoryName = 'Coffee';
+        }
+        
+        if (!categorySales[categoryId]) {
+          categorySales[categoryId] = {
+            name: categoryName,
             units: 0,
             amount: 0
           };
         }
         
-        categorySales['uncategorized'].units += 1;
-        categorySales['uncategorized'].amount += order.recipe?.price || 0;
-        return;
-      }
+        categorySales[categoryId].units += 1;
+        categorySales[categoryId].amount += order.bill || 0;
+      });
       
-      const categoryId = order.category._id.toString();
+      // Convert to array and sort by units sold
+      const sortedCategories = Object.values(categorySales)
+        .sort((a, b) => b.units - a.units);
       
-      if (!categorySales[categoryId]) {
-        categorySales[categoryId] = {
-          name: order.category.name,
-          units: 0,
-          amount: 0
-        };
-      }
-      
-      categorySales[categoryId].units += 1;
-      categorySales[categoryId].amount += order.recipe.price || 0;
-    });
+      res.status(200).json({
+        success: true,
+        data: sortedCategories
+      });
+      return;
+    }
     
-    // Convert to array and sort by units sold
-    const sortedCategories = Object.values(categorySales)
-      .sort((a, b) => b.units - a.units);
+    // No orders, so return real categories with zero values
+    const categories = await RecipeCategory.find().lean();
+    
+    // If no categories found, provide defaults
+    if (!categories || categories.length === 0) {
+      res.status(200).json({
+        success: true,
+        data: [
+          { name: 'Coffee', units: 0, amount: 0 },
+          { name: 'Specialty', units: 0, amount: 0 }
+        ]
+      });
+      return;
+    }
+    
+    // Map categories to the expected format
+    const categoryData = categories.map(category => ({
+      name: category.name,
+      units: 0,
+      amount: 0
+    }));
+    
+    // Ensure we have at least one category
+    if (categoryData.length === 0) {
+      categoryData.push({ name: 'Coffee', units: 0, amount: 0 });
+    }
     
     res.status(200).json({
       success: true,
-      data: sortedCategories
+      data: categoryData
     });
   } catch (error: any) {
     res.status(500).json({
@@ -372,7 +418,7 @@ export const getRevenueAnalytics = async (req: Request, res: Response): Promise<
               $dateToString: { format: timeFormat, date: '$ordered_at' }
             }
           },
-          totalRevenue: { $sum: '$recipe.price' },
+          totalRevenue: { $sum: '$bill' },
           count: { $sum: 1 }
         }
       },
@@ -427,50 +473,97 @@ export const getPopularProducts = async (req: Request, res: Response): Promise<v
       filter.machine_id = machineId;
     }
 
-    // Get popular products using aggregation
-    const popularProducts = await Order.aggregate([
-      { $match: filter },
-      {
-        $lookup: {
-          from: 'recipes',
-          localField: 'recipe_id',
-          foreignField: 'recipe_id',
-          as: 'recipe'
+    // First check if we have completed orders
+    const completedOrders = await Order.find(filter).countDocuments();
+    
+    if (completedOrders > 0) {
+      // We have orders, use aggregation to get actual order data
+      const popularProducts = await Order.aggregate([
+        { $match: filter },
+        {
+          $lookup: {
+            from: 'recipes',
+            localField: 'recipe_id',
+            foreignField: 'recipe_id',
+            as: 'recipe'
+          }
+        },
+        { $unwind: '$recipe' },
+        {
+          $lookup: {
+            from: 'recipecategories',
+            localField: 'recipe.category_id',
+            foreignField: '_id', 
+            as: 'category'
+          }
+        },
+        {
+          $unwind: {
+            path: '$category',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $group: {
+            _id: '$recipe_id',
+            name: { $first: '$recipe.name' },
+            totalSold: { $sum: 1 },
+            totalRevenue: { $sum: { $ifNull: ['$bill', 0] } },
+            categoryName: { $first: { $ifNull: ['$category.name', 'Coffee'] } },
+            averageRating: { $avg: { $ifNull: ['$rating', 0] } }
+          }
+        },
+        { $sort: { totalSold: -1 } },
+        { $limit: limitNumber }
+      ]);
+      
+      // If we got results, return them
+      if (popularProducts && popularProducts.length > 0) {
+        res.status(200).json({
+          success: true,
+          data: popularProducts
+        });
+        return;
+      }
+    }
+    
+    // No orders or no popular products found - fetch actual recipes
+    // Get all recipe categories for proper mapping
+    const categories = await RecipeCategory.find().lean();
+    const categoryMap: Record<string, string> = {};
+    categories.forEach(cat => {
+      if (cat._id) categoryMap[cat._id.toString()] = cat.name;
+    });
+    
+    // Get all recipes with category information
+    const recipes = await Recipe.find().limit(limitNumber).lean();
+    
+    // Map recipes to the expected format
+    const recipeData = recipes.map(recipe => {
+      // Try to get the real category name
+      let categoryName = 'Coffee'; // Default
+      if (recipe.category_id) {
+        const catId = recipe.category_id.toString();
+        if (categoryMap[catId]) {
+          categoryName = categoryMap[catId];
         }
-      },
-      { $unwind: '$recipe' },
-      {
-        $lookup: {
-          from: 'recipecategories',
-          localField: 'recipe.category_id',
-          foreignField: '_id', 
-          as: 'category'
-        }
-      },
-      {
-        $unwind: {
-          path: '$category',
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $group: {
-          _id: '$recipe_id',
-          name: { $first: '$recipe.name' },
-          totalSold: { $sum: 1 },
-          totalRevenue: { $sum: '$recipe.price' },
-          categoryName: { $first: { $ifNull: ['$category.name', 'Uncategorized'] } },
-          averageRating: { $avg: '$rating' }
-        }
-      },
-      { $sort: { totalSold: -1 } },
-      { $limit: limitNumber }
-    ]);
+      }
+      
+      return {
+        _id: recipe.recipe_id,
+        name: recipe.name,
+        totalSold: 0,
+        totalRevenue: 0,
+        categoryName,
+        averageRating: 0
+      };
+    });
     
     res.status(200).json({
       success: true,
-      data: popularProducts
+      data: recipeData
     });
+    return;
   } catch (error: any) {
     res.status(500).json({
       success: false,
@@ -525,7 +618,7 @@ export const getSalesOverTime = async (req: Request, res: Response): Promise<voi
             timeInterval: { $dateToString: { format: timeFormat, date: '$ordered_at' } }
           },
           units: { $sum: 1 },
-          amount: { $sum: '$recipe.price' }
+          amount: { $sum: '$bill' }
         }
       },
       { $sort: { '_id.timeInterval': 1 } }
@@ -591,7 +684,7 @@ export const getMachinePerformance = async (req: Request, res: Response): Promis
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: '$recipe.price' }
+          totalRevenue: { $sum: '$bill' }
         }
       }
     ]);

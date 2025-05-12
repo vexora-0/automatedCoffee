@@ -120,6 +120,7 @@ export default function RecipeDetailsDialog({
         user_id: userId,
         machine_id: machineId,
         recipe_id: recipe.recipe_id,
+        bill: recipe.price,
         status: "pending",
       });
 

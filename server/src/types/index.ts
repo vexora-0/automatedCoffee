@@ -78,6 +78,7 @@ export interface IOrder extends Document {
   user_id: string;
   machine_id: string;
   recipe_id: string;
+  bill: number;
   ordered_at: Date;
   status: string;
   rating: number;
