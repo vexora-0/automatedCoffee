@@ -8,7 +8,6 @@ import {
   AlertCircle,
   Coffee,
   Loader2,
-  Lock,
   ChevronLeft,
   Users,
   Phone,
@@ -102,8 +101,8 @@ export default function StaffLoginPage() {
   // Only render animations after component has mounted on the client
   if (!isMounted) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center">
-        <div className="w-full max-w-md p-8">
+      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <h2 className="text-2xl font-bold text-white">
               STAFF <span className="text-amber-500">LOGIN</span>
@@ -114,23 +113,50 @@ export default function StaffLoginPage() {
     );
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+      },
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Background elements */}
+    <div className="min-h-screen bg-[#0A0A0A] flex flex-col relative overflow-hidden">
+      {/* Background elements - Optimized for mobile */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0F0F0F] to-black opacity-80"></div>
         <div className="absolute inset-0">
-          {[...Array(40)].map((_, i) => (
-            <div
+          {[...Array(20)].map((_, i) => (
+            <motion.div
               key={i}
               className="absolute rounded-full bg-amber-900/5"
               style={{
-                width: Math.random() * 4 + 2 + "px",
-                height: Math.random() * 4 + 2 + "px",
+                width: Math.random() * 3 + 1 + "px",
+                height: Math.random() * 3 + 1 + "px",
                 top: Math.random() * 100 + "%",
                 left: Math.random() * 100 + "%",
               }}
-            ></div>
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: Math.random() * 2, duration: 1 }}
+            />
           ))}
         </div>
         <div className="absolute top-0 w-full h-32 bg-gradient-to-b from-black to-transparent"></div>
@@ -138,61 +164,53 @@ export default function StaffLoginPage() {
       </div>
 
       {/* Header - Back Link */}
-      <Link href="/" className="absolute top-8 left-8 z-10">
-        <motion.div
-          whileHover={{ x: -3 }}
-          className="flex items-center text-gray-400 hover:text-amber-500 transition-colors"
-        >
-          <ChevronLeft size={20} />
-          <span className="ml-1 text-sm">Back to Home</span>
-        </motion.div>
-      </Link>
+      <motion.div
+        className="absolute top-4 left-4 z-10"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
+        <Link href="/">
+          <motion.div
+            whileHover={{ x: -3 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center text-gray-400 hover:text-amber-500 transition-colors py-2 px-3 rounded-lg active:bg-gray-800/30"
+          >
+            <ChevronLeft size={20} />
+            <span className="ml-1 text-sm">Back to Home</span>
+          </motion.div>
+        </Link>
+      </motion.div>
 
       {/* Main Content */}
-      <div className="z-10 w-full max-w-md mx-auto px-6">
+      <div className="flex-1 flex items-center justify-center px-4 py-8 pt-20">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          className="z-10 w-full max-w-md mx-auto"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
         >
           {/* Title Section */}
-          <div className="mb-8 text-center">
+          <motion.div variants={itemVariants} className="mb-8 text-center">
             <motion.div
-              initial={{ scale: 0.9, rotate: -5 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{
-                duration: 0.5,
-                type: "spring",
-                stiffness: 100,
-              }}
-              className="inline-flex mb-6 p-3 bg-gradient-to-br from-amber-600/30 to-amber-800/10 rounded-full"
+              className="inline-flex mb-6 p-4 bg-gradient-to-br from-amber-600/30 to-amber-800/10 rounded-2xl"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Users size={32} className="text-amber-500" />
+              <Users size={36} className="text-amber-500" />
             </motion.div>
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="text-3xl font-bold text-white tracking-tight"
-            >
+            <h2 className="text-3xl lg:text-4xl font-bold text-white tracking-tight mb-2">
               STAFF <span className="text-amber-500">LOGIN</span>
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="mt-2 text-gray-400"
-            >
+            </h2>
+            <p className="text-gray-400 text-sm lg:text-base">
               Access your assigned machines and maintenance tools
-            </motion.p>
-          </div>
+            </p>
+          </motion.div>
 
           {/* Card Section */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="bg-[#141414] backdrop-blur-xl border border-gray-800 rounded-2xl shadow-2xl overflow-hidden"
+            variants={itemVariants}
+            className="bg-[#141414] backdrop-blur-xl border border-gray-800 rounded-2xl lg:rounded-3xl shadow-2xl overflow-hidden"
           >
             {/* Error Alert */}
             {error && (
@@ -212,9 +230,9 @@ export default function StaffLoginPage() {
               </motion.div>
             )}
 
-            <div className="p-8">
+            <div className="p-6 lg:p-8">
               <form onSubmit={handleLoginSubmit} className="space-y-6">
-                <div className="space-y-2">
+                <motion.div className="space-y-2" variants={itemVariants}>
                   <label className="text-sm font-medium text-gray-300">
                     Email Address
                   </label>
@@ -224,18 +242,18 @@ export default function StaffLoginPage() {
                       placeholder="Enter your email"
                       value={loginForm.email}
                       onChange={(e) => updateLoginForm("email", e.target.value)}
-                      className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-12 pl-12 text-white"
+                      className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-14 pl-12 text-white text-base lg:text-sm rounded-xl transition-all duration-200 focus:ring-2 focus:ring-amber-600/20"
                       required
                       disabled={isLoading}
                     />
                     <Mail
-                      size={18}
+                      size={20}
                       className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500/70"
                     />
                   </div>
-                </div>
+                </motion.div>
 
-                <div className="space-y-2">
+                <motion.div className="space-y-2" variants={itemVariants}>
                   <label className="text-sm font-medium text-gray-300">
                     Mobile Number
                   </label>
@@ -247,32 +265,33 @@ export default function StaffLoginPage() {
                       onChange={(e) =>
                         updateLoginForm("mobile_number", e.target.value)
                       }
-                      className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-12 pl-12 text-white"
+                      className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-14 pl-12 text-white text-base lg:text-sm rounded-xl transition-all duration-200 focus:ring-2 focus:ring-amber-600/20"
                       required
                       disabled={isLoading}
                       maxLength={10}
                       pattern="[0-9]{10}"
                     />
                     <Phone
-                      size={18}
+                      size={20}
                       className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500/70"
                     />
                   </div>
                   <p className="text-xs text-gray-500">
                     Use your registered mobile number as password
                   </p>
-                </div>
+                </motion.div>
 
                 <motion.div
+                  variants={itemVariants}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <Button
                     type="submit"
-                    className={`w-full h-12 text-base font-medium ${
+                    className={`w-full h-14 text-base font-medium rounded-xl transition-all duration-200 ${
                       isLoading
                         ? "bg-amber-800/20 text-amber-300/80"
-                        : "bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white"
+                        : "bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white shadow-lg hover:shadow-amber-500/25"
                     }`}
                     disabled={
                       isLoading || !loginForm.email || !loginForm.mobile_number
@@ -280,7 +299,16 @@ export default function StaffLoginPage() {
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center">
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin text-amber-300/80" />
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            ease: "linear",
+                          }}
+                        >
+                          <Loader2 className="mr-2 h-5 w-5" />
+                        </motion.div>
                         <span>Authenticating...</span>
                       </div>
                     ) : (
@@ -293,18 +321,16 @@ export default function StaffLoginPage() {
           </motion.div>
 
           {/* Footer */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8, duration: 0.5 }}
-            className="mt-8 text-center"
-          >
+          <motion.div variants={itemVariants} className="mt-8 text-center">
             <p className="text-gray-500 text-sm">
               Need help? Contact your administrator
             </p>
           </motion.div>
         </motion.div>
       </div>
+
+      {/* Safe area for mobile devices */}
+      <div className="h-safe-area-inset-bottom"></div>
     </div>
   );
 }

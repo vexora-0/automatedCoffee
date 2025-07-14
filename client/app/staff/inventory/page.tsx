@@ -9,7 +9,6 @@ import {
   ChevronDown,
   Loader2,
   RotateCcw,
-  Droplet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Machine {
   machine_id: string;
@@ -229,13 +229,29 @@ export default function StaffInventoryPage() {
 
   if (loading && !selectedMachine) {
     return (
-      <div className="p-8 flex items-center justify-center">
+      <div className="p-4 lg:p-8 flex items-center justify-center min-h-[50vh]">
         <div className="text-center">
-          <div className="relative w-12 h-12 mx-auto mb-4">
+          <motion.div
+            className="relative w-12 h-12 mx-auto mb-4"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="absolute w-12 h-12 rounded-full border-2 border-amber-500/20"></div>
-            <div className="absolute w-12 h-12 rounded-full border-t-2 border-amber-500 animate-spin"></div>
-          </div>
-          <p className="text-gray-400">Loading inventory...</p>
+            <motion.div
+              className="absolute w-12 h-12 rounded-full border-t-2 border-amber-500"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            />
+          </motion.div>
+          <motion.p
+            className="text-gray-400"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+          >
+            Loading inventory...
+          </motion.p>
         </div>
       </div>
     );
@@ -246,38 +262,73 @@ export default function StaffInventoryPage() {
     staffData.assigned_machines.length === 0
   ) {
     return (
-      <div className="p-8">
-        <Card className="bg-[#141414] border-gray-800">
-          <CardContent className="p-8 text-center">
-            <Package size={48} className="mx-auto text-gray-500 mb-4" />
-            <p className="text-gray-400 mb-2">No machines assigned</p>
-            <p className="text-sm text-gray-500">
-              Contact your administrator to get machines assigned to you.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="p-4 lg:p-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="bg-[#141414] border-gray-800">
+            <CardContent className="p-6 lg:p-8 text-center">
+              <Package size={48} className="mx-auto text-gray-500 mb-4" />
+              <p className="text-gray-400 mb-2">No machines assigned</p>
+              <p className="text-sm text-gray-500">
+                Contact your administrator to get machines assigned to you.
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     );
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+      },
+    },
+  };
+
   return (
-    <div className="p-8">
+    <motion.div
+      className="p-4 lg:p-8"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white mb-2">
+      <motion.div variants={itemVariants} className="mb-6">
+        <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">
           Machine Inventory
         </h1>
-        <p className="text-gray-400">
+        <p className="text-gray-400 text-sm lg:text-base">
           Monitor and refill ingredient levels for your assigned machines
         </p>
-      </div>
+      </motion.div>
 
       {/* Machine Selector */}
-      <div className="mb-6">
-        <div className="flex items-center space-x-4">
-          <div className="flex-1 max-w-xs">
+      <motion.div variants={itemVariants} className="mb-6">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center space-y-3 lg:space-y-0 lg:space-x-4">
+          <div className="w-full lg:w-auto lg:flex-1 lg:max-w-xs">
             <Select value={selectedMachine} onValueChange={setSelectedMachine}>
-              <SelectTrigger className="bg-[#141414] border-gray-800 text-white">
+              <SelectTrigger className="bg-[#141414] border-gray-800 text-white h-12 lg:h-10">
                 <SelectValue placeholder="Select a machine" />
               </SelectTrigger>
               <SelectContent className="bg-[#141414] border-gray-800">
@@ -295,20 +346,27 @@ export default function StaffInventoryPage() {
           </div>
 
           {selectedMachine && (
-            <Button
-              onClick={() => loadInventory(selectedMachine)}
-              variant="outline"
-              size="sm"
-              className="border-gray-700 text-gray-300 hover:text-amber-400"
-            >
-              <RotateCcw size={16} className="mr-1" />
-              Refresh
-            </Button>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                onClick={() => loadInventory(selectedMachine)}
+                variant="outline"
+                size="sm"
+                className="border-gray-700 text-gray-300 hover:text-amber-400 h-12 lg:h-9 px-4"
+              >
+                <RotateCcw size={16} className="mr-2" />
+                Refresh
+              </Button>
+            </motion.div>
           )}
         </div>
 
         {selectedMachine && (
-          <div className="mt-2 flex items-center space-x-4">
+          <motion.div
+            className="mt-3 flex flex-wrap items-center gap-2"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             <Badge
               variant="outline"
               className="border-blue-600/30 text-blue-400"
@@ -324,193 +382,263 @@ export default function StaffInventoryPage() {
             >
               {getSelectedMachineData()?.status}
             </Badge>
-          </div>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
 
       {/* Success/Error Messages */}
-      {success && (
-        <div className="mb-4 p-3 bg-green-900/30 border border-green-800 text-green-400 rounded-md">
-          {success}
-        </div>
-      )}
+      <AnimatePresence>
+        {success && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            className="mb-4 p-4 bg-green-900/30 border border-green-800 text-green-400 rounded-xl"
+          >
+            {success}
+          </motion.div>
+        )}
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-900/30 border border-red-800 text-red-400 rounded-md">
-          {error}
-        </div>
-      )}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            className="mb-4 p-4 bg-red-900/30 border border-red-800 text-red-400 rounded-xl"
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Inventory Items */}
       {selectedMachine && (
-        <>
+        <motion.div variants={itemVariants}>
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 size={30} className="text-amber-500 animate-spin" />
-              <span className="ml-2 text-gray-300">Loading inventory...</span>
+            <div className="flex items-center justify-center py-12">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <Loader2 size={30} className="text-amber-500" />
+                </motion.div>
+                <span className="ml-3 text-gray-300">Loading inventory...</span>
+              </motion.div>
             </div>
           ) : inventoryItems.length === 0 ? (
-            <Card className="bg-[#141414] border-gray-800">
-              <CardContent className="p-8 text-center">
-                <AlertCircle size={48} className="mx-auto text-gray-500 mb-4" />
-                <p className="text-gray-400 mb-2">No inventory data found</p>
-                <p className="text-sm text-gray-500">
-                  This machine may not have any ingredients configured.
-                </p>
-              </CardContent>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card className="bg-[#141414] border-gray-800">
+                <CardContent className="p-6 lg:p-8 text-center">
+                  <AlertCircle
+                    size={48}
+                    className="mx-auto text-gray-500 mb-4"
+                  />
+                  <p className="text-gray-400 mb-2">No inventory data found</p>
+                  <p className="text-sm text-gray-500">
+                    This machine may not have any ingredients configured.
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {inventoryItems.map((item) => (
-                <Card key={item.id} className="bg-[#141414] border-gray-800">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg text-white">
-                        {item.ingredient?.name}
-                      </CardTitle>
-                      <Badge
-                        variant="outline"
-                        className="border-gray-600 text-gray-400"
-                      >
-                        {item.ingredient?.unit}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    {/* Progress Bar */}
-                    <div className="w-full bg-[#1A1A1A] rounded-full h-4 overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          calculateFillPercentage(item) < 20
-                            ? "bg-red-500"
-                            : calculateFillPercentage(item) < 50
-                            ? "bg-amber-500"
-                            : "bg-green-500"
-                        }`}
-                        style={{ width: `${calculateFillPercentage(item)}%` }}
-                      ></div>
-                    </div>
-
-                    {/* Quantity Info */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400">
-                        {item.quantity} / {item.max_capacity || 1000}{" "}
-                        {item.ingredient?.unit}
-                      </span>
-                      <span
-                        className={`text-sm font-medium ${
-                          calculateFillPercentage(item) < 20
-                            ? "text-red-400"
-                            : calculateFillPercentage(item) < 50
-                            ? "text-amber-400"
-                            : "text-green-400"
-                        }`}
-                      >
-                        {calculateFillPercentage(item).toFixed(0)}% full
-                      </span>
-                    </div>
-
-                    {/* Refill Options */}
-                    <div className="mt-4">
-                      {selectedItem === item.id ? (
-                        <div className="bg-[#1A1A1A] rounded-md p-3 border border-gray-800">
-                          <h4 className="text-sm text-gray-300 mb-3">
-                            Select amount to refill:
-                          </h4>
-                          <div className="grid grid-cols-2 gap-2 mb-2">
-                            <Button
-                              onClick={() => updateInventory(item, 100)}
-                              disabled={
-                                updating[item.id] ||
-                                calculateFillPercentage(item) >= 100
-                              }
-                              variant="outline"
-                              size="sm"
-                              className="border-amber-600/30 text-amber-400 hover:bg-amber-600/20"
-                            >
-                              +100 {item.ingredient?.unit}
-                            </Button>
-                            <Button
-                              onClick={() => updateInventory(item, 250)}
-                              disabled={
-                                updating[item.id] ||
-                                calculateFillPercentage(item) >= 100
-                              }
-                              variant="outline"
-                              size="sm"
-                              className="border-amber-600/30 text-amber-400 hover:bg-amber-600/20"
-                            >
-                              +250 {item.ingredient?.unit}
-                            </Button>
-                            <Button
-                              onClick={() => updateInventory(item, 500)}
-                              disabled={
-                                updating[item.id] ||
-                                calculateFillPercentage(item) >= 100
-                              }
-                              variant="outline"
-                              size="sm"
-                              className="border-amber-600/30 text-amber-400 hover:bg-amber-600/20"
-                            >
-                              +500 {item.ingredient?.unit}
-                            </Button>
-                            <Button
-                              onClick={() => handleFillToMax(item)}
-                              disabled={
-                                updating[item.id] ||
-                                calculateFillPercentage(item) >= 100
-                              }
-                              variant="outline"
-                              size="sm"
-                              className="border-amber-700/50 text-amber-400 hover:bg-amber-700/20"
-                            >
-                              Fill Max
-                            </Button>
-                          </div>
-                          <Button
-                            onClick={() => setSelectedItem(null)}
-                            variant="ghost"
-                            size="sm"
-                            className="w-full text-gray-400 hover:text-gray-300"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button
-                          onClick={() => setSelectedItem(item.id)}
-                          disabled={
-                            updating[item.id] ||
-                            calculateFillPercentage(item) >= 100
-                          }
-                          className="w-full bg-amber-600 hover:bg-amber-700 disabled:bg-gray-700 disabled:text-gray-500"
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+              {inventoryItems.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  variants={{
+                    hidden: { opacity: 0, y: 30 },
+                    visible: {
+                      opacity: 1,
+                      y: 0,
+                      transition: {
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 30,
+                        delay: index * 0.1,
+                      },
+                    },
+                  }}
+                  whileHover={{ scale: 1.02, y: -5 }}
+                  layout
+                >
+                  <Card className="bg-[#141414] border-gray-800 hover:border-gray-700 transition-all duration-200 hover:shadow-lg hover:shadow-amber-500/10">
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-base lg:text-lg text-white">
+                          {item.ingredient?.name}
+                        </CardTitle>
+                        <Badge
+                          variant="outline"
+                          className="border-gray-600 text-gray-400"
                         >
-                          {updating[item.id] ? (
-                            <>
-                              <Loader2
-                                size={16}
-                                className="animate-spin mr-1"
-                              />
-                              Updating...
-                            </>
+                          {item.ingredient?.unit}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="space-y-4">
+                      {/* Progress Bar */}
+                      <div className="w-full bg-[#1A1A1A] rounded-full h-3 lg:h-4 overflow-hidden">
+                        <motion.div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            calculateFillPercentage(item) < 20
+                              ? "bg-red-500"
+                              : calculateFillPercentage(item) < 50
+                              ? "bg-amber-500"
+                              : "bg-green-500"
+                          }`}
+                          style={{ width: `${calculateFillPercentage(item)}%` }}
+                          initial={{ width: 0 }}
+                          animate={{
+                            width: `${calculateFillPercentage(item)}%`,
+                          }}
+                          transition={{ duration: 1, delay: index * 0.1 }}
+                        />
+                      </div>
+
+                      {/* Quantity Info */}
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400 text-sm">
+                          {item.quantity} / {item.max_capacity || 1000}{" "}
+                          {item.ingredient?.unit}
+                        </span>
+                        <span
+                          className={`text-sm font-medium ${
+                            calculateFillPercentage(item) < 20
+                              ? "text-red-400"
+                              : calculateFillPercentage(item) < 50
+                              ? "text-amber-400"
+                              : "text-green-400"
+                          }`}
+                        >
+                          {calculateFillPercentage(item).toFixed(0)}% full
+                        </span>
+                      </div>
+
+                      {/* Refill Options */}
+                      <div className="mt-4">
+                        <AnimatePresence mode="wait">
+                          {selectedItem === item.id ? (
+                            <motion.div
+                              key="refill-options"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3 }}
+                              className="bg-[#1A1A1A] rounded-xl p-4 border border-gray-800"
+                            >
+                              <h4 className="text-sm text-gray-300 mb-3">
+                                Select amount to refill:
+                              </h4>
+                              <div className="grid grid-cols-2 gap-2 mb-3">
+                                {[
+                                  {
+                                    amount: 100,
+                                    label: `+100 ${item.ingredient?.unit}`,
+                                  },
+                                  {
+                                    amount: 250,
+                                    label: `+250 ${item.ingredient?.unit}`,
+                                  },
+                                  {
+                                    amount: 500,
+                                    label: `+500 ${item.ingredient?.unit}`,
+                                  },
+                                  { amount: -1, label: "Fill Max" },
+                                ].map((option, idx) => (
+                                  <motion.div
+                                    key={idx}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                  >
+                                    <Button
+                                      onClick={() =>
+                                        option.amount === -1
+                                          ? handleFillToMax(item)
+                                          : updateInventory(item, option.amount)
+                                      }
+                                      disabled={
+                                        updating[item.id] ||
+                                        calculateFillPercentage(item) >= 100
+                                      }
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full border-amber-600/30 text-amber-400 hover:bg-amber-600/20 h-10 text-xs"
+                                    >
+                                      {option.label}
+                                    </Button>
+                                  </motion.div>
+                                ))}
+                              </div>
+                              <Button
+                                onClick={() => setSelectedItem(null)}
+                                variant="ghost"
+                                size="sm"
+                                className="w-full text-gray-400 hover:text-gray-300 h-10"
+                              >
+                                Cancel
+                              </Button>
+                            </motion.div>
                           ) : (
-                            <>
-                              <Plus size={16} className="mr-1" />
-                              Refill
-                              <ChevronDown size={14} className="ml-1" />
-                            </>
+                            <motion.div
+                              key="refill-button"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Button
+                                onClick={() => setSelectedItem(item.id)}
+                                disabled={
+                                  updating[item.id] ||
+                                  calculateFillPercentage(item) >= 100
+                                }
+                                className="w-full bg-amber-600 hover:bg-amber-700 disabled:bg-gray-700 disabled:text-gray-500 h-12 lg:h-10 transition-all duration-200"
+                              >
+                                {updating[item.id] ? (
+                                  <>
+                                    <motion.div
+                                      animate={{ rotate: 360 }}
+                                      transition={{
+                                        duration: 1,
+                                        repeat: Infinity,
+                                        ease: "linear",
+                                      }}
+                                    >
+                                      <Loader2 size={16} className="mr-2" />
+                                    </motion.div>
+                                    Updating...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus size={16} className="mr-2" />
+                                    Refill
+                                    <ChevronDown size={14} className="ml-2" />
+                                  </>
+                                )}
+                              </Button>
+                            </motion.div>
                           )}
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                        </AnimatePresence>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               ))}
             </div>
           )}
-        </>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }
