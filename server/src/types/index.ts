@@ -7,7 +7,7 @@ export interface IUser extends Document {
   date_of_birth?: Date;
   email?: string;
   password?: string;
-  role: 'customer' | 'admin';
+  role: 'customer' | 'admin' | 'staff';
   created_at: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
@@ -94,4 +94,18 @@ export interface IWarning extends Document {
   status: 'active' | 'resolved';
   resolved_at?: Date;
   created_at: Date;
+}
+
+export interface IStaff extends Document {
+  staff_id: string;
+  name: string;
+  mobile_number: string;
+  email: string;
+  address: string;
+  documents: string[];
+  assigned_machine_ids: string[];
+  is_active: boolean;
+  created_by: string;
+  created_at: Date;
+  updated_at: Date;
 } 

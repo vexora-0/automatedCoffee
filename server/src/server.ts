@@ -20,6 +20,7 @@ import orderRoutes from './routes/orderRoutes';
 import warningRoutes from './routes/warningRoutes';
 import authRoutes from './routes/authRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import staffRoutes from './routes/staffRoutes';
 
 // Import models for websocket updates
 import Recipe from './models/Recipe';
@@ -62,6 +63,7 @@ app.use('/api/recipes', recipeRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/warnings', warningRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/staff', staffRoutes);
 
 // Health check route
 app.get('/api/health-check', (req, res) => {

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import Staff from '../models/Staff';
 
 // Interface for decoded JWT token
 interface DecodedToken {
@@ -41,24 +42,45 @@ export const protect = async (
       // Type cast the decoded token properly
       const decoded = jwt.verify(token, secret) as unknown as DecodedToken;
 
-      // Get user from the token
-      const user = await User.findOne({ user_id: decoded.id });
+      // First check if it's a regular user
+      let user = await User.findOne({ user_id: decoded.id });
 
-      if (!user) {
-        res.status(401).json({
-          success: false,
-          message: 'Not authorized, user not found'
-        });
+      if (user) {
+        // Set user in request object
+        req.user = {
+          id: user.user_id,
+          role: user.role,
+          type: 'user'
+        };
+        next();
         return;
       }
 
-      // Set user in request object
-      req.user = {
-        id: user.user_id,
-        role: user.role
-      };
+      // If not found in User model, check Staff model
+      const staff = await Staff.findOne({ 
+        staff_id: decoded.id,
+        is_active: true 
+      });
 
-      next();
+      if (staff) {
+        // Set staff in request object
+        req.user = {
+          id: staff.staff_id,
+          role: 'staff',
+          type: 'staff',
+          assigned_machine_ids: staff.assigned_machine_ids
+        };
+        next();
+        return;
+      }
+
+      // Neither user nor staff found
+      res.status(401).json({
+        success: false,
+        message: 'Not authorized, user/staff not found'
+      });
+      return;
+
     } catch (error) {
       res.status(401).json({
         success: false,
@@ -89,6 +111,23 @@ export const admin = (
     res.status(403).json({
       success: false,
       message: 'Not authorized as an admin'
+    });
+    return;
+  }
+};
+
+// Staff middleware (allows both admin and staff access)
+export const staffOrAdmin = (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+): void => {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'staff')) {
+    next();
+  } else {
+    res.status(403).json({
+      success: false,
+      message: 'Not authorized - admin or staff access required'
     });
     return;
   }

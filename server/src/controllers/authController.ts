@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import User from '../models/User';
 import UserHistory from '../models/UserHistory';
+import Staff from '../models/Staff';
+import Machine from '../models/Machine';
 import jwt from 'jsonwebtoken';
 
 // Generate JWT Token
@@ -156,6 +158,78 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
         created_at: user.created_at
       }
     });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Staff login
+export const staffLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, mobile_number } = req.body;
+
+    if (!email || !mobile_number) {
+      res.status(400).json({
+        success: false,
+        message: 'Email and mobile number are required'
+      });
+      return;
+    }
+
+    // Find staff member by email
+    const staff = await Staff.findOne({ 
+      email: email.toLowerCase().trim(),
+      is_active: true 
+    });
+
+    if (!staff) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+      return;
+    }
+
+    // Check if mobile number matches (acts as password)
+    if (staff.mobile_number !== mobile_number.trim()) {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+      return;
+    }
+
+    // Generate token using staff_id
+    const token = generateToken(staff.staff_id);
+
+    // Manually fetch assigned machines using the machine IDs
+    let assignedMachines: any[] = [];
+    if (staff.assigned_machine_ids && staff.assigned_machine_ids.length > 0) {
+      assignedMachines = await Machine.find({
+        machine_id: { $in: staff.assigned_machine_ids }
+      }).select('machine_id location status temperature_c cleaning_water_ml last_regular_service last_deep_service').lean();
+    }
+
+    // Prepare response data
+    const responseData = {
+      success: true,
+      token,
+      staff: {
+        staff_id: staff.staff_id,
+        name: staff.name,
+        email: staff.email,
+        mobile_number: staff.mobile_number,
+        assigned_machines: assignedMachines,
+        role: 'staff'
+      }
+    };
+
+    // Return staff data and token
+    res.status(200).json(responseData);
   } catch (error: any) {
     res.status(500).json({
       success: false,
