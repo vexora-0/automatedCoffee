@@ -68,6 +68,10 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/payments', paymentRoutes);
 
 // Health check route
+app.get('/', (req, res) => {
+  res.send('Automated Coffee API is running');
+});
+
 app.get('/api/health-check', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
