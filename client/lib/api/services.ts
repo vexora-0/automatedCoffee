@@ -329,6 +329,23 @@ export const orderService = {
   }
 };
 
+// ===== PAYMENT SERVICES =====
+export const paymentService = {
+  // Initiate payment: server responds with HTML that redirects to CCAvenue
+  initiate: async (payload: {
+    user_id: string;
+    machine_id: string;
+    recipe_id: string;
+  }): Promise<string> => {
+    // We need raw HTML, not JSON
+    const response = await apiClient.post('/payments/init', payload, {
+      headers: { 'Content-Type': 'application/json' },
+      responseType: 'text',
+    });
+    return response.data as unknown as string;
+  },
+};
+
 // ===== WARNING SERVICES =====
 export const warningService = {
   // Get all warnings

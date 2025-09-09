@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Recipe, RecipeIngredient, Ingredient } from "@/lib/api/types";
-import { orderService } from "@/lib/api/services";
+import { paymentService } from "@/lib/api/services";
 import { Button } from "@/components/ui/button";
 import { X, ShoppingCart, Loader2, ThumbsUp, Coffee } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -116,31 +116,31 @@ export default function RecipeDetailsDialog({
     setErrorMessage("");
 
     try {
-      const response = await orderService.createOrder({
+      // Ask server to build and return an HTML form that posts to CCAvenue
+      const html = await paymentService.initiate({
         user_id: userId,
         machine_id: machineId,
         recipe_id: recipe.recipe_id,
-        bill: recipe.price,
-        status: "pending",
       });
 
-      if (response.success && response.data) {
-        setShowOrderSuccess(true);
-
-        // Wait 2 seconds before redirecting to success page
-        setTimeout(() => {
-          router.push(
-            `/product/success?recipe=${encodeURIComponent(
-              recipe.name
-            )}&price=${encodeURIComponent(recipe.price)}`
-          );
-        }, 2000);
+      // Create a new document and write the HTML to trigger redirect
+      const newWindow = window.open('', '_self');
+      if (newWindow) {
+        newWindow.document.open();
+        newWindow.document.write(html);
+        newWindow.document.close();
       } else {
-        setErrorMessage("Failed to place order. Please try again.");
+        // Fallback: render inline
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        iframe.contentDocument?.open();
+        iframe.contentDocument?.write(html);
+        iframe.contentDocument?.close();
       }
     } catch (err) {
-      console.error("Order error:", err);
-      setErrorMessage("An error occurred while placing your order.");
+      console.error('Payment initiation error:', err);
+      setErrorMessage('Failed to initiate payment. Please try again.');
     } finally {
       setIsOrdering(false);
     }
