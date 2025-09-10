@@ -7,7 +7,11 @@ const router = express.Router();
 router.post('/init', initiatePayment);
 
 // CCAvenue response/cancel callback (POST encResp)
-router.post('/ccav-response', express.urlencoded({ extended: true }), handleCcavResponse);
+router.post(
+  '/ccav-response',
+  express.urlencoded({ extended: true, limit: '2mb' }),
+  handleCcavResponse
+);
 
 export default router;
 

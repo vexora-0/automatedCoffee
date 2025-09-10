@@ -8,8 +8,8 @@ import { decryptCc, encryptCc, getIvBase64, getKeyBase64FromWorkingKey, serializ
 
 // Environment / merchant config
 const MERCHANT_ID = process.env.CCAV_MERCHANT_ID || '4401460';
-const ACCESS_CODE = process.env.CCAV_ACCESS_CODE || 'ATYF83MI55AD63FYDA';
-const WORKING_KEY = process.env.CCAV_WORKING_KEY || '43A6895320C883451367AC62F8B64E3C';
+const ACCESS_CODE = process.env.CCAV_ACCESS_CODE || 'ATTB06MI55AU46BTUA';
+const WORKING_KEY = process.env.CCAV_WORKING_KEY || '92220F4A49F5E3AE3D3DDB37E06CAD7B';
 const PAYMENT_URL = process.env.CCAV_INIT_URL || 'https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction';
 
 // The URL that CCAvenue will POST back to with encResp
@@ -30,8 +30,8 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Create a pending order to attach to transaction
-    const orderId = uuidv4().replace(/-/g, '');
+    // Create a pending order to attach to transaction (CCAvenue typically limits to 20 chars)
+    const orderId = uuidv4().replace(/-/g, '').substring(0, 20);
     await Order.create({
       order_id: orderId,
       user_id,
@@ -42,14 +42,21 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
       status: 'pending'
     });
 
+    // Resolve URLs (prefer explicit env, else derive from request)
+    const xfProto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
+    const host = req.get('host');
+    const serverBase = host ? `${xfProto}://${host}` : (process.env.SERVER_PUBLIC_URL || 'http://localhost:5000');
+    const responseUrl = process.env.CCAV_RESPONSE_URL || `${serverBase}/api/payments/ccav-response`;
+    const cancelUrl = process.env.CCAV_CANCEL_URL || responseUrl;
+
     // Build billing parameters minimal required
     const params: Record<string, string | number> = {
       merchant_id: MERCHANT_ID,
       order_id: orderId,
       amount: recipe.price.toFixed(2),
       currency: 'INR',
-      redirect_url: RESPONSE_URL,
-      cancel_url: CANCEL_URL,
+      redirect_url: responseUrl,
+      cancel_url: cancelUrl,
       language: 'EN',
       billing_name: user.name,
       billing_tel: user.phone_number,
@@ -64,12 +71,11 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
     const ivBase64 = getIvBase64();
     const encRequest = encryptCc(plain, keyBase64, ivBase64);
 
-    // Return an HTML form that auto-submits to CCAvenue
+    // Return an HTML form that auto-submits to CCAvenue (only encRequest and access_code as per kit)
     const formHtml = `<!doctype html><html><head><meta charset="utf-8"><title>Redirecting...</title></head><body>
       <form id="ccavForm" method="post" action="${PAYMENT_URL}">
         <input type="hidden" name="encRequest" value="${encRequest}" />
         <input type="hidden" name="access_code" value="${ACCESS_CODE}" />
-        <input type="hidden" name="merchant_id" value="${MERCHANT_ID}" />
       </form>
       <script>document.getElementById('ccavForm').submit();</script>
     </body></html>`;
@@ -117,7 +123,9 @@ export const handleCcavResponse = async (req: Request, res: Response): Promise<v
     );
 
     // Redirect the client app to success/failure page with details
-    const clientBase = process.env.CLIENT_PUBLIC_URL || 'http://localhost:3000';
+    const xfProto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
+    const host = req.get('host');
+    const clientBase = process.env.CLIENT_PUBLIC_URL || (host ? `${xfProto}://${host}` : 'http://localhost:3000');
     let recipeName = '';
     let amount = '';
 
