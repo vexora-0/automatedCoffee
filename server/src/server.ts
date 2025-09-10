@@ -72,6 +72,11 @@ app.get('/', (req, res) => {
   res.send('Automated Coffee API is running');
 });
 
+// Ignore favicon requests to avoid 404 noise
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end();
+});
+
 app.get('/api/health-check', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });

@@ -8,8 +8,8 @@ import { decryptCc, encryptCc, getIvBase64, getKeyBase64FromWorkingKey, serializ
 
 // Environment / merchant config
 const MERCHANT_ID = process.env.CCAV_MERCHANT_ID || '4401460';
-const ACCESS_CODE = process.env.CCAV_ACCESS_CODE || 'ATYF83MI55AD63FYDA';
-const WORKING_KEY = process.env.CCAV_WORKING_KEY || '43A6895320C883451367AC62F8B64E3C';
+const ACCESS_CODE = process.env.CCAV_ACCESS_CODE || 'ATTB06MI55AU46BTUA';
+const WORKING_KEY = process.env.CCAV_WORKING_KEY || '92220F4A49F5E3AE3D3DDB37E06CAD7B';
 const PAYMENT_URL = process.env.CCAV_INIT_URL || 'https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction';
 
 // The URL that CCAvenue will POST back to with encResp
