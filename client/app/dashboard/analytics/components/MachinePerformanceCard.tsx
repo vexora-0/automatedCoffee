@@ -139,33 +139,7 @@ const MachinePerformanceCard: React.FC<MachinePerformanceProps> = ({
               <Progress value={orderStats.rate} className="h-2 mt-1" />
             </div>
 
-            <div className="pt-2 border-t">
-              <div className="flex justify-between items-center">
-                <span className="text-sm flex items-center gap-1">
-                  <Star className="h-4 w-4 text-yellow-500" />
-                  Customer Rating
-                </span>
-                <span className="text-sm font-medium">
-                  {ratingStats.average ? ratingStats.average.toFixed(1) : "N/A"} /
-                  5{ratingStats.count > 0 && ` (${ratingStats.count} ratings)`}
-                </span>
-              </div>
-
-              {ratingStats.average > 0 && (
-                <div className="flex gap-1 mt-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`h-4 w-4 ${
-                        star <= Math.round(ratingStats.average)
-                          ? "text-yellow-500 fill-yellow-500"
-                          : "text-muted-foreground"
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+          
           </>
         ) : (
           <div className="text-center py-6">

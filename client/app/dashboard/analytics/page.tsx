@@ -26,48 +26,18 @@ import RevenueMetricsCard from "@/app/dashboard/analytics/components/RevenueMetr
 import SalesChart from "@/app/dashboard/analytics/components/SalesChart";
 import SalesOverTimeChart from "@/app/dashboard/analytics/components/SalesOverTimeChart";
 
+// Import API client from services
+import { apiClient } from "@/lib/api";
+
 // Import UI components properly instead of local implementations
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DatePickerWithRange } from "@/components/date-range-picker";
 
-// DatePicker improved implementation
-interface DatePickerProps {
-  date: { from: Date; to: Date };
-  onDateChange: (date: DayPickerDateRange) => void;
-  className?: string;
-}
-
-const DatePickerWithRange = ({
-  date,
-  onDateChange,
-  className,
-}: DatePickerProps) => {
-  const handleDateChange = () => {
-    // Simple implementation that would normally open a date picker
-    const newFrom = new Date();
-    newFrom.setDate(newFrom.getDate() - 7); // Default to last 7 days
-    const newTo = new Date();
-
-    onDateChange({ from: newFrom, to: newTo });
-  };
-
-  return (
-    <div
-      className={`border rounded p-2 cursor-pointer hover:bg-gray-50 ${
-        className || ""
-      }`}
-      onClick={handleDateChange}
-    >
-      <div className="text-sm">Date range</div>
-      <div className="text-xs text-gray-500">
-        {format(date.from, "PP")} - {format(date.to, "PP")}
-      </div>
-    </div>
-  );
-};
+// DatePickerWithRange is now imported from components
 
 // Add this interface definition
 interface CategorySalesData {
@@ -76,137 +46,101 @@ interface CategorySalesData {
   amount: number;
 }
 
-// Update the return type
 const formatCategorySalesData = (data: CategorySales[] | any) => {
   // Ensure data is an array
-  if (!data || !Array.isArray(data)) return [];
+  if (!data || !Array.isArray(data)) {
+    return [];
+  }
 
-  return data.map((category) => {
+  const formatted = data.map((category) => {
     if (!category) return { name: "Unknown", units: 0, amount: 0 };
 
     return {
-      name: category.name || category.categoryName || "Other",
+      name: category.name || category.categoryName || "Unknown Category",
       units: category.units || category.totalSold || 0,
       amount: category.amount || category.totalRevenue || 0,
     };
-  });
+  }).filter(item => item.name !== "Unknown Category" || item.units > 0 || item.amount > 0);
+
+  return formatted;
 };
 
 const formatProductSalesData = (data: Product[] | any) => {
   // Ensure data is an array
-  if (!data || !Array.isArray(data)) return [];
+  if (!data || !Array.isArray(data)) {
+    return [];
+  }
 
-  return data.map((product) => {
-    if (!product)
-      return { name: "Unknown", units: 0, amount: 0, category: "Other" };
+  const formatted = data.map((product) => {
+    if (!product) return { name: "Unknown", units: 0, amount: 0, category: "Other" };
 
     return {
-      name: product.name || "Unknown",
-      units: product.totalSold || product.unitsSold || 0,
-      amount: product.totalRevenue || product.revenue || 0,
+      name: product.name || "Unknown Product",
+      units: product.totalSold || product.unitsSold || product.units || 0,
+      amount: product.totalRevenue || product.revenue || product.amount || 0,
       category: product.categoryName || product.category || "Other",
     };
-  });
+  }).filter(item => item.name !== "Unknown Product" || item.units > 0 || item.amount > 0);
+
+  return formatted;
 };
 
 const formatSalesChartData = (
-  data: SalesDataPoint[] | any,
+  data: any,
   isToday: boolean
 ) => {
-  // Ensure data is an array
-  if (!data || !Array.isArray(data) || data.length === 0) {
-    // Return empty record with at least one hour and one day to avoid empty chart
-    const emptyRecord: Record<string, { units: number; amount: number }> = {};
-
-    if (isToday) {
-      // Add some placeholder hourly data
-      for (let i = 0; i < 24; i++) {
-        emptyRecord[`${i}:00`] = { units: 0, amount: 0 };
-      }
-    } else {
-      // Add some placeholder daily data for the last 7 days
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        emptyRecord[format(date, "yyyy-MM-dd")] = { units: 0, amount: 0 };
-      }
-    }
-
-    return emptyRecord;
+  // If data is already in the right format (object with string keys), return it
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    return data;
   }
 
-  const formattedData: Record<string, { units: number; amount: number }> = {};
+  // If data is an array, convert to the expected object format
+  if (Array.isArray(data)) {
+    const formattedData: Record<string, { units: number; amount: number }> = {};
 
-  data.forEach((point) => {
-    // Make sure point is a valid object
-    if (!point) return;
+    data.forEach((point) => {
+      if (!point) return;
 
-    // Format key based on whether it's hourly or daily data
-    let key;
-    if (isToday && point.time) {
-      key = point.time;
-    } else if (!isToday && point.date) {
-      // Ensure correct date format for daily data
-      try {
-        key = format(new Date(point.date), "yyyy-MM-dd");
-      } catch (e) {
+      // Format key based on whether it's hourly or daily data
+      let key;
+      if (isToday && point.time) {
+        key = point.time;
+      } else if (!isToday && point.date) {
         key = point.date;
+      } else if (point.timeInterval) {
+        key = point.timeInterval;
       }
-    } else {
-      key = isToday ? "00:00" : format(new Date(), "yyyy-MM-dd");
-    }
 
-    formattedData[key] = {
-      units: point.units || 0,
-      amount: point.revenue || 0,
-    };
-  });
-
-  // If no data was processed, return the empty record with placeholders
-  if (Object.keys(formattedData).length === 0) {
-    const emptyRecord: Record<string, { units: number; amount: number }> = {};
-
-    if (isToday) {
-      // Add some placeholder hourly data
-      for (let i = 0; i < 24; i++) {
-        emptyRecord[`${i}:00`] = { units: 0, amount: 0 };
+      if (key) {
+        formattedData[key] = {
+          units: point.units || 0,
+          amount: point.revenue || point.amount || 0,
+        };
       }
-    } else {
-      // Add some placeholder daily data for the last 7 days
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        emptyRecord[format(date, "yyyy-MM-dd")] = { units: 0, amount: 0 };
-      }
-    }
+    });
 
-    return emptyRecord;
+    return formattedData;
   }
 
-  return formattedData;
+  return {};
 };
 
 const formatTimeSeriesData = (data: any) => {
   // Ensure data is an array
-  if (!data || !Array.isArray(data)) return [];
+  if (!data || !Array.isArray(data)) {
+    return [];
+  }
 
-  return data.map((point) => {
-    // Make sure point is a valid object
-    if (!point)
-      return {
-        timeInterval: "",
-        units: 0,
-        revenue: 0,
-        orders: 0,
-      };
-
-    return {
-      timeInterval: point.time || point.date || "",
+  const formatted = data
+    .filter((point) => point != null)
+    .map((point) => ({
+      timeInterval: point.timeInterval || point.time || point.date || "",
       units: point.units || 0,
-      revenue: point.revenue || 0,
+      revenue: point.revenue || point.amount || 0,
       orders: point.orders || 0,
-    };
-  });
+    }));
+
+  return formatted;
 };
 
 // Updated PopularProductsTable component
@@ -244,45 +178,6 @@ const PopularProductsTable = ({ products }: { products: Product[] }) => (
     </table>
   </div>
 );
-
-// Real API service with fetch implementation and no fallback mock data
-const apiService = {
-  async get<T>(
-    url: string,
-    options?: { params?: Record<string, unknown> }
-  ): Promise<{ success: boolean; data: T }> {
-    try {
-      // Add timestamp to force fresh response
-      const baseParams = options?.params || {};
-      const params = {
-        ...baseParams,
-        _t: Date.now(), // Add timestamp to bust cache
-      };
-
-      const queryParams = params
-        ? "?" +
-          new URLSearchParams(
-            Object.entries(params)
-              .filter(([, v]) => v !== undefined)
-              .map(([k, v]) => [k, String(v)])
-          ).toString()
-        : "";
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-      const response = await fetch(`${apiUrl}${url}${queryParams}`);
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return { success: true, data: result as T };
-    } catch (error) {
-      console.error("API request failed:", error);
-      return { success: false, data: {} as T };
-    }
-  },
-};
 
 // Improve type definitions with more specific typing
 interface Machine {
@@ -480,10 +375,10 @@ export default function AnalyticsPage() {
   const [machines, setMachines] = useState<Machine[]>([]);
   const [selectedMachine, setSelectedMachine] = useState<string>("all");
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
-    from: new Date(new Date().setDate(new Date().getDate() - 7)),
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date(),
   });
-  const [timeFrame, setTimeFrame] = useState<string>("today");
+  const [timeFrame, setTimeFrame] = useState<string>("30days");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
@@ -503,18 +398,19 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const fetchMachines = async () => {
       try {
-        const response = await apiService.get<{
-          data: Machine[];
-          count: number;
-        }>("/machines");
-        if (response.success) {
+        
+        const response = await apiClient.get("/machines");
+
+        
+        if (response.data && response.data.success) {
           // Ensure machines is always an array
           const machinesData = Array.isArray(response.data.data)
             ? response.data.data
             : [];
           setMachines(machinesData);
         }
-      } catch (_error) {
+      } catch (error) {
+        console.error("Error fetching machines:", error);
         setError("Failed to load machines data");
       }
     };
@@ -559,14 +455,22 @@ export default function AnalyticsPage() {
         setSalesOverTime(timeSeriesResponse);
         setMachinePerformance(performanceResponse);
 
-        // Check for zero-value data
+        // Check for zero-value data and provide helpful messaging
         const foundZeroValues = 
           (!salesResponse || (salesResponse.total?.units === 0)) &&
           productResponse.every(p => (!p.totalSold || p.totalSold === 0) && (!p.unitsSold || p.unitsSold === 0)) &&
           categoryResponse.every(c => !c.units || c.units === 0);
           
         if (foundZeroValues) {
-          setError("Your analytics dashboard is ready but showing zero values. This could be because there are no completed orders yet or the order data is missing values.");
+          const timeMsg = timeFrame === "today" 
+            ? "today" 
+            : timeFrame === "7days" 
+            ? "the last 7 days"
+            : timeFrame === "30days"
+            ? "the last 30 days"
+            : "the selected time period";
+            
+          setError(`No completed orders found for ${timeMsg}. Try selecting a different time period or check if there are completed orders in your system.`);
         }
       } catch (error) {
         console.error("Error in fetchAnalyticsData:", error);
@@ -616,14 +520,16 @@ export default function AnalyticsPage() {
         : "/sales/machines";
 
     try {
-      const response = await apiService.get<{ data: SalesData }>(
-        `/analytics${endpoint}`,
-        { params }
-      );
+      
+      const response = await apiClient.get(`/analytics${endpoint}`, { 
+        params: params as any 
+      });
+
 
       // Ensure we have valid hourly and daily data arrays
-      if (response.success && response.data.data) {
+      if (response.data && response.data.success && response.data.data) {
         const result = response.data.data;
+        
         // Ensure hourly and daily are arrays or set them to empty arrays
         return {
           hourly: Array.isArray(result.hourly) ? result.hourly : [],
@@ -631,6 +537,7 @@ export default function AnalyticsPage() {
           total: result.total,
         };
       }
+      console.warn(`⚠️ [Frontend] No sales data in response`);
       return null;
     } catch (error) {
       console.error("Error fetching sales data:", error);
@@ -642,14 +549,16 @@ export default function AnalyticsPage() {
     params: QueryParams
   ): Promise<Product[]> => {
     try {
-      const response = await apiService.get<{ data: any[] }>(
-        "/analytics/sales/product",
-        { params }
-      );
       
-      if (response.success && Array.isArray(response.data.data)) {
+      const response = await apiClient.get("/analytics/sales/product", { 
+        params: params as any 
+      });
+
+      
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        
         // Properly map fields from backend to frontend
-        return response.data.data.map(item => ({
+        return response.data.data.map((item: any) => ({
           id: item._id || "",
           name: item.name || "Unknown Product",
           unitsSold: item.unitsSold || 0,
@@ -661,6 +570,7 @@ export default function AnalyticsPage() {
           categoryName: item.categoryName || "Other"
         }));
       }
+      console.warn(`⚠️ [Frontend] No product sales data in response`);
       return [];
     } catch (error) {
       console.error("Error fetching product sales data:", error);
@@ -672,19 +582,22 @@ export default function AnalyticsPage() {
     params: QueryParams
   ): Promise<CategorySales[]> => {
     try {
-      const response = await apiService.get<{ data: any[] }>(
-        "/analytics/sales/category",
-        { params }
-      );
       
-      if (response.success && Array.isArray(response.data.data)) {
+      const response = await apiClient.get("/analytics/sales/category", { 
+        params: params as any 
+      });
+
+      
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        
         // Properly map fields from backend to frontend
-        return response.data.data.map(item => ({
+        return response.data.data.map((item: any) => ({
           name: item.categoryName || item.name || "Other",
           units: item.totalSold || item.units || 0,
           amount: item.totalRevenue || item.amount || 0
         }));
       }
+      console.warn(`⚠️ [Frontend] No category sales data in response`);
       return [];
     } catch (error) {
       console.error("Error fetching category sales data:", error);
@@ -706,11 +619,21 @@ export default function AnalyticsPage() {
 
     params.interval = intervalParam;
 
-    const response = await apiService.get<{ data: RevenueData }>(
-      "/analytics/revenue",
-      { params }
-    );
-    return response.success ? response.data.data : null;
+    try {
+      
+      const response = await apiClient.get("/analytics/revenue", { 
+        params: params as any 
+      });
+
+      
+      if (response.data && response.data.success) {
+        return response.data.data;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching revenue data:", error);
+      return null;
+    }
   };
 
   const fetchPopularProductsData = async (
@@ -718,14 +641,16 @@ export default function AnalyticsPage() {
   ): Promise<Product[]> => {
     params.limit = 10;
     try {
-      const response = await apiService.get<{ data: any[] }>(
-        "/analytics/products/popular",
-        { params }
-      );
       
-      if (response.success && Array.isArray(response.data.data)) {
+      const response = await apiClient.get("/analytics/products/popular", { 
+        params: params as any 
+      });
+
+      
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        
         // Properly map fields from backend to frontend
-        return response.data.data.map(item => ({
+        return response.data.data.map((item: any) => ({
           id: item._id || "",
           name: item.name || "Unknown Product",
           totalSold: item.totalSold || 0,
@@ -733,6 +658,7 @@ export default function AnalyticsPage() {
           categoryName: item.categoryName || "Other"
         }));
       }
+      console.warn(`⚠️ [Frontend] No popular products data in response`);
       return [];
     } catch (error) {
       console.error("Error fetching popular products:", error);
@@ -755,11 +681,22 @@ export default function AnalyticsPage() {
     params.interval = intervalParam;
     params.limit = 10;
 
-    const response = await apiService.get<{ data: SalesDataPoint[] }>(
-      "/analytics/sales/time",
-      { params }
-    );
-    return response.success ? response.data.data : [];
+    try {
+      
+      const response = await apiClient.get("/analytics/sales/time", { 
+        params: params as any 
+      });
+
+      
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      console.warn(`⚠️ [Frontend] No sales over time data in response`);
+      return [];
+    } catch (error) {
+      console.error("Error fetching sales over time data:", error);
+      return [];
+    }
   };
 
   const fetchMachinePerformanceData = async (
@@ -772,11 +709,21 @@ export default function AnalyticsPage() {
 
     params.limit = 10;
 
-    const response = await apiService.get<{ data: MachinePerformance }>(
-      `/analytics${endpoint}`,
-      { params }
-    );
-    return response.success ? response.data.data : null;
+    try {
+      
+      const response = await apiClient.get(`/analytics${endpoint}`, { 
+        params: params as any 
+      });
+
+      
+      if (response.data && response.data.success) {
+        return response.data.data;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching machine performance data:", error);
+      return null;
+    }
   };
 
   return (
@@ -807,7 +754,16 @@ export default function AnalyticsPage() {
         <CardHeader className="pb-2">
           <CardTitle>Analytics Overview</CardTitle>
           <CardDescription>
-            Key metrics from all coffee machine operations
+            Key metrics from all coffee machine operations{" "}
+            {timeFrame === "today" 
+              ? "(Today)" 
+              : timeFrame === "7days" 
+              ? "(Last 7 Days)"
+              : timeFrame === "30days"
+              ? "(Last 30 Days)"
+              : timeFrame === "custom"
+              ? `(${format(dateRange.from, "MMM dd")} - ${format(dateRange.to, "MMM dd")})`
+              : "(Last 30 Days)"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -823,7 +779,7 @@ export default function AnalyticsPage() {
             <StatCard
               title="Orders"
               value={
-                getOrders(revenueData?.total).toLocaleString("en-IN") || "142"
+                getOrders(revenueData?.total).toLocaleString("en-IN")
               }
               trend="up"
               trendValue="+8% from last period"
@@ -882,7 +838,7 @@ export default function AnalyticsPage() {
               <SelectContent>
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="7days">Last 7 Days</SelectItem>
-                <SelectItem value="30days">Last 30 Days</SelectItem>
+                <SelectItem value="30days">Last 30 Days (Default)</SelectItem>
                 <SelectItem value="custom">Custom Range</SelectItem>
               </SelectContent>
             </Select>
@@ -890,10 +846,10 @@ export default function AnalyticsPage() {
 
           {timeFrame === "custom" && (
             <DatePickerWithRange
-              className="w-full sm:w-auto border rounded-md p-2 bg-white"
+              className="w-full sm:w-auto"
               date={dateRange}
               onDateChange={(date) => {
-                if (date.from && date.to) {
+                if (date?.from && date?.to) {
                   setDateRange({ from: date.from, to: date.to });
                 }
               }}
@@ -903,17 +859,24 @@ export default function AnalyticsPage() {
       </div>
 
       {error && (
-        <Alert
-          variant="destructive"
-          className="mb-6 bg-blue-50 border border-blue-200 text-blue-800"
-        >
-          <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <AlertDescription className="text-sm font-medium">{error}</AlertDescription>
+        <Alert className="mb-6 bg-blue-50 border border-blue-200 text-blue-800">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <AlertDescription className="text-sm font-medium">{error}</AlertDescription>
+            </div>
+            {timeFrame === "today" && (
+              <button
+                onClick={() => setTimeFrame("30days")}
+                className="ml-4 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+              >
+                Try Last 30 Days
+              </button>
+            )}
           </div>
         </Alert>
       )}

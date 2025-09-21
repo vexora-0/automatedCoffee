@@ -38,8 +38,10 @@ const parseDateRange = (req: Request) => {
 // Get sales data for a specific machine or all machines
 export const getMachineSales = async (req: Request, res: Response): Promise<void> => {
   try {
+    
     const { machineId } = req.params;
     const dateFilter = parseDateRange(req);
+    
     
     // Build the filter
     let filter: any = {
@@ -50,6 +52,7 @@ export const getMachineSales = async (req: Request, res: Response): Promise<void
     if (machineId && machineId !== 'all') {
       filter.machine_id = machineId;
     }
+    
     
     // Use aggregation instead of populate to properly join with recipe_id
     const orders = await Order.aggregate([
@@ -65,10 +68,12 @@ export const getMachineSales = async (req: Request, res: Response): Promise<void
       { $unwind: '$recipe' }
     ]);
     
+    
     // Calculate total sales amount
     const total = orders.reduce((sum, order: any) => {
       return sum + (order.bill || 0);
     }, 0);
+    
     
     // Group orders by hour for today's sales analysis
     if (!req.query.startDate && !req.query.endDate) {
@@ -135,8 +140,10 @@ export const getMachineSales = async (req: Request, res: Response): Promise<void
 // Get sales data by product
 export const getSalesByProduct = async (req: Request, res: Response): Promise<void> => {
   try {
+    
     const { machineId, categoryId } = req.query;
     const dateFilter = parseDateRange(req);
+    
     
     // Build the filter
     let filter: any = {
@@ -230,8 +237,10 @@ export const getSalesByProduct = async (req: Request, res: Response): Promise<vo
 // Get sales data by category
 export const getSalesByCategory = async (req: Request, res: Response): Promise<void> => {
   try {
+    
     const { machineId } = req.query;
     const dateFilter = parseDateRange(req);
+    
     
     // Build the filter
     let filter: any = {

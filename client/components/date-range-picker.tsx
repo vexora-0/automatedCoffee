@@ -25,44 +25,64 @@ export function DatePickerWithRange({
   onDateChange,
   className,
 }: DatePickerWithRangeProps) {
+  const [open, setOpen] = React.useState(false);
+
+  const handleDateSelect = (newDate: DateRange | undefined) => {
+    if (newDate) {
+      onDateChange(newDate);
+      // Auto-close when both dates are selected
+      if (newDate.from && newDate.to) {
+        setTimeout(() => setOpen(false), 200);
+      }
+    }
+  };
+
   return (
     <div className={cn("grid gap-2", className)}>
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             id="date"
             variant={"outline"}
             className={cn(
-              "w-full justify-start text-left font-normal",
-              !date && "text-muted-foreground"
+              "w-full min-w-[280px] justify-start text-left font-medium bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 px-4 py-2 h-11 shadow-sm",
+              !date && "text-gray-500"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            <CalendarIcon className="mr-3 h-4 w-4 text-gray-500" />
             {date?.from ? (
               date.to ? (
-                <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
-                </>
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium text-gray-900">
+                    {format(date.from, "MMM dd, y")}
+                  </span>
+                  <span className="text-gray-400">→</span>
+                  <span className="font-medium text-gray-900">
+                    {format(date.to, "MMM dd, y")}
+                  </span>
+                </div>
               ) : (
-                format(date.from, "LLL dd, y")
+                <span className="font-medium text-gray-900">
+                  {format(date.from, "MMM dd, y")}
+                </span>
               )
             ) : (
-              <span>Pick a date range</span>
+              <span className="text-gray-500">Select date range</span>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent 
+          className="w-auto p-0 bg-white border shadow-lg rounded-lg" 
+          align="start"
+          side="bottom"
+          sideOffset={8}
+        >
           <Calendar
             initialFocus
             mode="range"
             defaultMonth={date?.from}
             selected={date}
-            onSelect={(newDate) => {
-              if (newDate) {
-                onDateChange(newDate);
-              }
-            }}
+            onSelect={handleDateSelect}
             numberOfMonths={2}
             required={false}
           />
