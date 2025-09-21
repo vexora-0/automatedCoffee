@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,7 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
@@ -69,6 +71,7 @@ interface StaffFormData {
 }
 
 export default function StaffManagementPage() {
+  const router = useRouter();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(true);
@@ -321,6 +324,17 @@ export default function StaffManagementPage() {
       </div>
 
       <div className="relative z-10 p-8">
+        {/* Back Button */}
+        <div className="flex items-center space-x-4 mb-6">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center space-x-2 text-[#8A5738] hover:text-[#5F3023] transition-colors duration-200"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+        </div>
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>

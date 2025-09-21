@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 import {
   LineChart,
   TrendingUp,
@@ -13,6 +14,7 @@ import {
   CreditCard,
   ArrowUpRight,
   ArrowDownRight,
+  ArrowLeft,
 } from "lucide-react";
 import type { DateRange as DayPickerDateRange } from "react-day-picker";
 
@@ -471,6 +473,8 @@ const StatCard = ({
 };
 
 export default function AnalyticsPage() {
+  const router = useRouter();
+  
   // State declarations
   const [activeTab, setActiveTab] = useState<string>("sales");
   const [machines, setMachines] = useState<Machine[]>([]);
@@ -777,6 +781,17 @@ export default function AnalyticsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-8 bg-gray-50 min-h-screen">
+      {/* Back Button */}
+      <div className="flex items-center space-x-4">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span className="text-sm font-medium">Back</span>
+        </button>
+      </div>
+
       <div className="flex flex-col space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
           Analytics Dashboard

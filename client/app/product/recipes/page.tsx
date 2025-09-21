@@ -103,7 +103,6 @@ export default function RecipesPage() {
     const loadIngredients = async () => {
       if (ingredients.length === 0) {
         try {
-          console.log("[Recipes] Fetching ingredients from API...");
           const response = await ingredientService.getAllIngredients();
 
           if (response.success && response.data) {
@@ -133,7 +132,6 @@ export default function RecipesPage() {
       // Only load if we have recipes but no recipe ingredients
       if (currentRecipeIngredients.length === 0 && recipes.length > 0) {
         try {
-          console.log("[Recipes] Fetching recipe ingredients from API...");
           recipeIngredientStore.setLoading(true);
 
           // Use only the service, skip direct fetch attempt
@@ -184,14 +182,14 @@ export default function RecipesPage() {
       return;
     }
 
-    // If no machine ID is stored, use a default or handle appropriately
+    // If no machine ID is stored, redirect to machine auth page
     if (!storedMachineId) {
-      console.log("[Recipes] No machine ID found, using default");
-      // You can set a default machine ID or handle it differently
-      // For now, we'll continue without redirecting
+      console.log("[Recipes] No machine ID found, redirecting to machine auth");
+      router.push("/product/auth/machine");
+      return;
     }
 
-    setMachineId(storedMachineId || "default-machine");
+    setMachineId(storedMachineId);
 
     // Initialize WebSocket connection if not already connected
     if (!webSocketStore.isConnected) {

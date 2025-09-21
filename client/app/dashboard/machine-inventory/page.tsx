@@ -662,7 +662,7 @@ export default function MachineInventoryManagement() {
                                   <div className="flex justify-between text-xs">
                                     <span>{item.quantity}</span>
                                     <span>
-                                      {item.max_capacity || "Unknown"}
+                                      {item.max_capacity ? item.max_capacity : "—"}
                                     </span>
                                   </div>
                                   <Progress
@@ -675,12 +675,30 @@ export default function MachineInventoryManagement() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className="border-[#C28654]/30 text-[#5F3023]"
-                                >
-                                  {item.max_capacity || "Not set"}
-                                </Badge>
+                                {item.max_capacity ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="border-[#C28654]/30 text-[#5F3023]"
+                                  >
+                                    {item.max_capacity}
+                                  </Badge>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setUpdateData({
+                                        ingredient_id: item.ingredient_id,
+                                        quantity: item.quantity,
+                                        max_capacity: 0,
+                                      });
+                                      setIsUpdating(true);
+                                    }}
+                                    className="text-xs border-[#C28654]/30 text-[#5F3023] hover:bg-[#C28654]/20"
+                                  >
+                                    Not set
+                                  </Button>
+                                )}
                               </TableCell>
                               <TableCell className="text-[#8A5738]">
                                 {getIngredientUnit(item)}
