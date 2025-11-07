@@ -120,3 +120,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Simple Calendar Styling */
+@layer components {
+  /* Hide navigation on inner sides for dual month view */
+  .rdp-months > .rdp-month:first-child .rdp-nav_button_next {
+    @apply hidden;
+  }
+  
+  .rdp-months > .rdp-month:last-child .rdp-nav_button_previous {
+    @apply hidden;
+  }
+}
