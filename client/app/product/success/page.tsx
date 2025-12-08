@@ -118,8 +118,24 @@ function SuccessPageContent() {
   useEffect(() => {
     if (isConnected && recipeName && !recipePublishedRef.current) {
       console.log(`Sending recipe "${recipeName}" to MQTT input topic`);
-      publish(recipeName);
-      recipePublishedRef.current = true;
+      const success = publish(recipeName);
+      if (success) {
+        console.log(`Recipe "${recipeName}" published successfully`);
+        recipePublishedRef.current = true;
+      } else {
+        console.error(
+          `Failed to publish recipe "${recipeName}" - MQTT client may not be connected`
+        );
+        // Retry after a short delay
+        setTimeout(() => {
+          if (isConnected && !recipePublishedRef.current) {
+            const retrySuccess = publish(recipeName);
+            if (retrySuccess) {
+              recipePublishedRef.current = true;
+            }
+          }
+        }, 1000);
+      }
     }
   }, [isConnected, recipeName, publish]);
 
