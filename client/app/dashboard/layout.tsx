@@ -5,6 +5,12 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { authService } from "@/lib/api/services";
 
+// Deterministic pseudo-random generator to keep server and client renders in sync
+const seededRandom = (seed: number) => {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+};
+
 export default function DashboardLayout({
   children,
 }: {
@@ -81,7 +87,16 @@ export default function DashboardLayout({
 
           {/* Coffee bean pattern */}
           <div className="absolute inset-0">
-            {[...Array(20)].map((_, i) => (
+          {[...Array(20)].map((_, i) => {
+            const seed = i + 1;
+            const width = seededRandom(seed * 5 + 1) * 60 + 20;
+            const height = seededRandom(seed * 5 + 2) * 40 + 10;
+            const top = seededRandom(seed * 5 + 3) * 100;
+            const left = seededRandom(seed * 5 + 4) * 100;
+            const duration = seededRandom(seed * 5 + 5) * 8 + 4;
+            const delay = seededRandom(seed * 5 + 6) * 5;
+
+            return (
               <motion.div
                 key={i}
                 className="absolute rounded-full bg-[#C28654]/10"
@@ -92,19 +107,20 @@ export default function DashboardLayout({
                   rotate: [0, 20, 0],
                 }}
                 transition={{
-                  duration: Math.random() * 8 + 4,
+                  duration,
                   repeat: Infinity,
                   ease: "easeInOut",
-                  delay: Math.random() * 5,
+                  delay,
                 }}
                 style={{
-                  width: Math.random() * 60 + 20 + "px",
-                  height: Math.random() * 40 + 10 + "px",
-                  top: Math.random() * 100 + "%",
-                  left: Math.random() * 100 + "%",
+                  width: `${width}px`,
+                  height: `${height}px`,
+                  top: `${top}%`,
+                  left: `${left}%`,
                 }}
               ></motion.div>
-            ))}
+            );
+          })}
           </div>
         </div>
 
@@ -150,30 +166,40 @@ export default function DashboardLayout({
 
         {/* Coffee bean pattern */}
         <div className="absolute inset-0 opacity-30">
-          {[...Array(15)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full bg-[#C28654]/10"
-              initial={{ opacity: 0.1, scale: 0.8 }}
-              animate={{
-                opacity: [0.1, 0.2, 0.1],
-                scale: [0.8, 1, 0.8],
-                rotate: [0, 10, 0],
-              }}
-              transition={{
-                duration: Math.random() * 12 + 8,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: Math.random() * 5,
-              }}
-              style={{
-                width: Math.random() * 80 + 30 + "px",
-                height: Math.random() * 50 + 15 + "px",
-                top: Math.random() * 100 + "%",
-                left: Math.random() * 100 + "%",
-              }}
-            ></motion.div>
-          ))}
+          {[...Array(15)].map((_, i) => {
+            const seed = i + 101; // offset seed to vary from loading state
+            const width = seededRandom(seed * 5 + 1) * 80 + 30;
+            const height = seededRandom(seed * 5 + 2) * 50 + 15;
+            const top = seededRandom(seed * 5 + 3) * 100;
+            const left = seededRandom(seed * 5 + 4) * 100;
+            const duration = seededRandom(seed * 5 + 5) * 12 + 8;
+            const delay = seededRandom(seed * 5 + 6) * 5;
+
+            return (
+              <motion.div
+                key={i}
+                className="absolute rounded-full bg-[#C28654]/10"
+                initial={{ opacity: 0.1, scale: 0.8 }}
+                animate={{
+                  opacity: [0.1, 0.2, 0.1],
+                  scale: [0.8, 1, 0.8],
+                  rotate: [0, 10, 0],
+                }}
+                transition={{
+                  duration,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay,
+                }}
+                style={{
+                  width: `${width}px`,
+                  height: `${height}px`,
+                  top: `${top}%`,
+                  left: `${left}%`,
+                }}
+              ></motion.div>
+            );
+          })}
         </div>
 
         {/* Swirling coffee elements */}

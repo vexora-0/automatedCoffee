@@ -17,6 +17,7 @@ import {
 } from "@/lib/api/services";
 import AllRecipesList from "./components/AllRecipesList";
 import Image from "next/image";
+import { useRef } from "react";
 
 // Extend Window interface to include our custom property
 declare global {
@@ -35,6 +36,8 @@ export default function RecipesPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [machineId, setMachineId] = useState<string | null>(null);
   const [scrollY, setScrollY] = useState(0);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const INACTIVITY_TIMEOUT_SECONDS = 15;
 
   // Get categories from API
   const { categories, isLoading: isLoadingCategories } = useRecipeCategories();
@@ -72,6 +75,47 @@ export default function RecipesPage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Redirect to screensaver after inactivity
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      inactivityTimerRef.current = setTimeout(() => {
+        // Clear user login details before redirecting to screensaver
+        sessionStorage.removeItem("userId");
+        sessionStorage.removeItem("userName");
+        router.push("/product/screensaver");
+      }, INACTIVITY_TIMEOUT_SECONDS * 1000);
+    };
+
+    const activityEvents = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "touchstart",
+      "scroll",
+    ] as const;
+
+    activityEvents.forEach((eventName) =>
+      window.addEventListener(eventName, resetInactivityTimer)
+    );
+
+    // Start the timer immediately
+    resetInactivityTimer();
+
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      activityEvents.forEach((eventName) =>
+        window.removeEventListener(eventName, resetInactivityTimer)
+      );
+    };
+  }, [isMounted, router]);
 
   // Fetch recipe availability from backend and subscribe to updates
   useEffect(() => {
