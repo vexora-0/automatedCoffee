@@ -1,10 +1,14 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Coffee } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Recipe } from "@/lib/api/types";
+
+// Track failed image URLs to avoid repeated 404 fetches
+const failedImageUrls = new Set<string>();
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -12,13 +16,38 @@ interface RecipeCardProps {
   onClick?: () => void;
 }
 
+// Helper function to validate image URL
+const isValidImageUrl = (url: string | undefined): boolean => {
+  if (!url) return false;
+  try {
+    const urlObj = new URL(url);
+    // Check if it's a valid HTTP/HTTPS URL
+    return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
 export function RecipeCard({
   recipe,
   isAvailable = true,
   onClick,
 }: RecipeCardProps) {
+  const [imageError, setImageError] = useState(false);
+  const [isImageValid, setIsImageValid] = useState(() => 
+    isValidImageUrl(recipe.image_url) && !failedImageUrls.has(recipe.image_url || "")
+  );
+  
   // Format price to show ₹ symbol
   const formattedPrice = `₹${recipe.price}`;
+  
+  // Validate image URL when recipe changes
+  useEffect(() => {
+    const failedPreviously = !!recipe.image_url && failedImageUrls.has(recipe.image_url);
+    const valid = isValidImageUrl(recipe.image_url) && !failedPreviously;
+    setIsImageValid(valid);
+    setImageError(!valid);
+  }, [recipe.image_url]);
 
   return (
     <motion.div
@@ -52,16 +81,48 @@ export function RecipeCard({
 
         {/* Image section */}
         <div className="h-[65%] relative overflow-hidden">
-          <Image
-            src={recipe.image_url || "/placeholder-recipe.jpg"}
-            alt={recipe.name}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className={cn(
-              "object-cover",
-              !isAvailable && "grayscale brightness-50"
-            )}
-          />
+          {!imageError && isImageValid && recipe.image_url ? (
+            <Image
+              src={recipe.image_url}
+              alt={recipe.name}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className={cn(
+                "object-cover",
+                !isAvailable && "grayscale brightness-50"
+              )}
+              onError={() => {
+                // Remember failed URL so we don't retry and spam 404s
+                if (recipe.image_url) {
+                  failedImageUrls.add(recipe.image_url);
+                }
+                setImageError(true);
+                setIsImageValid(false);
+              }}
+              onLoad={() => {
+                // Image loaded successfully
+                if (imageError) setImageError(false);
+              }}
+              // For Cloudinary URLs, use unoptimized to prevent Next.js optimization issues
+              unoptimized={recipe.image_url.includes('cloudinary.com')}
+            />
+          ) : (
+            <div
+              className={cn(
+                "w-full h-full flex items-center justify-center",
+                isAvailable
+                  ? "bg-gradient-to-br from-[#C28654]/20 to-[#8A5738]/20"
+                  : "bg-gray-300"
+              )}
+            >
+              <Coffee
+                className={cn(
+                  "h-16 w-16",
+                  isAvailable ? "text-[#8A5738]/40" : "text-gray-500"
+                )}
+              />
+            </div>
+          )}
 
           {/* Gradient overlay */}
           <div
