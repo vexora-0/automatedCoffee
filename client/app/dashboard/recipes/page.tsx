@@ -238,14 +238,19 @@ export default function RecipesManagement() {
 
     // Fetch recipe ingredients and populate selectedIngredients
     try {
-      const response = await recipeIngredientService.getRecipeIngredientsByRecipeId(recipe.recipe_id);
-      
+      const response =
+        await recipeIngredientService.getRecipeIngredientsByRecipeId(
+          recipe.recipe_id
+        );
+
       if (response.success && response.data) {
         // Map recipe ingredients to IngredientWithQuantity format
         const mappedIngredients: IngredientWithQuantity[] = response.data
           .map((ri) => {
             // Find the full ingredient details from the ingredients list
-            const ingredient = ingredients.find((ing) => ing.ingredient_id === ri.ingredient_id);
+            const ingredient = ingredients.find(
+              (ing) => ing.ingredient_id === ri.ingredient_id
+            );
             if (ingredient) {
               return {
                 ...ingredient,
@@ -255,7 +260,7 @@ export default function RecipesManagement() {
             return null;
           })
           .filter((ing): ing is IngredientWithQuantity => ing !== null);
-        
+
         setSelectedIngredients(mappedIngredients);
       } else {
         // If no ingredients found or error, set empty array
@@ -266,7 +271,7 @@ export default function RecipesManagement() {
       // On error, set empty array
       setSelectedIngredients([]);
     }
-    
+
     setImageFile(null);
 
     setIsEditing(true);
