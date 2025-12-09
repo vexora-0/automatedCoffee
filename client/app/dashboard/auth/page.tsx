@@ -221,11 +221,11 @@ export default function DashboardAuthPage() {
   // Only render animations after component has mounted on the client
   if (!isMounted) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D] flex flex-col items-center justify-center">
         <div className="w-full max-w-md p-8">
           <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold text-white">
-              DASHBOARD <span className="text-amber-500">ACCESS</span>
+            <h2 className="text-2xl font-bold text-[#5F3023]">
+              DASHBOARD <span className="text-[#C28654]">ACCESS</span>
             </h2>
           </div>
         </div>
@@ -234,36 +234,57 @@ export default function DashboardAuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D] flex flex-col items-center justify-center relative overflow-hidden">
       {/* Background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0F0F0F] to-black opacity-80"></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D] opacity-90"></div>
+
+        {/* Coffee bean pattern */}
         <div className="absolute inset-0">
-          {[...Array(40)].map((_, i) => (
-            <div
+          {[...Array(30)].map((_, i) => (
+            <motion.div
               key={i}
-              className="absolute rounded-full bg-amber-900/5"
+              className="absolute rounded-full bg-[#C28654]/10"
+              initial={{ opacity: 0.1, scale: 0.8 }}
+              animate={{
+                opacity: [0.1, 0.3, 0.1],
+                scale: [0.8, 1, 0.8],
+                rotate: [0, 20, 0],
+              }}
+              transition={{
+                duration: Math.random() * 8 + 4,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: Math.random() * 5,
+              }}
               style={{
-                width: Math.random() * 4 + 2 + "px",
-                height: Math.random() * 4 + 2 + "px",
+                width: Math.random() * 40 + 10 + "px",
+                height: Math.random() * 25 + 5 + "px",
                 top: Math.random() * 100 + "%",
                 left: Math.random() * 100 + "%",
               }}
-            ></div>
+            ></motion.div>
           ))}
         </div>
-        <div className="absolute top-0 w-full h-32 bg-gradient-to-b from-black to-transparent"></div>
-        <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-black to-transparent"></div>
+
+        {/* Swirling coffee elements */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute w-[600px] h-[600px] rounded-full border-[10px] border-[#8A5738]/10 -top-[300px] -right-[300px]"></div>
+          <div className="absolute w-[400px] h-[400px] rounded-full border-[8px] border-[#C28654]/10 -bottom-[200px] -left-[200px]"></div>
+        </div>
+
+        <div className="absolute top-0 w-full h-32 bg-gradient-to-b from-[#F4EBDE] to-transparent"></div>
+        <div className="absolute bottom-0 w-full h-32 bg-gradient-to-t from-[#F4EBDE] to-transparent"></div>
       </div>
 
       {/* Header - Back Link */}
       <Link href="/" className="absolute top-8 left-8 z-10">
         <motion.div
           whileHover={{ x: -3 }}
-          className="flex items-center text-gray-400 hover:text-amber-500 transition-colors"
+          className="flex items-center text-[#8A5738] hover:text-[#5F3023] transition-colors duration-300"
         >
           <ChevronLeft size={20} />
-          <span className="ml-1 text-sm">Back to Home</span>
+          <span className="ml-1 text-sm font-medium">Back to Home</span>
         </motion.div>
       </Link>
 
@@ -284,23 +305,23 @@ export default function DashboardAuthPage() {
                 type: "spring",
                 stiffness: 100,
               }}
-              className="inline-flex mb-6 p-3 bg-gradient-to-br from-amber-600/30 to-amber-800/10 rounded-full"
+              className="inline-flex mb-6 p-4 bg-gradient-to-br from-[#C28654]/20 to-[#8A5738]/10 rounded-full backdrop-blur-md border border-[#C28654]/30"
             >
-              <Lock size={32} className="text-amber-500" />
+              <Lock size={32} className="text-[#5F3023]" />
             </motion.div>
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="text-3xl font-bold text-white tracking-tight"
+              className="text-3xl font-bold text-[#5F3023] tracking-tight"
             >
-              DASHBOARD <span className="text-amber-500">ACCESS</span>
+              DASHBOARD <span className="text-[#C28654]">ACCESS</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.5 }}
-              className="mt-2 text-gray-400"
+              className="mt-2 text-[#8A5738]"
             >
               Login or create an account to continue
             </motion.p>
@@ -312,16 +333,16 @@ export default function DashboardAuthPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.6 }}
           >
-            <div className="bg-[#141414] backdrop-blur-md rounded-2xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] border border-[#292929]">
+            <div className="bg-white/90 backdrop-blur-xl rounded-2xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(194,134,84,0.3)] border border-[#C28654]/20">
               {error && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
-                  className="border-b border-red-900/30"
+                  className="border-b border-red-200/50"
                 >
                   <Alert
                     variant="destructive"
-                    className="rounded-none bg-red-900/20 border-0 text-red-300"
+                    className="rounded-none bg-red-50/80 border-0 text-red-700 backdrop-blur-sm"
                   >
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Authentication Error</AlertTitle>
@@ -331,25 +352,25 @@ export default function DashboardAuthPage() {
               )}
 
               <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-[#1A1A1A] rounded-none border-b border-[#292929]">
+                <TabsList className="grid w-full grid-cols-1 bg-[#F4EBDE]/80 rounded-none border-b border-[#C28654]/20">
                   <TabsTrigger
                     value="login"
-                    className="data-[state=active]:bg-[#232323] data-[state=active]:text-amber-500"
+                    className="data-[state=active]:bg-[#C28654]/20 data-[state=active]:text-[#5F3023] text-[#8A5738] font-medium"
                   >
                     Login
                   </TabsTrigger>
-                  <TabsTrigger
+                  {/* <TabsTrigger
                     value="signup"
-                    className="data-[state=active]:bg-[#232323] data-[state=active]:text-amber-500"
+                    className="data-[state=active]:bg-[#C28654]/20 data-[state=active]:text-[#5F3023] text-[#8A5738] font-medium"
                   >
                     Sign Up
-                  </TabsTrigger>
+                  </TabsTrigger> */}
                 </TabsList>
 
                 <TabsContent value="login" className="p-8">
                   <form onSubmit={handleLoginSubmit} className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">
+                      <label className="text-sm font-medium text-[#5F3023]">
                         Email
                       </label>
                       <div className="relative">
@@ -360,19 +381,19 @@ export default function DashboardAuthPage() {
                           onChange={(e) =>
                             updateLoginForm("email", e.target.value)
                           }
-                          className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-12 pl-12 text-white"
+                          className="bg-white/70 border-[#C28654]/30 focus:border-[#5F3023] focus:ring-[#C28654]/20 h-12 pl-12 text-[#5F3023] placeholder:text-[#8A5738]/60 backdrop-blur-sm"
                           required
                           disabled={isLoading}
                         />
                         <Coffee
                           size={18}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500/70"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-[#C28654]"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-300">
+                      <label className="text-sm font-medium text-[#5F3023]">
                         Password
                       </label>
                       <div className="relative">
@@ -383,13 +404,13 @@ export default function DashboardAuthPage() {
                           onChange={(e) =>
                             updateLoginForm("password", e.target.value)
                           }
-                          className="bg-[#1A1A1A] border-[#333] focus:border-amber-600/50 h-12 pl-12 text-white"
+                          className="bg-white/70 border-[#C28654]/30 focus:border-[#5F3023] focus:ring-[#C28654]/20 h-12 pl-12 text-[#5F3023] placeholder:text-[#8A5738]/60 backdrop-blur-sm"
                           required
                           disabled={isLoading}
                         />
                         <Lock
                           size={18}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500/70"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-[#C28654]"
                         />
                       </div>
                     </div>
@@ -402,8 +423,8 @@ export default function DashboardAuthPage() {
                         type="submit"
                         className={`w-full h-12 text-base font-medium ${
                           isLoading
-                            ? "bg-amber-800/20 text-amber-300/80"
-                            : "bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-500 hover:to-amber-700 text-white"
+                            ? "bg-[#8A5738]/20 text-[#5F3023]/60"
+                            : "bg-gradient-to-r from-[#8A5738] to-[#5F3023] hover:from-[#C28654] hover:to-[#8A5738] text-white shadow-lg hover:shadow-xl transition-all duration-300"
                         }`}
                         disabled={
                           isLoading || !loginForm.email || !loginForm.password
@@ -411,7 +432,7 @@ export default function DashboardAuthPage() {
                       >
                         {isLoading ? (
                           <div className="flex items-center justify-center">
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin text-amber-300/80" />
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin text-[#5F3023]/60" />
                             <span>Authenticating...</span>
                           </div>
                         ) : (
@@ -566,10 +587,10 @@ export default function DashboardAuthPage() {
                 </TabsContent>
               </Tabs>
 
-              <div className="py-4 px-8 border-t border-[#292929] flex justify-center">
-                <p className="text-xs text-gray-500">
+              <div className="py-4 px-8 border-t border-[#C28654]/20 flex justify-center bg-[#F4EBDE]/50">
+                <p className="text-xs text-[#8A5738]">
                   Contact{" "}
-                  <span className="text-amber-500 hover:underline cursor-pointer">
+                  <span className="text-[#5F3023] hover:underline cursor-pointer font-medium">
                     support@frothfilter.com
                   </span>{" "}
                   for assistance
@@ -595,11 +616,11 @@ export default function DashboardAuthPage() {
             repeatType: "loop",
             ease: "easeInOut",
           }}
-          className="flex items-center text-xs text-gray-500 tracking-widest"
+          className="flex items-center text-xs text-[#8A5738] tracking-widest"
         >
-          <span className="h-px w-6 bg-gradient-to-r from-transparent to-gray-800 mr-4"></span>
+          <span className="h-px w-6 bg-gradient-to-r from-transparent to-[#C28654] mr-4"></span>
           ADMIN PORTAL
-          <span className="h-px w-6 bg-gradient-to-l from-transparent to-gray-800 ml-4"></span>
+          <span className="h-px w-6 bg-gradient-to-l from-transparent to-[#C28654] ml-4"></span>
         </motion.div>
       </motion.div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,7 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
@@ -69,6 +71,7 @@ interface StaffFormData {
 }
 
 export default function StaffManagementPage() {
+  const router = useRouter();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [machines, setMachines] = useState<Machine[]>([]);
   const [loading, setLoading] = useState(true);
@@ -278,64 +281,457 @@ export default function StaffManagementPage() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D] flex items-center justify-center">
         <div className="text-center">
-          <div className="relative w-12 h-12 mx-auto mb-4">
-            <div className="absolute w-12 h-12 rounded-full border-2 border-amber-500/20"></div>
-            <div className="absolute w-12 h-12 rounded-full border-t-2 border-amber-500 animate-spin"></div>
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute w-16 h-16 rounded-full border-2 border-[#C28654]/30"></div>
+            <div className="absolute w-16 h-16 rounded-full border-t-2 border-[#5F3023] animate-spin"></div>
+            <div className="absolute inset-4 rounded-full bg-[#C28654]/20 flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-[#5F3023]"></div>
+            </div>
           </div>
-          <p className="text-gray-400">Loading staff data...</p>
+          <p className="text-[#5F3023] text-lg font-medium">
+            Loading staff data...
+          </p>
+          <p className="text-[#8A5738]/70 text-sm mt-1">Please wait</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-zinc-600">Staff Management</h1>
-          <p className="text-gray-400">
-            Manage staff members and machine assignments
-          </p>
+    <div className="min-h-screen relative">
+      {/* Background decorative elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D] opacity-90"></div>
+
+        {/* Coffee bean pattern */}
+        <div className="absolute inset-0 opacity-20">
+          {[...Array(16)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-[#C28654]/10"
+              style={{
+                width: Math.random() * 65 + 22 + "px",
+                height: Math.random() * 38 + 12 + "px",
+                top: Math.random() * 100 + "%",
+                left: Math.random() * 100 + "%",
+                transform: `rotate(${Math.random() * 360}deg)`,
+              }}
+            ></div>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative z-10 p-8">
+        {/* Back Button */}
+        <div className="flex items-center space-x-4 mb-6">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center space-x-2 text-[#8A5738] hover:text-[#5F3023] transition-colors duration-200"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
         </div>
 
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-amber-600 hover:bg-amber-700">
-              <Plus size={16} className="mr-2" />
-              Add Staff Member
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl bg-[#141414] border-gray-800">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[#5F3023]">
+              Staff Management
+            </h1>
+            <p className="text-[#8A5738]">
+              Manage staff members and machine assignments
+            </p>
+          </div>
+
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-[#8A5738] to-[#5F3023] hover:from-[#C28654] hover:to-[#8A5738] text-white shadow-lg hover:shadow-xl transition-all duration-300">
+                <Plus size={16} className="mr-2" />
+                Add Staff Member
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-xl border-[#C28654]/20">
+              <DialogHeader>
+                <DialogTitle className="text-[#5F3023]">
+                  Create New Staff Member
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label
+                      htmlFor="name"
+                      className="text-[#5F3023] font-medium"
+                    >
+                      Full Name
+                    </Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="bg-white/70 border-[#C28654]/30 focus:border-[#5F3023] focus:ring-[#C28654]/20 text-[#5F3023] placeholder:text-[#8A5738]/60"
+                      placeholder="Enter full name"
+                    />
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="mobile"
+                      className="text-[#5F3023] font-medium"
+                    >
+                      Mobile Number
+                    </Label>
+                    <Input
+                      id="mobile"
+                      value={formData.mobile_number}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          mobile_number: e.target.value,
+                        })
+                      }
+                      className="bg-white/70 border-[#C28654]/30 focus:border-[#5F3023] focus:ring-[#C28654]/20 text-[#5F3023] placeholder:text-[#8A5738]/60"
+                      placeholder="10-digit mobile number"
+                      maxLength={10}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="email" className="text-[#5F3023] font-medium">
+                    Email Address
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
+                    className="bg-white/70 border-[#C28654]/30 focus:border-[#5F3023] focus:ring-[#C28654]/20 text-[#5F3023] placeholder:text-[#8A5738]/60"
+                    placeholder="Enter email address"
+                  />
+                </div>
+
+                <div>
+                  <Label
+                    htmlFor="address"
+                    className="text-[#5F3023] font-medium"
+                  >
+                    Address
+                  </Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: e.target.value })
+                    }
+                    className="bg-white/70 border-[#C28654]/30 focus:border-[#5F3023] focus:ring-[#C28654]/20 text-[#5F3023] placeholder:text-[#8A5738]/60"
+                    placeholder="Enter full address"
+                  />
+                </div>
+
+                {/* Machine Assignment */}
+                <div>
+                  <Label className="text-[#5F3023] font-medium mb-3 block">
+                    Assign Machines
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                    {machines.map((machine) => (
+                      <div
+                        key={machine.machine_id}
+                        className={`p-3 rounded-md border cursor-pointer transition-colors ${
+                          formData.assigned_machine_ids.includes(
+                            machine.machine_id
+                          )
+                            ? "bg-[#C28654]/20 border-[#C28654]/50 text-[#5F3023]"
+                            : "bg-white/50 border-[#8A5738]/30 text-[#8A5738] hover:border-[#C28654]/50 hover:bg-[#C28654]/10"
+                        }`}
+                        onClick={() =>
+                          toggleMachineAssignment(machine.machine_id)
+                        }
+                      >
+                        <div className="text-sm font-medium">
+                          {machine.location}
+                        </div>
+                        <div className="text-xs opacity-70">
+                          {machine.machine_id}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsCreateDialogOpen(false);
+                      resetForm();
+                    }}
+                    className="border-[#8A5738]/30 text-[#8A5738] hover:bg-[#8A5738]/10"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateStaff}
+                    disabled={
+                      submitting ||
+                      !formData.name ||
+                      !formData.email ||
+                      !formData.mobile_number
+                    }
+                    className="bg-gradient-to-r from-[#8A5738] to-[#5F3023] hover:from-[#C28654] hover:to-[#8A5738] text-white"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 size={16} className="mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Staff Member"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Staff Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-white/90 backdrop-blur-xl border-[#C28654]/20 shadow-xl">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-[#8A5738]">
+                Total Staff
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-[#5F3023]">
+                {staff.length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/90 backdrop-blur-xl border-[#8A5738]/20 shadow-xl">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-[#8A5738]">
+                Active Staff
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-[#C28654]">
+                {staff.filter((s) => s.is_active).length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/90 backdrop-blur-xl border-[#8A5738]/20 shadow-xl">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-[#8A5738]">
+                Total Machines
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-[#5F3023]">
+                {machines.length}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Staff List */}
+        <div className="space-y-4">
+          {staff.length === 0 ? (
+            <Card className="bg-white/90 backdrop-blur-xl border-[#C28654]/20 shadow-xl">
+              <CardContent className="p-8 text-center">
+                <Users size={48} className="mx-auto text-[#8A5738] mb-4" />
+                <p className="text-[#5F3023] mb-2">No staff members found</p>
+                <p className="text-sm text-[#8A5738]">
+                  Create your first staff member to get started.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            staff.map((staffMember) => (
+              <Card
+                key={staffMember.staff_id}
+                className="bg-white/90 backdrop-blur-xl border-[#C28654]/20 shadow-xl"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-[#C28654]/20 rounded-full flex items-center justify-center">
+                        <Users size={20} className="text-[#5F3023]" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-[#5F3023]">
+                          {staffMember.name}
+                        </h3>
+                        <div className="flex items-center space-x-4 text-sm text-[#8A5738]">
+                          <span className="flex items-center">
+                            <Mail size={14} className="mr-1" />
+                            {staffMember.email}
+                          </span>
+                          <span className="flex items-center">
+                            <Phone size={14} className="mr-1" />
+                            {staffMember.mobile_number}
+                          </span>
+                        </div>
+                        <div className="flex items-center mt-2 space-x-4">
+                          <Badge
+                            className={
+                              staffMember.is_active
+                                ? "bg-green-100 text-green-700 border-green-200"
+                                : "bg-red-100 text-red-700 border-red-200"
+                            }
+                          >
+                            {staffMember.is_active ? (
+                              <>
+                                <CheckCircle size={12} className="mr-1" />
+                                Active
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle size={12} className="mr-1" />
+                                Inactive
+                              </>
+                            )}
+                          </Badge>
+                          <span className="text-sm text-[#8A5738]">
+                            {staffMember.assigned_machine_ids.length} machines
+                            assigned
+                          </span>
+                          <span className="text-sm text-[#8A5738]">
+                            Created {formatDate(staffMember.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(staffMember)}
+                        className="border-[#8A5738]/30 text-[#8A5738] hover:bg-[#8A5738] hover:text-white"
+                      >
+                        <Edit size={16} className="mr-1" />
+                        Edit
+                      </Button>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-red-600/50 text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 size={16} className="mr-1" />
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-white/95 backdrop-blur-xl border-[#C28654]/20">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-[#5F3023]">
+                              Delete Staff Member
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-[#8A5738]">
+                              Are you sure you want to delete {staffMember.name}
+                              ? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel className="border-[#8A5738]/30 text-[#8A5738] hover:bg-[#8A5738]/10">
+                              Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() =>
+                                handleDeleteStaff(staffMember.staff_id)
+                              }
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+
+                  {/* Assigned Machines */}
+                  {staffMember.assigned_machine_ids.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-[#C28654]/20">
+                      <p className="text-sm text-[#8A5738] mb-2">
+                        Assigned Machines:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {staffMember.assigned_machine_ids.map((machineId) => {
+                          const machine = machines.find(
+                            (m) => m.machine_id === machineId
+                          );
+                          return (
+                            <Badge
+                              key={machineId}
+                              variant="outline"
+                              className="border-[#C28654]/30 text-[#5F3023] bg-[#C28654]/10"
+                            >
+                              <MapPin size={12} className="mr-1" />
+                              {machine?.location || machineId}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-xl border-[#C28654]/20">
             <DialogHeader>
-              <DialogTitle className="text-white">
-                Create New Staff Member
+              <DialogTitle className="text-[#5F3023]">
+                Edit Staff Member
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name" className="text-gray-300">
+                  <Label
+                    htmlFor="edit-name"
+                    className="text-[#5F3023] font-medium"
+                  >
                     Full Name
                   </Label>
                   <Input
-                    id="name"
+                    id="edit-name"
                     value={formData.name}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="bg-[#1A1A1A] border-gray-700 text-white"
-                    placeholder="Enter full name"
+                    className="bg-white/70 border-[#C28654]/30 focus:border-[#5F3023] focus:ring-[#C28654]/20 text-[#5F3023]"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="mobile" className="text-gray-300">
+                  <Label
+                    htmlFor="edit-mobile"
+                    className="text-[#5F3023] font-medium"
+                  >
                     Mobile Number
                   </Label>
                   <Input
-                    id="mobile"
+                    id="edit-mobile"
                     value={formData.mobile_number}
                     onChange={(e) =>
                       setFormData({
@@ -343,47 +739,50 @@ export default function StaffManagementPage() {
                         mobile_number: e.target.value,
                       })
                     }
-                    className="bg-[#1A1A1A] border-gray-700 text-white"
-                    placeholder="10-digit mobile number"
+                    className="bg-white/70 border-[#C28654]/30 focus:border-[#5F3023] focus:ring-[#C28654]/20 text-[#5F3023]"
                     maxLength={10}
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="email" className="text-gray-300">
+                <Label
+                  htmlFor="edit-email"
+                  className="text-[#5F3023] font-medium"
+                >
                   Email Address
                 </Label>
                 <Input
-                  id="email"
+                  id="edit-email"
                   type="email"
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  className="bg-[#1A1A1A] border-gray-700 text-white"
-                  placeholder="Enter email address"
+                  className="bg-white/70 border-[#C28654]/30 focus:border-[#5F3023] focus:ring-[#C28654]/20 text-[#5F3023]"
                 />
               </div>
 
               <div>
-                <Label htmlFor="address" className="text-gray-300">
+                <Label
+                  htmlFor="edit-address"
+                  className="text-[#5F3023] font-medium"
+                >
                   Address
                 </Label>
                 <Input
-                  id="address"
+                  id="edit-address"
                   value={formData.address}
                   onChange={(e) =>
                     setFormData({ ...formData, address: e.target.value })
                   }
-                  className="bg-[#1A1A1A] border-gray-700 text-white"
-                  placeholder="Enter full address"
+                  className="bg-white/70 border-[#C28654]/30 focus:border-[#5F3023] focus:ring-[#C28654]/20 text-[#5F3023]"
                 />
               </div>
 
               {/* Machine Assignment */}
               <div>
-                <Label className="text-gray-300 mb-3 block">
+                <Label className="text-[#5F3023] font-medium mb-3 block">
                   Assign Machines
                 </Label>
                 <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
@@ -394,8 +793,8 @@ export default function StaffManagementPage() {
                         formData.assigned_machine_ids.includes(
                           machine.machine_id
                         )
-                          ? "bg-amber-600/20 border-amber-600/50 text-amber-400"
-                          : "bg-[#1A1A1A] border-gray-700 text-gray-300 hover:border-gray-600"
+                          ? "bg-[#C28654]/20 border-[#C28654]/50 text-[#5F3023]"
+                          : "bg-white/50 border-[#8A5738]/30 text-[#8A5738] hover:border-[#C28654]/50 hover:bg-[#C28654]/10"
                       }`}
                       onClick={() =>
                         toggleMachineAssignment(machine.machine_id)
@@ -416,30 +815,31 @@ export default function StaffManagementPage() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    setIsCreateDialogOpen(false);
+                    setIsEditDialogOpen(false);
+                    setEditingStaff(null);
                     resetForm();
                   }}
-                  className="border-gray-700"
+                  className="border-[#8A5738]/30 text-[#8A5738] hover:bg-[#8A5738]/10"
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleCreateStaff}
+                  onClick={handleEditStaff}
                   disabled={
                     submitting ||
                     !formData.name ||
                     !formData.email ||
                     !formData.mobile_number
                   }
-                  className="bg-amber-600 hover:bg-amber-700"
+                  className="bg-gradient-to-r from-[#8A5738] to-[#5F3023] hover:from-[#C28654] hover:to-[#8A5738] text-white"
                 >
                   {submitting ? (
                     <>
                       <Loader2 size={16} className="mr-2 animate-spin" />
-                      Creating...
+                      Updating...
                     </>
                   ) : (
-                    "Create Staff Member"
+                    "Update Staff Member"
                   )}
                 </Button>
               </div>
@@ -447,325 +847,6 @@ export default function StaffManagementPage() {
           </DialogContent>
         </Dialog>
       </div>
-
-      {/* Staff Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="bg-[#141414] border-gray-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">
-              Total Staff
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{staff.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-[#141414] border-gray-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">
-              Active Staff
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-400">
-              {staff.filter((s) => s.is_active).length}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-[#141414] border-gray-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">
-              Total Machines
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-400">
-              {machines.length}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Staff List */}
-      <div className="space-y-4">
-        {staff.length === 0 ? (
-          <Card className="bg-[#141414] border-gray-800">
-            <CardContent className="p-8 text-center">
-              <Users size={48} className="mx-auto text-gray-500 mb-4" />
-              <p className="text-gray-400 mb-2">No staff members found</p>
-              <p className="text-sm text-gray-500">
-                Create your first staff member to get started.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          staff.map((staffMember) => (
-            <Card
-              key={staffMember.staff_id}
-              className="bg-[#141414] border-gray-800"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center">
-                      <Users size={20} className="text-amber-500" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">
-                        {staffMember.name}
-                      </h3>
-                      <div className="flex items-center space-x-4 text-sm text-gray-400">
-                        <span className="flex items-center">
-                          <Mail size={14} className="mr-1" />
-                          {staffMember.email}
-                        </span>
-                        <span className="flex items-center">
-                          <Phone size={14} className="mr-1" />
-                          {staffMember.mobile_number}
-                        </span>
-                      </div>
-                      <div className="flex items-center mt-2 space-x-4">
-                        <Badge
-                          className={
-                            staffMember.is_active
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-red-500/20 text-red-400"
-                          }
-                        >
-                          {staffMember.is_active ? (
-                            <>
-                              <CheckCircle size={12} className="mr-1" />
-                              Active
-                            </>
-                          ) : (
-                            <>
-                              <AlertCircle size={12} className="mr-1" />
-                              Inactive
-                            </>
-                          )}
-                        </Badge>
-                        <span className="text-sm text-gray-500">
-                          {staffMember.assigned_machine_ids.length} machines
-                          assigned
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          Created {formatDate(staffMember.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(staffMember)}
-                      className="border-gray-700 text-gray-300 hover:text-amber-400"
-                    >
-                      <Edit size={16} className="mr-1" />
-                      Edit
-                    </Button>
-
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-red-700/50 text-red-400 hover:bg-red-600/20"
-                        >
-                          <Trash2 size={16} className="mr-1" />
-                          Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-[#141414] border-gray-800">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="text-white">
-                            Delete Staff Member
-                          </AlertDialogTitle>
-                          <AlertDialogDescription className="text-gray-400">
-                            Are you sure you want to delete {staffMember.name}?
-                            This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="border-gray-700">
-                            Cancel
-                          </AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() =>
-                              handleDeleteStaff(staffMember.staff_id)
-                            }
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-
-                {/* Assigned Machines */}
-                {staffMember.assigned_machine_ids.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-800">
-                    <p className="text-sm text-gray-400 mb-2">
-                      Assigned Machines:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {staffMember.assigned_machine_ids.map((machineId) => {
-                        const machine = machines.find(
-                          (m) => m.machine_id === machineId
-                        );
-                        return (
-                          <Badge
-                            key={machineId}
-                            variant="outline"
-                            className="border-blue-600/30 text-blue-400"
-                          >
-                            <MapPin size={12} className="mr-1" />
-                            {machine?.location || machineId}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl bg-[#141414] border-gray-800">
-          <DialogHeader>
-            <DialogTitle className="text-white">Edit Staff Member</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-name" className="text-gray-300">
-                  Full Name
-                </Label>
-                <Input
-                  id="edit-name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="bg-[#1A1A1A] border-gray-700 text-white"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-mobile" className="text-gray-300">
-                  Mobile Number
-                </Label>
-                <Input
-                  id="edit-mobile"
-                  value={formData.mobile_number}
-                  onChange={(e) =>
-                    setFormData({ ...formData, mobile_number: e.target.value })
-                  }
-                  className="bg-[#1A1A1A] border-gray-700 text-white"
-                  maxLength={10}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="edit-email" className="text-gray-300">
-                Email Address
-              </Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="bg-[#1A1A1A] border-gray-700 text-white"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="edit-address" className="text-gray-300">
-                Address
-              </Label>
-              <Input
-                id="edit-address"
-                value={formData.address}
-                onChange={(e) =>
-                  setFormData({ ...formData, address: e.target.value })
-                }
-                className="bg-[#1A1A1A] border-gray-700 text-white"
-              />
-            </div>
-
-            {/* Machine Assignment */}
-            <div>
-              <Label className="text-gray-300 mb-3 block">
-                Assign Machines
-              </Label>
-              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                {machines.map((machine) => (
-                  <div
-                    key={machine.machine_id}
-                    className={`p-3 rounded-md border cursor-pointer transition-colors ${
-                      formData.assigned_machine_ids.includes(machine.machine_id)
-                        ? "bg-amber-600/20 border-amber-600/50 text-amber-400"
-                        : "bg-[#1A1A1A] border-gray-700 text-gray-300 hover:border-gray-600"
-                    }`}
-                    onClick={() => toggleMachineAssignment(machine.machine_id)}
-                  >
-                    <div className="text-sm font-medium">
-                      {machine.location}
-                    </div>
-                    <div className="text-xs opacity-70">
-                      {machine.machine_id}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsEditDialogOpen(false);
-                  setEditingStaff(null);
-                  resetForm();
-                }}
-                className="border-gray-700"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleEditStaff}
-                disabled={
-                  submitting ||
-                  !formData.name ||
-                  !formData.email ||
-                  !formData.mobile_number
-                }
-                className="bg-amber-600 hover:bg-amber-700"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 size={16} className="mr-2 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  "Update Staff Member"
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

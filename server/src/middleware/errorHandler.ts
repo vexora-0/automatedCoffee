@@ -36,7 +36,15 @@ export const errorHandler = (
 };
 
 export const notFound = (req: Request, res: Response, next: NextFunction): void => {
-  const error = new Error(`Not Found - ${req.originalUrl}`);
-  res.status(404);
-  next(error);
+  // Handle common browser requests gracefully without logging
+  if (req.originalUrl === '/favicon.ico' || req.originalUrl === '/robots.txt') {
+    res.status(404).end();
+    return;
+  }
+
+  // For other 404s, send a proper JSON response
+  res.status(404).json({
+    success: false,
+    message: `Route not found - ${req.originalUrl}`
+  });
 };

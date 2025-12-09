@@ -305,176 +305,593 @@ export default function RecipesManagement() {
   );
 
   return (
-    <div className="container mx-auto py-10 space-y-8">
-      <div className="flex justify-between items-center">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-bold tracking-tight">Recipes</h1>
-          <p className="text-muted-foreground text-lg">
-            Create and manage your coffee recipes
-          </p>
+    <div className="min-h-screen relative">
+      {/* Background decorative elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D] opacity-90"></div>
+
+        {/* Coffee bean pattern */}
+        <div className="absolute inset-0 opacity-20">
+          {[...Array(18)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-[#C28654]/10"
+              style={{
+                width: Math.random() * 65 + 20 + "px",
+                height: Math.random() * 40 + 12 + "px",
+                top: Math.random() * 100 + "%",
+                left: Math.random() * 100 + "%",
+                transform: `rotate(${Math.random() * 360}deg)`,
+              }}
+            ></div>
+          ))}
         </div>
-        <div className="flex space-x-2">
-          <Link href="/dashboard">
-            <Button variant="outline" size="lg">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </Link>
-          <Dialog open={isCreating} onOpenChange={setIsCreating}>
-            <DialogTrigger asChild>
-              <Button size="lg">
-                <Plus className="mr-2 h-4 w-4" />
-                Add New Recipe
+      </div>
+
+      <div className="relative z-10 container mx-auto py-10 space-y-8">
+        <div className="flex justify-between items-center">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-bold tracking-tight text-[#5F3023]">
+              Recipes
+            </h1>
+            <p className="text-[#8A5738] text-lg">
+              Create and manage your coffee recipes
+            </p>
+          </div>
+          <div className="flex space-x-2">
+            <Link href="/dashboard">
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-[#8A5738]/30 text-[#8A5738] hover:bg-[#8A5738] hover:text-white backdrop-blur-sm"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Create New Recipe</DialogTitle>
-                <DialogDescription>
-                  Add a new coffee recipe with ingredients and nutritional
-                  information
-                </DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="h-[calc(100vh-12rem)]">
-                <div className="grid grid-cols-2 gap-6 py-4 pr-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Name</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        placeholder="e.g. Cappuccino"
-                      />
-                    </div>
+            </Link>
+            <Dialog open={isCreating} onOpenChange={setIsCreating}>
+              <DialogTrigger asChild>
+                <Button
+                  size="lg"
+                  className="bg-gradient-to-r from-[#8A5738] to-[#5F3023] hover:from-[#C28654] hover:to-[#8A5738] text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add New Recipe
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Create New Recipe</DialogTitle>
+                  <DialogDescription>
+                    Add a new coffee recipe with ingredients and nutritional
+                    information
+                  </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="h-[calc(100vh-12rem)]">
+                  <div className="grid grid-cols-2 gap-6 py-4 pr-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Name</Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Cappuccino"
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        placeholder="Describe the recipe"
-                        rows={3}
-                      />
-                    </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                          id="description"
+                          name="description"
+                          value={formData.description}
+                          onChange={handleInputChange}
+                          placeholder="Describe the recipe"
+                          rows={3}
+                        />
+                      </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="category">Category</Label>
-                      <Select
-                        value={formData.category_id}
-                        onValueChange={(value) =>
-                          handleSelectChange("category_id", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categoriesLoading ? (
-                            <SelectItem value="">Loading categories...</SelectItem>
-                          ) : (
-                            categories?.map((category) => (
-                              <SelectItem
-                                key={category.category_id}
-                                value={category.category_id}
-                              >
-                                {category.name}
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Category</Label>
+                        <Select
+                          value={formData.category_id}
+                          onValueChange={(value) =>
+                            handleSelectChange("category_id", value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categoriesLoading ? (
+                              <SelectItem value="">
+                                Loading categories...
                               </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                            ) : (
+                              categories?.map((category) => (
+                                <SelectItem
+                                  key={category.category_id}
+                                  value={category.category_id}
+                                >
+                                  {category.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="price">Price ($)</Label>
+                        <Input
+                          id="price"
+                          name="price"
+                          type="number"
+                          value={formData.price}
+                          onChange={handleInputChange}
+                          min={0}
+                          step={0.01}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="image_url">Image URL</Label>
+                        <Input
+                          id="image_url"
+                          name="image_url"
+                          value={formData.image_url}
+                          onChange={handleInputChange}
+                          placeholder="e.g. https://example.com/image.jpg"
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="price">Price ($)</Label>
-                      <Input
-                        id="price"
-                        name="price"
-                        type="number"
-                        value={formData.price}
-                        onChange={handleInputChange}
-                        min={0}
-                        step={0.01}
-                      />
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="calories">Calories</Label>
+                          <Input
+                            id="calories"
+                            name="calories"
+                            type="number"
+                            value={formData.calories}
+                            onChange={handleInputChange}
+                            min={0}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="protein">Protein (g)</Label>
+                          <Input
+                            id="protein"
+                            name="protein"
+                            type="number"
+                            value={formData.protein}
+                            onChange={handleInputChange}
+                            min={0}
+                            step={0.1}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="carbs">Carbs (g)</Label>
+                          <Input
+                            id="carbs"
+                            name="carbs"
+                            type="number"
+                            value={formData.carbs}
+                            onChange={handleInputChange}
+                            min={0}
+                            step={0.1}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="fat">Fat (g)</Label>
+                          <Input
+                            id="fat"
+                            name="fat"
+                            type="number"
+                            value={formData.fat}
+                            onChange={handleInputChange}
+                            min={0}
+                            step={0.1}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="sugar">Sugar (g)</Label>
+                        <Input
+                          id="sugar"
+                          name="sugar"
+                          type="number"
+                          value={formData.sugar}
+                          onChange={handleInputChange}
+                          min={0}
+                          step={0.1}
+                        />
+                      </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="image_url">Image URL</Label>
-                      <Input
-                        id="image_url"
-                        name="image_url"
-                        value={formData.image_url}
-                        onChange={handleInputChange}
-                        placeholder="e.g. https://example.com/image.jpg"
-                      />
+                    <div className="col-span-2 space-y-4 border-t pt-4">
+                      <h3 className="font-medium">Recipe Ingredients</h3>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="col-span-2">
+                          <Label htmlFor="ingredient">Ingredient</Label>
+                          <Select
+                            value={ingredientToAdd}
+                            onValueChange={setIngredientToAdd}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select an ingredient" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ingredientsLoading ? (
+                                <SelectItem value="">
+                                  Loading ingredients...
+                                </SelectItem>
+                              ) : (
+                                ingredients?.map((ingredient) => (
+                                  <SelectItem
+                                    key={ingredient.ingredient_id}
+                                    value={ingredient.ingredient_id}
+                                  >
+                                    {ingredient.name} ({ingredient.unit})
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="quantity">Quantity</Label>
+                          <div className="flex items-center space-x-2">
+                            <Input
+                              id="quantity"
+                              type="number"
+                              value={ingredientQuantity || ""}
+                              onChange={(e) =>
+                                setIngredientQuantity(
+                                  parseFloat(e.target.value)
+                                )
+                              }
+                              min={0}
+                              step={1}
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleAddIngredient}
+                              disabled={
+                                !ingredientToAdd || ingredientQuantity <= 0
+                              }
+                            >
+                              Add
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {selectedIngredients.length > 0 ? (
+                        <div className="rounded-md border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Ingredient</TableHead>
+                                <TableHead>Quantity</TableHead>
+                                <TableHead>Unit</TableHead>
+                                <TableHead className="text-right">
+                                  Actions
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {selectedIngredients.map((ingredient) => (
+                                <TableRow key={ingredient.ingredient_id}>
+                                  <TableCell className="font-medium">
+                                    {ingredient.name}
+                                  </TableCell>
+                                  <TableCell>{ingredient.quantity}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="secondary">
+                                      {ingredient.unit}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleRemoveIngredient(
+                                          ingredient.ingredient_id
+                                        )
+                                      }
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground border rounded-md">
+                          No ingredients added yet.
+                        </div>
+                      )}
                     </div>
                   </div>
+                </ScrollArea>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreating(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateRecipe}
+                    disabled={
+                      !formData.name ||
+                      !formData.category_id ||
+                      selectedIngredients.length === 0
+                    }
+                  >
+                    Create Recipe
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
 
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="calories">Calories</Label>
-                        <Input
-                          id="calories"
-                          name="calories"
-                          type="number"
-                          value={formData.calories}
-                          onChange={handleInputChange}
-                          min={0}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="protein">Protein (g)</Label>
-                        <Input
-                          id="protein"
-                          name="protein"
-                          type="number"
-                          value={formData.protein}
-                          onChange={handleInputChange}
-                          min={0}
-                          step={0.1}
-                        />
-                      </div>
-                    </div>
+        <Card className="border-none shadow-xl bg-white/90 backdrop-blur-xl">
+          <CardHeader className="border-b border-[#C28654]/20 bg-[#F4EBDE]/50">
+            <CardTitle className="text-xl text-[#5F3023]">
+              Recipes List
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {isLoading ? (
+              <RecipesSkeleton />
+            ) : recipes.length === 0 ? (
+              <div className="text-center py-12 text-[#8A5738]">
+                No recipes found. Create your first recipe to get started.
+              </div>
+            ) : (
+              <div className="rounded-md border border-[#C28654]/20">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-[#F4EBDE]/30">
+                      <TableHead className="text-[#5F3023] font-semibold">
+                        Name
+                      </TableHead>
+                      <TableHead className="text-[#5F3023] font-semibold">
+                        Category
+                      </TableHead>
+                      <TableHead className="text-[#5F3023] font-semibold">
+                        Price
+                      </TableHead>
+                      <TableHead className="text-[#5F3023] font-semibold">
+                        Nutrition
+                      </TableHead>
+                      <TableHead className="text-right text-[#5F3023] font-semibold">
+                        Actions
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {recipes.map((recipe) => (
+                      <TableRow
+                        key={recipe.recipe_id}
+                        className="hover:bg-[#F4EBDE]/20"
+                      >
+                        <TableCell className="font-medium text-[#5F3023]">
+                          {recipe.name}
+                        </TableCell>
+                        <TableCell>
+                          {categoriesLoading ? (
+                            "Loading..."
+                          ) : (
+                            <Badge
+                              variant="secondary"
+                              className="bg-[#C28654]/20 text-[#5F3023] hover:bg-[#C28654]/30"
+                            >
+                              {categories?.find(
+                                (c) => c.category_id === recipe.category_id
+                              )?.name || "Unknown"}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-[#5F3023] font-medium">
+                          ${recipe.price.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Badge
+                              variant="outline"
+                              className="border-[#C28654]/30 text-[#5F3023]"
+                            >
+                              <Coffee className="h-3 w-3 mr-1" />
+                              {recipe.calories} cal
+                            </Badge>
+                            <Badge
+                              variant="outline"
+                              className="border-[#8A5738]/30 text-[#8A5738]"
+                            >
+                              <Scale className="h-3 w-3 mr-1" />
+                              {recipe.protein}g protein
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditRecipe(recipe)}
+                              className="text-[#8A5738] hover:text-[#5F3023] hover:bg-[#C28654]/20"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Are you sure?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete the recipe
+                                    &quot;
+                                    {recipe.name}&quot;. This action cannot be
+                                    undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() =>
+                                      handleDeleteRecipe(recipe.recipe_id)
+                                    }
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="carbs">Carbs (g)</Label>
-                        <Input
-                          id="carbs"
-                          name="carbs"
-                          type="number"
-                          value={formData.carbs}
-                          onChange={handleInputChange}
-                          min={0}
-                          step={0.1}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="fat">Fat (g)</Label>
-                        <Input
-                          id="fat"
-                          name="fat"
-                          type="number"
-                          value={formData.fat}
-                          onChange={handleInputChange}
-                          min={0}
-                          step={0.1}
-                        />
-                      </div>
-                    </div>
+        {/* Edit Dialog */}
+        <Dialog open={isEditing} onOpenChange={setIsEditing}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Edit Recipe</DialogTitle>
+              <DialogDescription>
+                Update the recipe details and ingredients
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-[calc(100vh-12rem)]">
+              <div className="grid grid-cols-2 gap-6 py-4 pr-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-name">Name</Label>
+                    <Input
+                      id="edit-name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="sugar">Sugar (g)</Label>
+                  <div>
+                    <Label htmlFor="edit-description">Description</Label>
+                    <Textarea
+                      id="edit-description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-category">Category</Label>
+                    <Select
+                      value={formData.category_id}
+                      onValueChange={(value) =>
+                        handleSelectChange("category_id", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoriesLoading ? (
+                          <SelectItem value="">
+                            Loading categories...
+                          </SelectItem>
+                        ) : (
+                          categories?.map((category) => (
+                            <SelectItem
+                              key={category.category_id}
+                              value={category.category_id}
+                            >
+                              {category.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-price">Price ($)</Label>
+                    <Input
+                      id="edit-price"
+                      name="price"
+                      type="number"
+                      value={formData.price}
+                      onChange={handleInputChange}
+                      min={0}
+                      step={0.01}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-image-url">Image URL</Label>
+                    <Input
+                      id="edit-image-url"
+                      name="image_url"
+                      value={formData.image_url}
+                      onChange={handleInputChange}
+                      placeholder="e.g. https://example.com/image.jpg"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-calories">Calories</Label>
                       <Input
-                        id="sugar"
-                        name="sugar"
+                        id="edit-calories"
+                        name="calories"
                         type="number"
-                        value={formData.sugar}
+                        value={formData.calories}
+                        onChange={handleInputChange}
+                        min={0}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-protein">Protein (g)</Label>
+                      <Input
+                        id="edit-protein"
+                        name="protein"
+                        type="number"
+                        value={formData.protein}
                         onChange={handleInputChange}
                         min={0}
                         step={0.1}
@@ -482,495 +899,167 @@ export default function RecipesManagement() {
                     </div>
                   </div>
 
-                  <div className="col-span-2 space-y-4 border-t pt-4">
-                    <h3 className="font-medium">Recipe Ingredients</h3>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2">
-                        <Label htmlFor="ingredient">Ingredient</Label>
-                        <Select
-                          value={ingredientToAdd}
-                          onValueChange={setIngredientToAdd}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an ingredient" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ingredientsLoading ? (
-                              <SelectItem value="">Loading ingredients...</SelectItem>
-                            ) : (
-                              ingredients?.map((ingredient) => (
-                                <SelectItem
-                                  key={ingredient.ingredient_id}
-                                  value={ingredient.ingredient_id}
-                                >
-                                  {ingredient.name} ({ingredient.unit})
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="quantity">Quantity</Label>
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            id="quantity"
-                            type="number"
-                            value={ingredientQuantity || ""}
-                            onChange={(e) =>
-                              setIngredientQuantity(parseFloat(e.target.value))
-                            }
-                            min={0}
-                            step={1}
-                          />
-                          <Button
-                            type="button"
-                            onClick={handleAddIngredient}
-                            disabled={!ingredientToAdd || ingredientQuantity <= 0}
-                          >
-                            Add
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedIngredients.length > 0 ? (
-                      <div className="rounded-md border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Ingredient</TableHead>
-                              <TableHead>Quantity</TableHead>
-                              <TableHead>Unit</TableHead>
-                              <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {selectedIngredients.map((ingredient) => (
-                              <TableRow key={ingredient.ingredient_id}>
-                                <TableCell className="font-medium">
-                                  {ingredient.name}
-                                </TableCell>
-                                <TableCell>{ingredient.quantity}</TableCell>
-                                <TableCell>
-                                  <Badge variant="secondary">
-                                    {ingredient.unit}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      handleRemoveIngredient(
-                                        ingredient.ingredient_id
-                                      )
-                                    }
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground border rounded-md">
-                        No ingredients added yet.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </ScrollArea>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreating(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateRecipe}
-                  disabled={
-                    !formData.name ||
-                    !formData.category_id ||
-                    selectedIngredients.length === 0
-                  }
-                >
-                  Create Recipe
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      <Card className="border-none shadow-lg">
-        <CardHeader className="border-b bg-muted/50">
-          <CardTitle className="text-xl">Recipes List</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          {isLoading ? (
-            <RecipesSkeleton />
-          ) : recipes.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              No recipes found. Create your first recipe to get started.
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Nutrition</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recipes.map((recipe) => (
-                    <TableRow key={recipe.recipe_id}>
-                      <TableCell className="font-medium">{recipe.name}</TableCell>
-                      <TableCell>
-                        {categoriesLoading ? (
-                          "Loading..."
-                        ) : (
-                          <Badge variant="secondary">
-                            {categories?.find(
-                              (c) => c.category_id === recipe.category_id
-                            )?.name || "Unknown"}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>${recipe.price.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline">
-                            <Coffee className="h-3 w-3 mr-1" />
-                            {recipe.calories} cal
-                          </Badge>
-                          <Badge variant="outline">
-                            <Scale className="h-3 w-3 mr-1" />
-                            {recipe.protein}g protein
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditRecipe(recipe)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete the recipe "
-                                  {recipe.name}". This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() =>
-                                    handleDeleteRecipe(recipe.recipe_id)
-                                  }
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Edit Recipe</DialogTitle>
-            <DialogDescription>
-              Update the recipe details and ingredients
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="h-[calc(100vh-12rem)]">
-            <div className="grid grid-cols-2 gap-6 py-4 pr-6">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="edit-name">Name</Label>
-                  <Input
-                    id="edit-name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-description">Description</Label>
-                  <Textarea
-                    id="edit-description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={3}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-category">Category</Label>
-                  <Select
-                    value={formData.category_id}
-                    onValueChange={(value) =>
-                      handleSelectChange("category_id", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categoriesLoading ? (
-                        <SelectItem value="">Loading categories...</SelectItem>
-                      ) : (
-                        categories?.map((category) => (
-                          <SelectItem
-                            key={category.category_id}
-                            value={category.category_id}
-                          >
-                            {category.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-price">Price ($)</Label>
-                  <Input
-                    id="edit-price"
-                    name="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    min={0}
-                    step={0.01}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-image-url">Image URL</Label>
-                  <Input
-                    id="edit-image-url"
-                    name="image_url"
-                    value={formData.image_url}
-                    onChange={handleInputChange}
-                    placeholder="e.g. https://example.com/image.jpg"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-calories">Calories</Label>
-                    <Input
-                      id="edit-calories"
-                      name="calories"
-                      type="number"
-                      value={formData.calories}
-                      onChange={handleInputChange}
-                      min={0}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-protein">Protein (g)</Label>
-                    <Input
-                      id="edit-protein"
-                      name="protein"
-                      type="number"
-                      value={formData.protein}
-                      onChange={handleInputChange}
-                      min={0}
-                      step={0.1}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-carbs">Carbs (g)</Label>
-                    <Input
-                      id="edit-carbs"
-                      name="carbs"
-                      type="number"
-                      value={formData.carbs}
-                      onChange={handleInputChange}
-                      min={0}
-                      step={0.1}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-fat">Fat (g)</Label>
-                    <Input
-                      id="edit-fat"
-                      name="fat"
-                      type="number"
-                      value={formData.fat}
-                      onChange={handleInputChange}
-                      min={0}
-                      step={0.1}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-sugar">Sugar (g)</Label>
-                  <Input
-                    id="edit-sugar"
-                    name="sugar"
-                    type="number"
-                    value={formData.sugar}
-                    onChange={handleInputChange}
-                    min={0}
-                    step={0.1}
-                  />
-                </div>
-              </div>
-
-              <div className="col-span-2 space-y-4 border-t pt-4">
-                <h3 className="font-medium">Recipe Ingredients</h3>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-2">
-                    <Label htmlFor="edit-ingredient">Ingredient</Label>
-                    <Select
-                      value={ingredientToAdd}
-                      onValueChange={setIngredientToAdd}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an ingredient" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ingredientsLoading ? (
-                          <SelectItem value="">Loading ingredients...</SelectItem>
-                        ) : (
-                          ingredients?.map((ingredient) => (
-                            <SelectItem
-                              key={ingredient.ingredient_id}
-                              value={ingredient.ingredient_id}
-                            >
-                              {ingredient.name} ({ingredient.unit})
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-quantity">Quantity</Label>
-                    <div className="flex items-center space-x-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-carbs">Carbs (g)</Label>
                       <Input
-                        id="edit-quantity"
+                        id="edit-carbs"
+                        name="carbs"
                         type="number"
-                        value={ingredientQuantity || ""}
-                        onChange={(e) =>
-                          setIngredientQuantity(parseFloat(e.target.value))
-                        }
+                        value={formData.carbs}
+                        onChange={handleInputChange}
                         min={0}
-                        step={1}
+                        step={0.1}
                       />
-                      <Button
-                        type="button"
-                        onClick={handleAddIngredient}
-                        disabled={!ingredientToAdd || ingredientQuantity <= 0}
-                      >
-                        Add
-                      </Button>
                     </div>
+                    <div>
+                      <Label htmlFor="edit-fat">Fat (g)</Label>
+                      <Input
+                        id="edit-fat"
+                        name="fat"
+                        type="number"
+                        value={formData.fat}
+                        onChange={handleInputChange}
+                        min={0}
+                        step={0.1}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-sugar">Sugar (g)</Label>
+                    <Input
+                      id="edit-sugar"
+                      name="sugar"
+                      type="number"
+                      value={formData.sugar}
+                      onChange={handleInputChange}
+                      min={0}
+                      step={0.1}
+                    />
                   </div>
                 </div>
 
-                {selectedIngredients.length > 0 ? (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Ingredient</TableHead>
-                          <TableHead>Quantity</TableHead>
-                          <TableHead>Unit</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedIngredients.map((ingredient) => (
-                          <TableRow key={ingredient.ingredient_id}>
-                            <TableCell className="font-medium">
-                              {ingredient.name}
-                            </TableCell>
-                            <TableCell>{ingredient.quantity}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">
-                                {ingredient.unit}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  handleRemoveIngredient(
-                                    ingredient.ingredient_id
-                                  )
-                                }
+                <div className="col-span-2 space-y-4 border-t pt-4">
+                  <h3 className="font-medium">Recipe Ingredients</h3>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2">
+                      <Label htmlFor="edit-ingredient">Ingredient</Label>
+                      <Select
+                        value={ingredientToAdd}
+                        onValueChange={setIngredientToAdd}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select an ingredient" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ingredientsLoading ? (
+                            <SelectItem value="">
+                              Loading ingredients...
+                            </SelectItem>
+                          ) : (
+                            ingredients?.map((ingredient) => (
+                              <SelectItem
+                                key={ingredient.ingredient_id}
+                                value={ingredient.ingredient_id}
                               >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </TableCell>
+                                {ingredient.name} ({ingredient.unit})
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-quantity">Quantity</Label>
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          id="edit-quantity"
+                          type="number"
+                          value={ingredientQuantity || ""}
+                          onChange={(e) =>
+                            setIngredientQuantity(parseFloat(e.target.value))
+                          }
+                          min={0}
+                          step={1}
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleAddIngredient}
+                          disabled={!ingredientToAdd || ingredientQuantity <= 0}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedIngredients.length > 0 ? (
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Ingredient</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Unit</TableHead>
+                            <TableHead className="text-right">
+                              Actions
+                            </TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground border rounded-md">
-                    No ingredients added yet.
-                  </div>
-                )}
+                        </TableHeader>
+                        <TableBody>
+                          {selectedIngredients.map((ingredient) => (
+                            <TableRow key={ingredient.ingredient_id}>
+                              <TableCell className="font-medium">
+                                {ingredient.name}
+                              </TableCell>
+                              <TableCell>{ingredient.quantity}</TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">
+                                  {ingredient.unit}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleRemoveIngredient(
+                                      ingredient.ingredient_id
+                                    )
+                                  }
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground border rounded-md">
+                      No ingredients added yet.
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </ScrollArea>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdateRecipe}
-              disabled={!formData.name || !formData.category_id}
-            >
-              Update Recipe
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </ScrollArea>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateRecipe}
+                disabled={!formData.name || !formData.category_id}
+              >
+                Update Recipe
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

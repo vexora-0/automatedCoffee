@@ -35,7 +35,7 @@ export const initChangeStreams = async () => {
         }
       }
     });
-    machineStream.on('error', (error) => {
+    machineStream.on('error', (error: any) => {
       console.error('Error in machine change stream:', error);
     });
 
@@ -45,7 +45,7 @@ export const initChangeStreams = async () => {
       const recipes = await Recipe.find({}).lean();
       websocketService.emitRecipeUpdate(recipes);
     });
-    recipeStream.on('error', (error) => {
+    recipeStream.on('error', (error: any) => {
       console.error('Error in recipe change stream:', error);
     });
 
@@ -67,7 +67,7 @@ export const initChangeStreams = async () => {
         }
       }
     });
-    inventoryStream.on('error', (error) => {
+    inventoryStream.on('error', (error: any) => {
       console.error('Error in inventory change stream:', error);
     });
   } catch (error) {

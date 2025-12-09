@@ -124,7 +124,12 @@ export default function AllRecipesList({
                   <RecipeCard
                     recipe={recipe}
                     isAvailable={isRecipeAvailable(recipe.recipe_id)}
-                    onClick={() => handleRecipeClick(recipe)}
+                    // Prevent clicks when unavailable
+                    onClick={
+                      isRecipeAvailable(recipe.recipe_id)
+                        ? () => handleRecipeClick(recipe)
+                        : undefined
+                    }
                   />
                 </motion.div>
               ))}

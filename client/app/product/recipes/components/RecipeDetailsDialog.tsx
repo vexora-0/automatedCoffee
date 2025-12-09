@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { X, ShoppingCart, Loader2, ThumbsUp, Coffee } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+// Track failed image URLs to avoid repeated 404 fetches
+const failedImageUrls = new Set<string>();
+
 // Array of benefits/quotes for each category
 const COFFEE_QUOTES = [
   "Coffee is a language in itself.",
@@ -45,6 +48,17 @@ interface RecipeDetailsDialogProps {
   ingredients: Ingredient[];
 }
 
+// Helper function to validate image URL
+const isValidImageUrl = (url: string | undefined): boolean => {
+  if (!url) return false;
+  try {
+    const urlObj = new URL(url);
+    return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
 export default function RecipeDetailsDialog({
   recipe,
   isOpen,
@@ -55,6 +69,20 @@ export default function RecipeDetailsDialog({
   const [isOrdering, setIsOrdering] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [imageError, setImageError] = useState(false);
+  const [isImageValid, setIsImageValid] = useState(() => 
+    recipe ? (isValidImageUrl(recipe.image_url) && !failedImageUrls.has(recipe.image_url || "")) : false
+  );
+
+  // Reset image error and validate URL when recipe changes
+  useEffect(() => {
+    if (recipe) {
+      const failedPreviously = !!recipe.image_url && failedImageUrls.has(recipe.image_url);
+      const valid = isValidImageUrl(recipe.image_url) && !failedPreviously;
+      setIsImageValid(valid);
+      setImageError(!valid);
+    }
+  }, [recipe]);
 
   // Generate random quote based on category
   const getRandomQuote = () => {
@@ -202,13 +230,33 @@ export default function RecipeDetailsDialog({
                 <div className="absolute inset-0 bg-[#5F3023]/20 mix-blend-overlay z-10"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-[#5F3023]/30 via-transparent to-[#5F3023]/10 z-10" />
 
-                <Image
-                  src={recipe.image_url || "/placeholder-recipe.jpg"}
-                  alt={recipe.name}
-                  fill
-                  className="object-cover"
-                  priority
-                />
+                {!imageError && isImageValid && recipe.image_url ? (
+                  <Image
+                    src={recipe.image_url}
+                    alt={recipe.name}
+                    fill
+                    className="object-cover"
+                    priority
+                    onError={() => {
+                      // Remember failed URL so we don't retry and spam 404s
+                      if (recipe.image_url) {
+                        failedImageUrls.add(recipe.image_url);
+                      }
+                      setImageError(true);
+                      setIsImageValid(false);
+                    }}
+                    onLoad={() => {
+                      // Image loaded successfully
+                      if (imageError) setImageError(false);
+                    }}
+                    // For Cloudinary URLs, use unoptimized to prevent Next.js optimization issues
+                    unoptimized={recipe.image_url.includes('cloudinary.com')}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#C28654]/20 to-[#8A5738]/20">
+                    <Coffee className="h-16 w-16 text-[#8A5738]/40" />
+                  </div>
+                )}
               </div>
 
               {/* Right column - Content */}

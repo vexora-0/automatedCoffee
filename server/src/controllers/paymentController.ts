@@ -6,15 +6,20 @@ import User from '../models/User';
 import Machine from '../models/Machine';
 import { decryptCc, encryptCc, getIvBase64, getKeyBase64FromWorkingKey, serializeParams } from '../utils/ccavenue';
 
-// Environment / merchant config
-const MERCHANT_ID = process.env.CCAV_MERCHANT_ID || '4401460';
-const ACCESS_CODE = process.env.CCAV_ACCESS_CODE || 'ATTB06MI55AU46BTUA';
-const WORKING_KEY = process.env.CCAV_WORKING_KEY || '92220F4A49F5E3AE3D3DDB37E06CAD7B';
-const PAYMENT_URL = process.env.CCAV_INIT_URL || 'https://test.ccavenue.com/transaction/transaction.do?command=initiateTransaction';
+// Environment / merchant config - All values must be set in environment variables
+const MERCHANT_ID = process.env.CCAV_MERCHANT_ID;
+const ACCESS_CODE = process.env.CCAV_ACCESS_CODE;
+const WORKING_KEY = process.env.CCAV_WORKING_KEY;
+const PAYMENT_URL = process.env.CCAV_INIT_URL;
 
 // The URL that CCAvenue will POST back to with encResp
-const RESPONSE_URL = process.env.CCAV_RESPONSE_URL || `${process.env.SERVER_PUBLIC_URL || 'http://localhost:5000'}/api/payments/ccav-response`;
-const CANCEL_URL = process.env.CCAV_CANCEL_URL || RESPONSE_URL;
+const RESPONSE_URL = process.env.CCAV_RESPONSE_URL;
+const CANCEL_URL = process.env.CCAV_CANCEL_URL;
+
+// Validate required environment variables
+if (!MERCHANT_ID || !ACCESS_CODE || !WORKING_KEY || !PAYMENT_URL || !RESPONSE_URL || !CANCEL_URL) {
+  throw new Error('Missing required CCAvenue environment variables: CCAV_MERCHANT_ID, CCAV_ACCESS_CODE, CCAV_WORKING_KEY, CCAV_INIT_URL, CCAV_RESPONSE_URL, CCAV_CANCEL_URL');
+}
 
 export const initiatePayment = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -42,12 +47,7 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
       status: 'pending'
     });
 
-    // Resolve URLs (prefer explicit env, else derive from request)
-    const xfProto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
-    const host = req.get('host');
-    const serverBase = host ? `${xfProto}://${host}` : (process.env.SERVER_PUBLIC_URL || 'http://localhost:5000');
-    const responseUrl = process.env.CCAV_RESPONSE_URL || `${serverBase}/api/payments/ccav-response`;
-    const cancelUrl = process.env.CCAV_CANCEL_URL || responseUrl;
+    // Use environment URLs directly (no fallbacks for security)
 
     // Build billing parameters minimal required
     const params: Record<string, string | number> = {
@@ -55,8 +55,8 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
       order_id: orderId,
       amount: recipe.price.toFixed(2),
       currency: 'INR',
-      redirect_url: responseUrl,
-      cancel_url: cancelUrl,
+      redirect_url: RESPONSE_URL,
+      cancel_url: CANCEL_URL,
       language: 'EN',
       billing_name: user.name,
       billing_tel: user.phone_number,
@@ -123,9 +123,11 @@ export const handleCcavResponse = async (req: Request, res: Response): Promise<v
     );
 
     // Redirect the client app to success/failure page with details
-    const xfProto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
-    const host = req.get('host');
-    const clientBase = process.env.CLIENT_PUBLIC_URL || (host ? `${xfProto}://${host}` : 'http://localhost:3000');
+    const clientBase = process.env.CLIENT_PUBLIC_URL;
+    if (!clientBase) {
+      res.status(500).send('CLIENT_PUBLIC_URL environment variable not configured');
+      return;
+    }
     let recipeName = '';
     let amount = '';
 
