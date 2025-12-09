@@ -69,7 +69,17 @@ export const finalizeOrderAndUpdateInventory = async (
     );
   }
 
-  // 3) Emit recipe availability update after inventory change
+  // 3) Reduce cleaning water by 250ml (floor at 0 to avoid negatives)
+  const machine = await Machine.findOne({ machine_id: order.machine_id });
+  if (machine) {
+    const newCleaningWater = Math.max((machine.cleaning_water_ml || 0) - 250, 0);
+    await Machine.findOneAndUpdate(
+      { machine_id: order.machine_id },
+      { cleaning_water_ml: newCleaningWater }
+    );
+  }
+
+  // 4) Emit recipe availability update after inventory change
   const recipes = await Recipe.find({}).lean();
   const allRecipeIngredients = await RecipeIngredient.find({}).lean();
   const updatedInventory = await MachineIngredientInventory.find({

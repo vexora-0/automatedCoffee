@@ -179,6 +179,16 @@ export const createOrder = async (req: Request, res: Response): Promise<void> =>
       }
     }
     
+    // Reduce cleaning water by 250ml (avoid negative)
+    const currentMachine = await Machine.findOne({ machine_id });
+    if (currentMachine) {
+      const newCleaningWater = Math.max((currentMachine.cleaning_water_ml || 0) - 250, 0);
+      await Machine.findOneAndUpdate(
+        { machine_id },
+        { cleaning_water_ml: newCleaningWater }
+      );
+    }
+
     // Update machine revenue
     await Machine.findOneAndUpdate(
       { machine_id },
