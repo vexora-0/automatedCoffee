@@ -48,7 +48,7 @@ import {
   useRecipeCategories,
   useIngredients,
 } from "@/lib/api/hooks";
-import { recipeService } from "@/lib/api/services";
+import { recipeService, recipeIngredientService } from "@/lib/api/services";
 import { Recipe, RecipeFormData, Ingredient } from "@/lib/api/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -213,7 +213,7 @@ export default function RecipesManagement() {
     }
   };
 
-  const handleEditRecipe = (recipe: Recipe) => {
+  const handleEditRecipe = async (recipe: Recipe) => {
     setCurrentRecipe(recipe);
     setFormData({
       name: recipe.name,
@@ -229,8 +229,35 @@ export default function RecipesManagement() {
     });
 
     // Fetch recipe ingredients and populate selectedIngredients
-    // For this example, we'll just set it empty - in a real app you'd load the ingredients
-    setSelectedIngredients([]);
+    try {
+      const response = await recipeIngredientService.getRecipeIngredientsByRecipeId(recipe.recipe_id);
+      
+      if (response.success && response.data) {
+        // Map recipe ingredients to IngredientWithQuantity format
+        const mappedIngredients: IngredientWithQuantity[] = response.data
+          .map((ri) => {
+            // Find the full ingredient details from the ingredients list
+            const ingredient = ingredients.find((ing) => ing.ingredient_id === ri.ingredient_id);
+            if (ingredient) {
+              return {
+                ...ingredient,
+                quantity: ri.quantity,
+              };
+            }
+            return null;
+          })
+          .filter((ing): ing is IngredientWithQuantity => ing !== null);
+        
+        setSelectedIngredients(mappedIngredients);
+      } else {
+        // If no ingredients found or error, set empty array
+        setSelectedIngredients([]);
+      }
+    } catch (error) {
+      console.error("Error fetching recipe ingredients:", error);
+      // On error, set empty array
+      setSelectedIngredients([]);
+    }
 
     setIsEditing(true);
   };
