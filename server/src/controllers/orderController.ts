@@ -9,6 +9,7 @@ import RecipeIngredient from '../models/RecipeIngredient';
 import UserHistory from '../models/UserHistory';
 import Warning from '../models/Warning';
 import websocketService from '../services/websocketService';
+import { finalizeOrderAndUpdateInventory } from '../services/orderFinalizationService';
 
 // Get all orders
 export const getAllOrders = async (req: Request, res: Response): Promise<void> => {
@@ -292,6 +293,11 @@ export const updateOrderStatus = async (req: Request, res: Response): Promise<vo
       { status },
       { new: true }
     );
+
+    // Apply inventory and availability changes only on first transition to completed
+    if (status === 'completed' && updatedOrder && order.status !== 'completed') {
+      await finalizeOrderAndUpdateInventory(updatedOrder);
+    }
 
     res.status(200).json({
       success: true,

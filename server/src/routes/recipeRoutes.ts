@@ -12,6 +12,7 @@ import {
   getAllRecipeIngredients,
   getRecipeAvailabilityForMachine
 } from '../controllers/recipeController';
+import { uploadSingle } from '../middleware/upload';
 
 const router = express.Router();
 
@@ -31,12 +32,13 @@ router.route('/')
 
 // Recipe with image upload routes
 router.route('/with-image')
-  .post(createRecipeWithImage);
+  .post(uploadSingle, createRecipeWithImage);
 
 // Update recipe image
 router.route('/:recipeId/image')
-  .put(updateRecipeImage);
-  router.route('/availability').get(getRecipeAvailabilityForMachine);
+  .put(uploadSingle, updateRecipeImage);
+  
+router.route('/availability').get(getRecipeAvailabilityForMachine);
 
 router.route('/:recipeId')
   .get(getRecipeById)

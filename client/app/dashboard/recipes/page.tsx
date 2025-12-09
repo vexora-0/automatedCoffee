@@ -63,6 +63,7 @@ import {
   Scale,
   Clock,
 } from "lucide-react";
+import { DragDropImageUpload } from "@/components/DragDropImageUpload";
 
 interface IngredientWithQuantity extends Ingredient {
   quantity: number;
@@ -83,6 +84,7 @@ export default function RecipesManagement() {
   >([]);
   const [ingredientToAdd, setIngredientToAdd] = useState("");
   const [ingredientQuantity, setIngredientQuantity] = useState(0);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState<RecipeFormData>({
     name: "",
@@ -117,6 +119,7 @@ export default function RecipesManagement() {
     setSelectedIngredients([]);
     setIngredientToAdd("");
     setIngredientQuantity(0);
+    setImageFile(null);
   };
 
   const handleInputChange = (
@@ -195,7 +198,12 @@ export default function RecipesManagement() {
     const recipeData = prepareFormData();
 
     try {
-      await recipeService.createRecipe(recipeData);
+      // Use createRecipeWithImage if image file is provided
+      if (imageFile) {
+        await recipeService.createRecipeWithImage(recipeData, imageFile);
+      } else {
+        await recipeService.createRecipe(recipeData);
+      }
       await mutate();
       resetForm();
       setIsCreating(false);
@@ -220,7 +228,7 @@ export default function RecipesManagement() {
       description: recipe.description,
       category_id: recipe.category_id,
       price: recipe.price,
-      image_url: recipe.image_url,
+      image_url: recipe.image_url || "",
       calories: recipe.calories,
       protein: recipe.protein,
       carbs: recipe.carbs,
@@ -230,14 +238,19 @@ export default function RecipesManagement() {
 
     // Fetch recipe ingredients and populate selectedIngredients
     try {
-      const response = await recipeIngredientService.getRecipeIngredientsByRecipeId(recipe.recipe_id);
-      
+      const response =
+        await recipeIngredientService.getRecipeIngredientsByRecipeId(
+          recipe.recipe_id
+        );
+
       if (response.success && response.data) {
         // Map recipe ingredients to IngredientWithQuantity format
         const mappedIngredients: IngredientWithQuantity[] = response.data
           .map((ri) => {
             // Find the full ingredient details from the ingredients list
-            const ingredient = ingredients.find((ing) => ing.ingredient_id === ri.ingredient_id);
+            const ingredient = ingredients.find(
+              (ing) => ing.ingredient_id === ri.ingredient_id
+            );
             if (ingredient) {
               return {
                 ...ingredient,
@@ -247,7 +260,7 @@ export default function RecipesManagement() {
             return null;
           })
           .filter((ing): ing is IngredientWithQuantity => ing !== null);
-        
+
         setSelectedIngredients(mappedIngredients);
       } else {
         // If no ingredients found or error, set empty array
@@ -259,6 +272,8 @@ export default function RecipesManagement() {
       setSelectedIngredients([]);
     }
 
+    setImageFile(null);
+
     setIsEditing(true);
   };
 
@@ -266,9 +281,36 @@ export default function RecipesManagement() {
     if (!currentRecipe?.recipe_id) return;
 
     const recipeData = prepareFormData();
+    let imageUpdated = false;
 
     try {
-      await recipeService.updateRecipe(currentRecipe.recipe_id, recipeData);
+      // Update image if a new file was uploaded
+      if (imageFile) {
+        await recipeService.updateRecipeImage(
+          currentRecipe.recipe_id,
+          imageFile,
+          recipeData.image_url
+        );
+        imageUpdated = true;
+      } else if (
+        recipeData.image_url &&
+        recipeData.image_url !== currentRecipe.image_url
+      ) {
+        // Update image URL if it changed
+        await recipeService.updateRecipeImage(
+          currentRecipe.recipe_id,
+          undefined,
+          recipeData.image_url
+        );
+        imageUpdated = true;
+      }
+
+      // Update recipe data (exclude image_url if we just updated it separately)
+      const { image_url, ...recipeDataWithoutImage } = recipeData;
+      await recipeService.updateRecipe(
+        currentRecipe.recipe_id,
+        imageUpdated ? recipeDataWithoutImage : recipeData
+      );
       await mutate();
       resetForm();
       setCurrentRecipe(null);
@@ -464,14 +506,27 @@ export default function RecipesManagement() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="image_url">Image URL</Label>
-                        <Input
-                          id="image_url"
-                          name="image_url"
-                          value={formData.image_url}
-                          onChange={handleInputChange}
-                          placeholder="e.g. https://example.com/image.jpg"
+                        <DragDropImageUpload
+                          onChange={(file) => setImageFile(file)}
+                          previewUrl={formData.image_url}
+                          label="Recipe Image"
+                          maxSizeMB={5}
                         />
+                        {!imageFile && formData.image_url && (
+                          <div className="mt-2">
+                            <Label htmlFor="image_url">
+                              Or enter image URL
+                            </Label>
+                            <Input
+                              id="image_url"
+                              name="image_url"
+                              value={formData.image_url}
+                              onChange={handleInputChange}
+                              placeholder="e.g. https://example.com/image.jpg"
+                              className="mt-1"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -888,14 +943,27 @@ export default function RecipesManagement() {
                   </div>
 
                   <div>
-                    <Label htmlFor="edit-image-url">Image URL</Label>
-                    <Input
-                      id="edit-image-url"
-                      name="image_url"
-                      value={formData.image_url}
-                      onChange={handleInputChange}
-                      placeholder="e.g. https://example.com/image.jpg"
+                    <DragDropImageUpload
+                      onChange={(file) => setImageFile(file)}
+                      previewUrl={formData.image_url}
+                      label="Recipe Image"
+                      maxSizeMB={5}
                     />
+                    {!imageFile && formData.image_url && (
+                      <div className="mt-2">
+                        <Label htmlFor="edit-image-url">
+                          Or enter image URL
+                        </Label>
+                        <Input
+                          id="edit-image-url"
+                          name="image_url"
+                          value={formData.image_url}
+                          onChange={handleInputChange}
+                          placeholder="e.g. https://example.com/image.jpg"
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 

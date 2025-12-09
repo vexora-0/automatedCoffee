@@ -5,6 +5,7 @@ import Recipe from '../models/Recipe';
 import User from '../models/User';
 import Machine from '../models/Machine';
 import { decryptCc, encryptCc, getIvBase64, getKeyBase64FromWorkingKey, serializeParams } from '../utils/ccavenue';
+import { finalizeOrderAndUpdateInventory } from '../services/orderFinalizationService';
 
 // Environment / merchant config - All values must be set in environment variables
 const MERCHANT_ID = process.env.CCAV_MERCHANT_ID;
@@ -111,6 +112,9 @@ export const handleCcavResponse = async (req: Request, res: Response): Promise<v
       return;
     }
 
+    // Capture previous status to avoid double-deducting inventory
+    const existingOrder = await Order.findOne({ order_id: orderId }).lean();
+
     // Map CCAvenue status to our order status
     let newStatus: 'completed' | 'failed' | 'cancelled' = 'failed';
     if (orderStatus === 'success') newStatus = 'completed';
@@ -121,6 +125,11 @@ export const handleCcavResponse = async (req: Request, res: Response): Promise<v
       { status: newStatus },
       { new: true }
     );
+
+    // When payment succeeds and we just transitioned to completed, finalize order + inventory
+    if (newStatus === 'completed' && updated && existingOrder?.status !== 'completed') {
+      await finalizeOrderAndUpdateInventory(updated);
+    }
 
     // Redirect the client app to success/failure page with details
     const clientBase = process.env.CLIENT_PUBLIC_URL;

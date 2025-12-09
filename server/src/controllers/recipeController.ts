@@ -7,6 +7,26 @@ import Ingredient from '../models/Ingredient';
 import Order from '../models/Order';
 import websocketService from '../services/websocketService';
 import MachineIngredientInventory from '../models/MachineIngredientInventory';
+import { uploadImageBufferToCloudinary, deleteImageFromCloudinary } from '../services/uploadService';
+import fs from 'fs';
+import path from 'path';
+
+// Extend Express Request to include multer file
+interface MulterFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  destination: string;
+  filename: string;
+  path: string;
+  buffer?: Buffer;
+}
+
+interface MulterRequest extends Request {
+  file?: MulterFile;
+}
 
 // Helper function to emit recipe updates
 const emitRecipeUpdates = async () => {
@@ -134,8 +154,14 @@ export const getRecipeById = async (req: Request, res: Response): Promise<void> 
 };
 
 // Create recipe with image
-export const createRecipeWithImage = async (req: Request, res: Response): Promise<void> => {
+export const createRecipeWithImage = async (req: MulterRequest, res: Response): Promise<void> => {
+  let imageUrl: string | undefined = undefined;
+  let uploadedFile: MulterFile | undefined = undefined;
+
   try {
+    // Get uploaded file from multer
+    uploadedFile = req.file;
+
     // Parse recipe data from request body
     const recipeData = req.body.recipe ? JSON.parse(req.body.recipe) : req.body;
     
@@ -148,6 +174,29 @@ export const createRecipeWithImage = async (req: Request, res: Response): Promis
       });
       return;
     }
+
+    // Upload image to Cloudinary if file is provided
+    if (uploadedFile) {
+      const fileBuffer = fs.readFileSync(uploadedFile.path);
+      const uploadResult = await uploadImageBufferToCloudinary(fileBuffer, 'recipes');
+      
+      // Clean up local file
+      fs.unlinkSync(uploadedFile.path);
+
+      if (!uploadResult.success || !uploadResult.url) {
+        res.status(500).json({
+          success: false,
+          message: 'Failed to upload image',
+          error: uploadResult.error
+        });
+        return;
+      }
+
+      imageUrl = uploadResult.url;
+    } else if (recipeData.image_url) {
+      // Use provided image URL if no file uploaded
+      imageUrl = recipeData.image_url;
+    }
     
     // Create recipe
     const recipe = await Recipe.create({
@@ -156,7 +205,7 @@ export const createRecipeWithImage = async (req: Request, res: Response): Promis
       description: recipeData.description,
       category_id: recipeData.category_id,
       price: recipeData.price,
-      image_url: recipeData.image_url,
+      image_url: imageUrl,
       calories: recipeData.calories,
       protein: recipeData.protein,
       carbs: recipeData.carbs,
@@ -206,6 +255,11 @@ export const createRecipeWithImage = async (req: Request, res: Response): Promis
       });
     }
   } catch (error: any) {
+    // Clean up uploaded file if error occurred
+    if (uploadedFile && fs.existsSync(uploadedFile.path)) {
+      fs.unlinkSync(uploadedFile.path);
+    }
+
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -215,7 +269,9 @@ export const createRecipeWithImage = async (req: Request, res: Response): Promis
 };
 
 // Update recipe image
-export const updateRecipeImage = async (req: Request, res: Response): Promise<void> => {
+export const updateRecipeImage = async (req: MulterRequest, res: Response): Promise<void> => {
+  let uploadedFile: MulterFile | undefined = undefined;
+
   try {
     const { recipeId } = req.params;
     
@@ -228,14 +284,56 @@ export const updateRecipeImage = async (req: Request, res: Response): Promise<vo
       });
       return;
     }
-    
-    // Update the recipe with the new image URL
-    const { image_url } = req.body;
+
+    // Get uploaded file from multer
+    uploadedFile = req.file;
+    let imageUrl: string | undefined = undefined;
+
+    // Upload new image to Cloudinary if file is provided
+    if (uploadedFile) {
+      const fileBuffer = fs.readFileSync(uploadedFile.path);
+      const uploadResult = await uploadImageBufferToCloudinary(fileBuffer, 'recipes');
+      
+      // Clean up local file
+      fs.unlinkSync(uploadedFile.path);
+
+      if (!uploadResult.success || !uploadResult.url) {
+        res.status(500).json({
+          success: false,
+          message: 'Failed to upload image',
+          error: uploadResult.error
+        });
+        return;
+      }
+
+      imageUrl = uploadResult.url;
+
+      // Delete old image from Cloudinary if it exists and is a Cloudinary URL
+      if (recipe.image_url && recipe.image_url.includes('cloudinary.com')) {
+        // Extract public_id from Cloudinary URL
+        const urlParts = recipe.image_url.split('/');
+        const publicIdWithExt = urlParts[urlParts.length - 1];
+        const publicId = publicIdWithExt.split('.')[0];
+        const folderPath = urlParts.slice(-2, -1)[0]; // Get folder name
+        const fullPublicId = folderPath ? `${folderPath}/${publicId}` : publicId;
+        
+        await deleteImageFromCloudinary(fullPublicId);
+      }
+    } else if (req.body.image_url) {
+      // Use provided image URL if no file uploaded
+      imageUrl = req.body.image_url;
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'No image file or URL provided'
+      });
+      return;
+    }
     
     // Update recipe with new image
     const updatedRecipe = await Recipe.findOneAndUpdate(
       { recipe_id: recipeId },
-      { image_url },
+      { image_url: imageUrl },
       { new: true }
     );
     
@@ -247,6 +345,11 @@ export const updateRecipeImage = async (req: Request, res: Response): Promise<vo
       data: updatedRecipe
     });
   } catch (error: any) {
+    // Clean up uploaded file if error occurred
+    if (uploadedFile && fs.existsSync(uploadedFile.path)) {
+      fs.unlinkSync(uploadedFile.path);
+    }
+
     res.status(500).json({
       success: false,
       message: 'Server Error',
@@ -386,20 +489,27 @@ export const updateRecipe = async (req: Request, res: Response): Promise<void> =
       }
     }
 
+    // Build update object, only include image_url if it's provided and not empty
+    const updateData: any = {
+      name,
+      description,
+      category_id,
+      price,
+      calories,
+      protein,
+      carbs,
+      fat,
+      sugar
+    };
+    
+    // Only update image_url if it's provided and not empty
+    if (image_url !== undefined && image_url !== null && image_url !== '') {
+      updateData.image_url = image_url;
+    }
+
     const updatedRecipe = await Recipe.findOneAndUpdate(
       { recipe_id: req.params.recipeId },
-      {
-        name,
-        description,
-        category_id,
-        price,
-        image_url,
-        calories,
-        protein,
-        carbs,
-        fat,
-        sugar
-      },
+      updateData,
       { new: true, runValidators: true }
     );
     
