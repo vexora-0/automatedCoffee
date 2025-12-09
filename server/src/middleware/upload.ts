@@ -3,6 +3,11 @@ import path from 'path';
 import fs from 'fs';
 import type { Request } from 'express';
 
+type UploadedFile = {
+  mimetype: string;
+  originalname: string;
+};
+
 // Ensure uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -13,14 +18,14 @@ if (!fs.existsSync(uploadsDir)) {
 const storage = multer.diskStorage({
   destination: (
     req: Request,
-    file: Express.Multer.File,
+    file: UploadedFile,
     cb: (error: Error | null, destination: string) => void
   ) => {
     cb(null, uploadsDir);
   },
   filename: (
     req: Request,
-    file: Express.Multer.File,
+    file: UploadedFile,
     cb: (error: Error | null, filename: string) => void
   ) => {
     // Generate unique filename
@@ -33,14 +38,14 @@ const storage = multer.diskStorage({
 // File filter for images only
 const fileFilter = (
   req: Request,
-  file: Express.Multer.File,
+  file: UploadedFile,
   cb: (error: Error | null, acceptFile: boolean) => void
 ) => {
   // Check if file is an image
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed!'));
+    cb(new Error('Only image files are allowed!'), false);
   }
 };
 
