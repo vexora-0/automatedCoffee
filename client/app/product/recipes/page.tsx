@@ -36,6 +36,7 @@ export default function RecipesPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [machineId, setMachineId] = useState<string | null>(null);
   const [scrollY, setScrollY] = useState(0);
+  const [isRecipeDialogOpen, setIsRecipeDialogOpen] = useState(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const INACTIVITY_TIMEOUT_SECONDS = 15;
 
@@ -361,36 +362,38 @@ export default function RecipesPage() {
       </div>
 
       {/* Header */}
-      <motion.header
-        className={`sticky top-0 z-20 pt-6 px-6 lg:px-10 backdrop-blur-md transition-all duration-300 ${
-          scrollY > 20
-            ? "bg-[#F4EBDE]/90 shadow-md shadow-[#C28654]/10"
-            : "bg-transparent"
-        }`}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        <div className="w-full mx-auto flex items-center justify-center pb-4">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex items-center justify-center"
-          >
-            {/* Use Image component for logo - Update with actual image */}
-            <div className="flex justify-center items-center">
-              <Image
-                src="/brownlogo.svg"
-                alt="Tagline"
-                className="w-1/2"
-                width={100}
-                height={100}
-              />
-            </div>
-          </motion.div>
-        </div>
-      </motion.header>
+      {!isRecipeDialogOpen && (
+        <motion.header
+          className={`sticky top-0 z-20 pt-6 px-6 lg:px-10 backdrop-blur-md transition-all duration-300 ${
+            scrollY > 20
+              ? "bg-[#F4EBDE]/90 shadow-md shadow-[#C28654]/10"
+              : "bg-transparent"
+          }`}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        >
+          <div className="w-full mx-auto flex items-center justify-center pb-4">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="flex items-center justify-center"
+            >
+              {/* Use Image component for logo - Update with actual image */}
+              <div className="flex justify-center items-center">
+                <Image
+                  src="/brownlogo.svg"
+                  alt="Tagline"
+                  className="w-1/2"
+                  width={100}
+                  height={100}
+                />
+              </div>
+            </motion.div>
+          </div>
+        </motion.header>
+      )}
 
       {/* Main content */}
       <main className="relative z-10 flex-1 px-6 lg:px-10 pb-16 pt-4 overflow-y-auto">
@@ -401,15 +404,17 @@ export default function RecipesPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <div className="flex justify-center items-center">
-              <Image
-                src="/tagline.svg"
-                alt="Tagline"
-                className="w-1/2"
-                width={100}
-                height={100}
-              />
-            </div>
+            {!isRecipeDialogOpen && (
+              <div className="flex justify-center items-center">
+                <Image
+                  src="/tagline.svg"
+                  alt="Tagline"
+                  className="w-1/2"
+                  width={100}
+                  height={100}
+                />
+              </div>
+            )}
             {isLoadingCategories ? (
               // Loading skeleton for categories
               <div className="space-y-12">
@@ -435,6 +440,7 @@ export default function RecipesPage() {
                 isRecipeAvailable={isRecipeAvailable}
                 recipeIngredients={recipeIngredients}
                 ingredients={ingredients}
+                onDialogToggle={setIsRecipeDialogOpen}
               />
             )}
           </motion.div>

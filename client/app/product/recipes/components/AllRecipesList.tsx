@@ -17,6 +17,7 @@ interface AllRecipesListProps {
   isRecipeAvailable: (recipeId: string) => boolean;
   recipeIngredients: RecipeIngredient[];
   ingredients: Ingredient[];
+  onDialogToggle?: (isOpen: boolean) => void;
 }
 
 export default function AllRecipesList({
@@ -25,6 +26,7 @@ export default function AllRecipesList({
   isRecipeAvailable,
   recipeIngredients,
   ingredients,
+  onDialogToggle,
 }: AllRecipesListProps) {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -32,10 +34,12 @@ export default function AllRecipesList({
   const handleRecipeClick = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
     setIsDialogOpen(true);
+    onDialogToggle?.(true);
   };
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
+    onDialogToggle?.(false);
     setTimeout(() => setSelectedRecipe(null), 300);
   };
 
