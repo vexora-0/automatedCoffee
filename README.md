@@ -4,7 +4,6 @@
 ## System Architecture Overview
 
 The automated coffee system uses a client-server architecture with real-time communication via WebSockets to handle recipe availability and inventory management:
-
 ```
 ┌─────────────┐         ┌─────────────┐         ┌─────────────┐
 │             │         │             │         │             │
