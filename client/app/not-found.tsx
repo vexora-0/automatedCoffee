@@ -3,34 +3,23 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { AlertCircle, Coffee } from "lucide-react";
+import { SearchX, Coffee } from "lucide-react";
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+export default function NotFound() {
   const router = useRouter();
 
   useEffect(() => {
-    // Log the error for debugging
-    console.error("Global error caught:", error);
-
-    // Redirect to screensaver after a short delay to show feedback once
-    const redirectTimer = setTimeout(() => {
+    const timer = setTimeout(() => {
       router.replace("/product/screensaver");
     }, 5000);
 
-    return () => clearTimeout(redirectTimer);
-  }, [error, router]);
+    return () => clearTimeout(timer);
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#432818] via-[#5F3023] to-[#2C1006] flex flex-col items-center justify-center overflow-hidden relative">
       {/* Background effects similar to screensaver */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Coffee bean floating elements */}
         {[...Array(10)].map((_, i) => (
           <motion.div
             key={`bean-${i}`}
@@ -58,7 +47,7 @@ export default function Error({
         ))}
       </div>
 
-      {/* Error message */}
+      {/* Message */}
       <motion.div
         className="relative z-10 text-center max-w-md mx-auto px-6"
         initial={{ opacity: 0, y: 20 }}
@@ -67,54 +56,31 @@ export default function Error({
       >
         <motion.div
           className="mb-6 flex justify-center"
-          animate={{
-            rotate: [0, 10, -10, 0],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+          animate={{ rotate: [0, 6, -6, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         >
-          <AlertCircle className="text-[#F4EBDE] h-16 w-16" />
+          <SearchX className="text-[#F4EBDE] h-16 w-16" />
         </motion.div>
 
         <h1 className="text-4xl font-light text-[#F4EBDE] mb-4 tracking-wide">
-          Sorry, something went wrong
+          Page not found
         </h1>
 
         <p className="text-lg text-[#F4EBDE]/70 mb-8 font-light">
-          We&apos;re redirecting you back to the home screen...
+          Taking you back to the screensaver...
         </p>
 
         <motion.div
           className="flex items-center justify-center space-x-2 text-[#F4EBDE]/60"
-          animate={{
-            opacity: [0.5, 1, 0.5],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
         >
           <Coffee className="h-5 w-5" />
           <span className="text-sm">Please wait</span>
         </motion.div>
-
-        {/* Optional: Reset button (hidden but available for development) */}
-        {process.env.NODE_ENV === "development" && (
-          <motion.button
-            onClick={reset}
-            className="mt-6 px-4 py-2 bg-[#F4EBDE]/10 hover:bg-[#F4EBDE]/20 text-[#F4EBDE] rounded-lg border border-[#F4EBDE]/20 transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Try again
-          </motion.button>
-        )}
       </motion.div>
     </div>
   );
 }
+
 
