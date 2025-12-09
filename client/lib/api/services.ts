@@ -278,9 +278,28 @@ export const recipeService = {
   },
 
   // Update recipe image
-  updateRecipeImage: async (recipeId: string, imageUrl: string): Promise<ApiResponse<Recipe>> => {
-    const response = await apiClient.put(`/recipes/${recipeId}/image`, { image_url: imageUrl });
-    return response.data;
+  updateRecipeImage: async (recipeId: string, imageFile?: File, imageUrl?: string): Promise<ApiResponse<Recipe>> => {
+    if (imageFile) {
+      // Upload file using FormData
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      if (imageUrl) {
+        formData.append('image_url', imageUrl);
+      }
+      
+      const response = await apiClient.put(`/recipes/${recipeId}/image`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } else if (imageUrl) {
+      // Use URL only
+      const response = await apiClient.put(`/recipes/${recipeId}/image`, { image_url: imageUrl });
+      return response.data;
+    } else {
+      throw new Error('Either imageFile or imageUrl must be provided');
+    }
   },
 
   // Update recipe

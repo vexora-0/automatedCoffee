@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { AlertCircle, Coffee } from "lucide-react";
+import { Coffee } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Recipe } from "@/lib/api/types";
 
