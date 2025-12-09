@@ -489,20 +489,27 @@ export const updateRecipe = async (req: Request, res: Response): Promise<void> =
       }
     }
 
+    // Build update object, only include image_url if it's provided and not empty
+    const updateData: any = {
+      name,
+      description,
+      category_id,
+      price,
+      calories,
+      protein,
+      carbs,
+      fat,
+      sugar
+    };
+    
+    // Only update image_url if it's provided and not empty
+    if (image_url !== undefined && image_url !== null && image_url !== '') {
+      updateData.image_url = image_url;
+    }
+
     const updatedRecipe = await Recipe.findOneAndUpdate(
       { recipe_id: req.params.recipeId },
-      {
-        name,
-        description,
-        category_id,
-        price,
-        image_url,
-        calories,
-        protein,
-        carbs,
-        fat,
-        sugar
-      },
+      updateData,
       { new: true, runValidators: true }
     );
     

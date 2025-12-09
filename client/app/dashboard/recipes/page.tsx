@@ -281,6 +281,7 @@ export default function RecipesManagement() {
     if (!currentRecipe?.recipe_id) return;
 
     const recipeData = prepareFormData();
+    let imageUpdated = false;
 
     try {
       // Update image if a new file was uploaded
@@ -290,6 +291,7 @@ export default function RecipesManagement() {
           imageFile,
           recipeData.image_url
         );
+        imageUpdated = true;
       } else if (
         recipeData.image_url &&
         recipeData.image_url !== currentRecipe.image_url
@@ -300,10 +302,15 @@ export default function RecipesManagement() {
           undefined,
           recipeData.image_url
         );
+        imageUpdated = true;
       }
 
-      // Update recipe data
-      await recipeService.updateRecipe(currentRecipe.recipe_id, recipeData);
+      // Update recipe data (exclude image_url if we just updated it separately)
+      const { image_url, ...recipeDataWithoutImage } = recipeData;
+      await recipeService.updateRecipe(
+        currentRecipe.recipe_id,
+        imageUpdated ? recipeDataWithoutImage : recipeData
+      );
       await mutate();
       resetForm();
       setCurrentRecipe(null);
