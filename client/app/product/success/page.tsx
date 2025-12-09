@@ -422,7 +422,7 @@ function SuccessPageContent() {
       </motion.div>
 
       {/* Main content with 3D card effect */}
-      <div className="relative z-20 w-full max-w-2xl" style={{ maxHeight: '720px', overflow: 'hidden' }}>
+      <div className="relative z-20 w-full max-w-5xl px-4" style={{ maxHeight: "760px", overflow: "hidden" }}>
         <motion.div
           initial={{ opacity: 0, y: 20, rotateX: -10 }}
           animate={{
@@ -431,312 +431,322 @@ function SuccessPageContent() {
             rotateX: 0,
             transition: { duration: 0.8, ease: "easeOut" },
           }}
-          className="bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden shadow-[0_20px_80px_-15px_rgba(194,134,84,0.4)] border border-white/40"
+          className="bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden shadow-[0_20px_80px_-15px_rgba(194,134,84,0.35)] border border-white/40"
         >
-          {/* Top section with success message */}
-          <div className="relative px-6 pt-5 pb-4">
-            {/* 3D floating success icon */}
-            <div className="relative flex justify-center mb-4">
-              <div className="absolute -inset-8 bg-gradient-to-r from-[#C28654]/10 via-[#F4EBDE]/5 to-[#5F3023]/10 rounded-full blur-xl opacity-70"></div>
-              <motion.div
-                className="relative w-20 h-20 flex items-center justify-center rounded-full bg-gradient-to-br from-[#C28654] to-[#8A5738] shadow-[0_10px_30px_rgba(194,134,84,0.4)]"
-                animate={{
-                  y: [0, -8, 0],
-                  boxShadow: [
-                    "0 10px 30px rgba(194,134,84,0.4)",
-                    "0 15px 40px rgba(194,134,84,0.6)",
-                    "0 10px 30px rgba(194,134,84,0.4)",
-                  ],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  repeatType: "reverse",
-                }}
-              >
-                <CheckCircle
-                  className="h-10 w-10 text-white"
-                  strokeWidth={2.5}
-                />
-              </motion.div>
-            </div>
-
-            {/* Success headings with animation */}
-            <div className="text-center space-y-1">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-                className="text-2xl font-bold text-[#5F3023]"
-              >
-                Payment Confirmed!
-              </motion.h1>
-
-              <motion.h2
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-                className="text-lg text-[#8A5738] font-medium"
-              >
-                Thank you, {userName}
-              </motion.h2>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.7, duration: 0.8 }}
-                className="text-[#8A5738]/70 italic font-light px-4 text-xs mt-1"
-              >
-                &ldquo;{randomQuote}&rdquo;
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Divider with coffee bean motif */}
-          <div className="relative h-px w-full bg-gradient-to-r from-transparent via-[#C28654]/30 to-transparent">
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                className="w-5 h-5 rounded-full border-2 border-[#C28654]/30 flex items-center justify-center"
-              >
-                <div className="w-1.5 h-2.5 bg-[#C28654]/30 rounded-full"></div>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Order details with glass card effect */}
-          <div className="px-6 pt-3 pb-3">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8, duration: 0.5 }}
-              className="bg-gradient-to-br from-white/70 to-white/40 backdrop-blur-md rounded-xl p-4 border border-white/50 shadow-inner"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <p className="text-[10px] text-[#8A5738]/70 font-medium">
-                    YOUR ORDER
-                  </p>
-                  <p className="text-base font-semibold text-[#5F3023]">
-                    {recipeName}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-[#8A5738]/70 font-medium">PRICE</p>
-                  <p className="text-base font-bold text-[#C28654]">
-                    {formattedPrice}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2 text-[10px] text-[#8A5738]">
-                <Clock size={10} />
-                <span>Time elapsed: {formatTime(timeElapsed)}</span>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Preparation steps with modern timeline */}
-          <div className="px-6 pb-4 pt-1">
-            <div className="relative">
-              {/* Timeline line */}
-              <div className="absolute left-5 top-5 bottom-5 w-px bg-gradient-to-b from-[#C28654] via-[#8A5738] to-[#5F3023]/30"></div>
-
-              {/* Timeline steps */}
-              {PREPARATION_STEPS.map((step, index) => {
-                const isActive = preparationStep >= step.id;
-                const isCurrent = preparationStep === step.id;
-                const isPast = preparationStep > step.id;
-
-                return (
+          <div className="grid grid-cols-1 md:grid-cols-[1.08fr_0.92fr] gap-6 md:gap-8 p-5 md:p-8 items-start">
+            {/* Left column: confirmation + order summary */}
+            <div className="space-y-4 md:space-y-6">
+              <div className="relative px-2 md:px-3 pt-2">
+                {/* 3D floating success icon */}
+                <div className="relative flex justify-start md:justify-center mb-3 md:mb-4">
+                  <div className="absolute -inset-6 bg-gradient-to-r from-[#C28654]/10 via-[#F4EBDE]/5 to-[#5F3023]/10 rounded-full blur-xl opacity-60"></div>
                   <motion.div
-                    key={step.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: isActive ? 1 : 0.4, x: 0 }}
-                    transition={{
-                      delay: index * 0.2,
-                      duration: 0.5,
-                      ease: "easeOut",
+                    className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-full bg-gradient-to-br from-[#C28654] to-[#8A5738] shadow-[0_10px_30px_rgba(194,134,84,0.35)]"
+                    animate={{
+                      y: [0, -6, 0],
+                      boxShadow: [
+                        "0 10px 30px rgba(194,134,84,0.35)",
+                        "0 15px 36px rgba(194,134,84,0.5)",
+                        "0 10px 30px rgba(194,134,84,0.35)",
+                      ],
                     }}
-                    className={`flex items-start mb-3 ${
-                      isActive ? "" : "opacity-40"
-                    }`}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                    }}
                   >
-                    {/* Step icon */}
-                    <motion.div
-                      animate={
-                        isCurrent
-                          ? {
-                              scale: [1, 1.2, 1],
-                              y: step.animation === "bounce" ? [0, -5, 0] : 0,
-                            }
-                          : {}
-                      }
-                      transition={{
-                        duration: 1.5,
-                        repeat: isCurrent ? Infinity : 0,
-                        repeatType: "reverse",
-                      }}
-                      className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
-                        isActive ? `bg-[${step.color}]` : "bg-[#DAB49D]/30"
-                      } ${isCurrent ? "ring-3 ring-[#C28654]/20" : ""}`}
-                    >
-                      {React.createElement(step.icon, {
-                        className: `h-4 w-4 ${
-                          isActive ? "text-white" : "text-[#8A5738]/50"
-                        }`,
-                        strokeWidth: 2.5,
-                      })}
+                    <CheckCircle className="h-8 w-8 text-white" strokeWidth={2.4} />
+                  </motion.div>
+                </div>
 
-                      {/* Pulsing effect for current step */}
-                      {isCurrent && (
-                        <motion.div
-                          className="absolute inset-0 rounded-full bg-[#C28654]/30"
-                          animate={{
-                            scale: [1, 1.6],
-                            opacity: [0.7, 0],
-                          }}
-                          transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                          }}
-                        />
-                      )}
+                {/* Success headings with animation */}
+                <div className="text-center space-y-1 md:space-y-1.5">
+                  <motion.h1
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.6 }}
+                    className="text-xl md:text-2xl font-bold text-[#5F3023]"
+                  >
+                    Payment Confirmed!
+                  </motion.h1>
 
-                      {/* Checkmark for completed steps */}
-                      {isPast && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ type: "spring", bounce: 0.5 }}
-                          className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center"
-                        >
-                          <CheckCircle className="h-2.5 w-2.5 text-white" />
-                        </motion.div>
-                      )}
-                    </motion.div>
+                  <motion.h2
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35, duration: 0.6 }}
+                    className="text-base md:text-lg text-[#8A5738] font-medium"
+                  >
+                    Thank you, {userName}
+                  </motion.h2>
 
-                    {/* Step content */}
-                    <div className="flex-1 pt-1">
-                      <div className="flex items-center justify-between">
-                        <h4
-                          className={`font-medium text-sm ${
-                            isActive ? "text-[#5F3023]" : "text-[#8A5738]/50"
-                          }`}
-                        >
-                          {step.title}
-                        </h4>
-                        {isCurrent && !orderReady && (
-                          <div className="ml-2 flex space-x-1">
-                            <motion.div
-                              animate={{ opacity: [0, 1, 0] }}
-                              transition={{
-                                duration: 1.4,
-                                repeat: Infinity,
-                                repeatDelay: 0.1,
-                              }}
-                              className="w-1 h-1 rounded-full bg-[#C28654]"
-                            />
-                            <motion.div
-                              animate={{ opacity: [0, 1, 0] }}
-                              transition={{
-                                duration: 1.4,
-                                delay: 0.2,
-                                repeat: Infinity,
-                                repeatDelay: 0.1,
-                              }}
-                              className="w-1 h-1 rounded-full bg-[#C28654]"
-                            />
-                            <motion.div
-                              animate={{ opacity: [0, 1, 0] }}
-                              transition={{
-                                duration: 1.4,
-                                delay: 0.4,
-                                repeat: Infinity,
-                                repeatDelay: 0.1,
-                              }}
-                              className="w-1 h-1 rounded-full bg-[#C28654]"
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <p
-                        className={`text-xs ${
-                          isActive ? "text-[#8A5738]/80" : "text-[#8A5738]/40"
-                        }`}
-                      >
-                        {step.description}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.55, duration: 0.8 }}
+                    className="text-[#8A5738]/70 italic font-light px-2 md:px-6 text-xs mt-1"
+                  >
+                    &ldquo;{randomQuote}&rdquo;
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Order details with glass card effect */}
+              <div className="px-1 md:px-3">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
+                  className="bg-gradient-to-br from-white/75 to-white/50 backdrop-blur-md rounded-2xl p-4 border border-white/50 shadow-inner"
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
+                      <p className="text-[10px] text-[#8A5738]/70 font-medium tracking-wide">
+                        YOUR ORDER
+                      </p>
+                      <p className="text-base md:text-lg font-semibold text-[#5F3023]">
+                        {recipeName}
                       </p>
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-[#8A5738]/70 font-medium">PRICE</p>
+                      <p className="text-base md:text-lg font-bold text-[#C28654]">
+                        {formattedPrice}
+                      </p>
+                    </div>
+                  </div>
 
-          {/* Completion button with custom animation */}
-          <div className="px-6 pb-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{
-                opacity: orderReady ? 1 : 0,
-                y: orderReady ? 0 : 20,
-              }}
-              transition={{ duration: 0.5 }}
-            >
-              <Button
-                disabled={!orderReady}
-                onClick={async () => {
-                  // Update dispensers before clearing user data
-                  try {
-                    const machineId = localStorage.getItem("machineId");
-                    if (machineId) {
-                      await machineService.getMachineInventory(machineId);
-                      console.log("[Success] Machine inventory refreshed on button click");
-                    }
-                  } catch (error) {
-                    console.error("[Success] Failed to refresh machine inventory:", error);
-                  }
-                  // Clear user login details
-                  sessionStorage.removeItem("userId");
-                  sessionStorage.removeItem("userName");
-                  router.push("/product/screensaver");
-                }}
-                className={`w-full py-4 ${
-                  orderReady
-                    ? "bg-gradient-to-r from-[#8A5738] to-[#5F3023] hover:from-[#C28654] hover:to-[#8A5738]"
-                    : "bg-[#DAB49D]/50"
-                } text-white rounded-xl font-semibold text-base relative overflow-hidden`}
-              >
+                  <div className="flex items-center space-x-2 text-[10px] md:text-xs text-[#8A5738]">
+                    <Clock size={10} />
+                    <span>Time elapsed: {formatTime(timeElapsed)}</span>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Completion button with custom animation */}
+              <div className="px-1 md:px-3">
                 <motion.div
-                  className={`absolute inset-0 ${
-                    orderReady ? "bg-[#C28654]/30" : "bg-transparent"
-                  }`}
-                  animate={{ x: orderReady ? ["100%", "-100%"] : "0%" }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "linear",
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{
+                    opacity: orderReady ? 1 : 0,
+                    y: orderReady ? 0 : 20,
                   }}
-                />
-                <div className="relative flex items-center justify-center">
-                  <span className="mr-2">See you next time!</span>
-                  <ChevronRight className="h-5 w-5" />
-                </div>
-              </Button>
-            </motion.div>
+                  transition={{ duration: 0.5 }}
+                >
+                  <Button
+                    disabled={!orderReady}
+                    onClick={async () => {
+                      // Update dispensers before clearing user data
+                      try {
+                        const machineId = localStorage.getItem("machineId");
+                        if (machineId) {
+                          await machineService.getMachineInventory(machineId);
+                          console.log("[Success] Machine inventory refreshed on button click");
+                        }
+                      } catch (error) {
+                        console.error("[Success] Failed to refresh machine inventory:", error);
+                      }
+                      // Clear user login details
+                      sessionStorage.removeItem("userId");
+                      sessionStorage.removeItem("userName");
+                      router.push("/product/screensaver");
+                    }}
+                    className={`w-full py-4 ${
+                      orderReady
+                        ? "bg-gradient-to-r from-[#8A5738] to-[#5F3023] hover:from-[#C28654] hover:to-[#8A5738]"
+                        : "bg-[#DAB49D]/50"
+                    } text-white rounded-xl font-semibold text-base relative overflow-hidden`}
+                  >
+                    <motion.div
+                      className={`absolute inset-0 ${
+                        orderReady ? "bg-[#C28654]/30" : "bg-transparent"
+                      }`}
+                      animate={{ x: orderReady ? ["100%", "-100%"] : "0%" }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                    />
+                    <div className="relative flex items-center justify-center">
+                      <span className="mr-2">See you next time!</span>
+                      <ChevronRight className="h-5 w-5" />
+                    </div>
+                  </Button>
+                </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{
-                opacity: !orderReady ? 0.7 : 0,
-                y: !orderReady ? 0 : -10,
-              }}
-              className="mt-2 text-center text-xs text-[#8A5738]/60"
-            >
-              Preparing your perfect brew...
-            </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{
+                    opacity: !orderReady ? 0.7 : 0,
+                    y: !orderReady ? 0 : -10,
+                  }}
+                  className="mt-2 text-center text-xs text-[#8A5738]/60"
+                >
+                  Preparing your perfect brew...
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Right column: preparation steps */}
+            <div className="pl-0 md:pl-2 pr-1 md:pr-0 space-y-3 md:space-y-4">
+              <div className="flex items-center justify-between px-1 md:px-2">
+                <div>
+                  <p className="text-[10px] text-[#8A5738]/70 font-semibold tracking-wide uppercase">
+                    Preparation
+                  </p>
+                  <p className="text-sm font-semibold text-[#5F3023]">
+                    {orderReady ? "Ready to serve" : `Step ${preparationStep} of ${PREPARATION_STEPS.length}`}
+                  </p>
+                </div>
+                <div
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    orderReady
+                      ? "bg-green-100 text-green-700 border border-green-200"
+                      : "bg-[#F4EBDE] text-[#8A5738] border border-[#DAB49D]/70"
+                  }`}
+                >
+                  {orderReady ? "Ready" : "In progress"}
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-white/75 to-white/50 backdrop-blur-md rounded-2xl border border-white/55 shadow-inner p-4 md:p-5 max-h-[520px] overflow-hidden">
+                <div className="relative">
+                  {/* Timeline line */}
+                  <div className="absolute left-5 top-4 bottom-4 w-px bg-gradient-to-b from-[#C28654] via-[#8A5738] to-[#5F3023]/30"></div>
+
+                  {/* Timeline steps */}
+                  {PREPARATION_STEPS.map((step, index) => {
+                    const isActive = preparationStep >= step.id;
+                    const isCurrent = preparationStep === step.id;
+                    const isPast = preparationStep > step.id;
+
+                    return (
+                      <motion.div
+                        key={step.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: isActive ? 1 : 0.4, x: 0 }}
+                        transition={{
+                          delay: index * 0.15,
+                          duration: 0.45,
+                          ease: "easeOut",
+                        }}
+                        className={`flex items-start mb-3 ${
+                          isActive ? "" : "opacity-40"
+                        }`}
+                      >
+                        {/* Step icon */}
+                        <motion.div
+                          animate={
+                            isCurrent
+                              ? {
+                                  scale: [1, 1.16, 1],
+                                  y: step.animation === "bounce" ? [0, -4, 0] : 0,
+                                }
+                              : {}
+                          }
+                          transition={{
+                            duration: 1.4,
+                            repeat: isCurrent ? Infinity : 0,
+                            repeatType: "reverse",
+                          }}
+                          className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center mr-3 ${
+                            isActive ? `bg-[${step.color}]` : "bg-[#DAB49D]/30"
+                          } ${isCurrent ? "ring-3 ring-[#C28654]/20" : ""}`}
+                        >
+                          {React.createElement(step.icon, {
+                            className: `h-4 w-4 ${
+                              isActive ? "text-white" : "text-[#8A5738]/50"
+                            }`,
+                            strokeWidth: 2.5,
+                          })}
+
+                          {/* Pulsing effect for current step */}
+                          {isCurrent && (
+                            <motion.div
+                              className="absolute inset-0 rounded-full bg-[#C28654]/30"
+                              animate={{
+                                scale: [1, 1.6],
+                                opacity: [0.7, 0],
+                              }}
+                              transition={{
+                                duration: 1.5,
+                                repeat: Infinity,
+                              }}
+                            />
+                          )}
+
+                          {/* Checkmark for completed steps */}
+                          {isPast && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: "spring", bounce: 0.5 }}
+                              className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center"
+                            >
+                              <CheckCircle className="h-2.5 w-2.5 text-white" />
+                            </motion.div>
+                          )}
+                        </motion.div>
+
+                        {/* Step content */}
+                        <div className="flex-1 pt-1">
+                          <div className="flex items-center justify-between">
+                            <h4
+                              className={`font-medium text-sm ${
+                                isActive ? "text-[#5F3023]" : "text-[#8A5738]/50"
+                              }`}
+                            >
+                              {step.title}
+                            </h4>
+                            {isCurrent && !orderReady && (
+                              <div className="ml-2 flex space-x-1">
+                                <motion.div
+                                  animate={{ opacity: [0, 1, 0] }}
+                                  transition={{
+                                    duration: 1.2,
+                                    repeat: Infinity,
+                                    repeatDelay: 0.08,
+                                  }}
+                                  className="w-1 h-1 rounded-full bg-[#C28654]"
+                                />
+                                <motion.div
+                                  animate={{ opacity: [0, 1, 0] }}
+                                  transition={{
+                                    duration: 1.2,
+                                    delay: 0.18,
+                                    repeat: Infinity,
+                                    repeatDelay: 0.08,
+                                  }}
+                                  className="w-1 h-1 rounded-full bg-[#C28654]"
+                                />
+                                <motion.div
+                                  animate={{ opacity: [0, 1, 0] }}
+                                  transition={{
+                                    duration: 1.2,
+                                    delay: 0.36,
+                                    repeat: Infinity,
+                                    repeatDelay: 0.08,
+                                  }}
+                                  className="w-1 h-1 rounded-full bg-[#C28654]"
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <p
+                            className={`text-xs ${
+                              isActive ? "text-[#8A5738]/80" : "text-[#8A5738]/40"
+                            }`}
+                          >
+                            {step.description}
+                          </p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
