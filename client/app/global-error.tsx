@@ -17,7 +17,7 @@ export default function GlobalError({
     console.error("Global error caught in root layout:", error);
 
     // Redirect to screensaver immediately
-    router.replace("/product/screensaver");
+    router.push("/product/screensaver");
   }, [error, router]);
 
   return (

@@ -8,9 +8,9 @@ import { useEffect } from 'react';
 let globalSocketInstance: Socket | null = null;
 let connectionAttempts = 0;
 let lastConnectionAttempt = 0;
-const MAX_RECONNECTION_ATTEMPTS = 3;
-const RECONNECTION_DELAY_BASE = 1000;
-const CONNECTION_COOLDOWN = 5000; // 5 seconds between connection attempts
+const MAX_RECONNECTION_ATTEMPTS = 5;
+const RECONNECTION_DELAY_BASE = 2000;
+const CONNECTION_COOLDOWN = 3000; // 3 seconds between connection attempts
 
 // Extend Window interface
 declare global {
@@ -75,56 +75,60 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
   error: null,
   
   initSocket: () => {
-    const { socket } = get();
-    
-    // Return early if we already have a socket
-    if (socket) {
-      console.log('[WebSocket] Socket already exists, reusing');
+    // Prefer reusing global instance first to avoid duplicate connections
+    if (globalSocketInstance?.connected) {
+      const { socket } = get();
+      if (socket !== globalSocketInstance) {
+        set({ socket: globalSocketInstance, isConnected: true });
+      }
       return;
     }
-    
-    // Use existing socket if available
-    if (globalSocketInstance?.connected) {
-      console.log('[WebSocket] Global socket exists and is connected, reusing');
-      set({ socket: globalSocketInstance, isConnected: true });
+    if (globalSocketInstance && !globalSocketInstance.connected) {
+      // Reuse existing socket and reconnect instead of creating a new one
+      const { socket } = get();
+      if (socket !== globalSocketInstance) {
+        set({ socket: globalSocketInstance, isConnected: false });
+      }
+      globalSocketInstance.connect();
+      return;
+    }
+
+    const { socket } = get();
+    if (socket) {
       return;
     }
     
     // Implement connection throttling
     const now = Date.now();
     if (now - lastConnectionAttempt < CONNECTION_COOLDOWN) {
-      console.log(`[WebSocket] Connection attempt too soon, wait ${CONNECTION_COOLDOWN}ms`);
       return;
     }
     
     lastConnectionAttempt = now;
     
-    // Check if we've tried to connect too many times already
     if (connectionAttempts >= MAX_RECONNECTION_ATTEMPTS) {
-      console.error(`[WebSocket] Maximum connection attempts (${MAX_RECONNECTION_ATTEMPTS}) reached.`);
       setTimeout(() => {
-        console.log('[WebSocket] Resetting connection attempts counter');
-        connectionAttempts = 0; // Reset after cooling period
+        connectionAttempts = 0;
       }, RECONNECTION_DELAY_BASE * 5);
       return;
     }
     
     connectionAttempts++;
-    console.log(`[WebSocket] Connection attempt ${connectionAttempts}`);
     
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     const socketUrl = apiBaseUrl.replace(/\/api$/, '');
     
-    // Create new socket with conservative settings
     const socketInstance = io(socketUrl, {
-      transports: ['websocket'], // WebSocket only, no polling fallback
-      reconnectionAttempts: 2,
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: MAX_RECONNECTION_ATTEMPTS,
       reconnectionDelay: RECONNECTION_DELAY_BASE,
-      reconnectionDelayMax: 5000,
-      timeout: 5000, // Short timeout to fail faster
+      reconnectionDelayMax: 10000,
+      timeout: 10000,
       forceNew: false,
       autoConnect: true
     });
+    globalSocketInstance = socketInstance;
     
     socketInstance.on('connect', () => {
       console.log('[WebSocket] Connected successfully');
@@ -140,7 +144,7 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
       console.log('[WebSocket] Disconnected');
       set({ isConnected: false });
     });
-    
+     
     socketInstance.on('connect_error', (error: Error) => {
       console.error(`[WebSocket] Connection error: ${error.message}`);
       set({ error: error.message });
@@ -376,8 +380,6 @@ export const useWebSocketStore = create<WebSocketState>((set, get) => ({
       set({ error: error.message });
     });
     
-    // Store the socket instance globally to prevent multiple connections
-    globalSocketInstance = socketInstance;
     set({ socket: socketInstance });
   },
   

@@ -64,8 +64,8 @@ export default function RecipesPage() {
   const ingredientStore = useIngredientStore();
   const ingredients = ingredientStore.getAllIngredients();
 
-  // Initialize WebSocket connection and handlers
   const webSocketStore = useWebSocketStore();
+  const isConnected = useWebSocketStore((s) => s.isConnected);
 
   // Handle scroll effect
   useEffect(() => {
@@ -215,32 +215,25 @@ export default function RecipesPage() {
     setIsMounted(true);
   }, []);
 
-  // Initialize WebSocket connection
+  // Initialize WebSocket connection when on this page and not yet connected
   useEffect(() => {
-    // Get user information from localStorage
     const storedUserId = sessionStorage.getItem("userId");
     const storedMachineId = localStorage.getItem("machineId");
 
-    // If no user ID is stored, redirect to the auth page
     if (!storedUserId) {
       router.push("/product/auth");
       return;
     }
-
-    // If no machine ID is stored, redirect to machine auth page
     if (!storedMachineId) {
-      console.log("[Recipes] No machine ID found, redirecting to machine auth");
       router.push("/product/auth/machine");
       return;
     }
 
     setMachineId(storedMachineId);
-
-    // Initialize WebSocket connection if not already connected
-    if (!webSocketStore.isConnected) {
-      webSocketStore.initSocket();
+    if (!isConnected) {
+      useWebSocketStore.getState().initSocket();
     }
-  }, [router, webSocketStore]);
+  }, [router, isConnected]);
 
   // Load recipe data from API if needed
   useEffect(() => {

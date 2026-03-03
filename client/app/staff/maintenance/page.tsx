@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
+import { useMqttContext } from "@/components/MqttProvider";
 import {
   Loader2,
   Zap,
@@ -46,7 +47,7 @@ export default function StaffMaintenancePage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [upLatch, setUpLatch] = useState(false);
   const [downLatch, setDownLatch] = useState(false);
-  const [mqttConnected, setMqttConnected] = useState(false);
+  const { isConnected, publish } = useMqttContext();
 
   useEffect(() => {
     const storedStaffData = localStorage.getItem("staffData");
@@ -68,18 +69,14 @@ export default function StaffMaintenancePage() {
     }
   }, [initialMachineId]);
 
-  // Simulate MQTT connection when machine is selected
+  // Sync selected machine to localStorage so MQTT publish uses machine-specific topic (machineId/input)
   useEffect(() => {
-    if (selectedMachine) {
-      // Simulate connecting to machine-specific MQTT topic
-      setMqttConnected(true);
-      console.log(`Connected to MQTT topic for machine: ${selectedMachine}`);
-    } else {
-      setMqttConnected(false);
+    if (selectedMachine && typeof window !== "undefined") {
+      localStorage.setItem("machineId", selectedMachine);
     }
   }, [selectedMachine]);
 
-  const sendMqttMessage = async (message: string) => {
+  const sendMqttMessage = (message: string) => {
     if (!selectedMachine) {
       toast({
         title: "Error",
@@ -89,66 +86,36 @@ export default function StaffMaintenancePage() {
       return;
     }
 
-    setProcessing(message);
-    toast({
-      title: "Processing",
-      description: `Sending command to ${
-        getSelectedMachineData()?.location
-      }: ${message}`,
-    });
-
-    // Simulate MQTT communication with retry mechanism
-    let gotResponse = false;
-    let retries = 0;
-
-    while (!gotResponse && retries < 3) {
-      try {
-        // Simulate sending MQTT message to machine-specific topic
-        console.log(`Sending MQTT message to ${selectedMachine}/${message}`);
-
-        // Simulate waiting for response
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-
-        // Simulate response (in real implementation, this would be MQTT subscription)
-        const success = Math.random() > 0.3;
-
-        if (success) {
-          console.log(`Received "got" feedback for: ${message}`);
-          gotResponse = true;
-          toast({
-            title: "Success",
-            description: `Command ${message} acknowledged by ${
-              getSelectedMachineData()?.location
-            }`,
-          });
-
-          // Wait for "done" message (simulated)
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          toast({
-            title: "Completed",
-            description: `Command ${message} completed on ${
-              getSelectedMachineData()?.location
-            }`,
-          });
-        } else {
-          console.log(`No response for: ${message}, retry ${retries + 1}/3`);
-          retries++;
-        }
-      } catch (error) {
-        console.error(`Error sending MQTT message: ${error}`);
-        retries++;
-      }
+    if (!isConnected) {
+      toast({
+        title: "Not connected",
+        description: "MQTT client is not connected. Please wait and try again.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    if (!gotResponse) {
+    setProcessing(message);
+    toast({
+      title: "Sending",
+      description: `Command to ${getSelectedMachineData()?.location}: ${message}`,
+    });
+
+    const success = publish(message);
+    setProcessing(null);
+
+    if (success) {
+      toast({
+        title: "Sent",
+        description: `Command ${message} published to ${getSelectedMachineData()?.location}`,
+      });
+    } else {
       toast({
         title: "Failed",
-        description: `Command ${message} failed after 3 retries`,
+        description: `Could not send command: ${message}`,
         variant: "destructive",
       });
     }
-
-    setProcessing(null);
   };
 
   const handleToggle = (type: "up" | "down", state: boolean) => {
@@ -249,12 +216,12 @@ export default function StaffMaintenancePage() {
               </Badge>
               <Badge
                 className={
-                  mqttConnected
+                  isConnected
                     ? "bg-green-500/20 text-green-400"
                     : "bg-red-500/20 text-red-400"
                 }
               >
-                {mqttConnected ? "MQTT Connected" : "MQTT Disconnected"}
+                {isConnected ? "MQTT Connected" : "MQTT Disconnected"}
               </Badge>
             </div>
           )}
@@ -397,6 +364,14 @@ export default function StaffMaintenancePage() {
                 disabled={processing !== null}
               >
                 Strong Coffee
+              </Button>
+              <Button
+                variant="outline"
+                className="bg-[#1A1A1A] border-gray-700 hover:bg-zinc-700 hover:text-amber-400 text-zinc-300"
+                onClick={() => sendMqttMessage("flush")}
+                disabled={processing !== null}
+              >
+                Flushing
               </Button>
             </div>
           </div>

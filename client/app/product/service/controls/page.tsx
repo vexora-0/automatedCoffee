@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import { useMqttContext } from "@/components/MqttProvider";
 import {
   Loader2,
   Zap,
@@ -17,70 +18,43 @@ export default function ControlsPage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [upLatch, setUpLatch] = useState(false);
   const [downLatch, setDownLatch] = useState(false);
+  const { isConnected, publish } = useMqttContext();
 
-  // MQTT connection would be initialized here in a real implementation
-  // For demo purposes, we'll simulate the MQTT communication
+  const sendMqttMessage = (message: string) => {
+    if (!isConnected) {
+      toast({
+        title: "Not connected",
+        description: "MQTT client is not connected. Please wait and try again.",
+        variant: "destructive",
+        className: "bg-zinc-900 border-zinc-800 text-red-400",
+      });
+      return;
+    }
 
-  const sendMqttMessage = async (message: string) => {
     setProcessing(message);
     toast({
-      title: "Processing",
-      description: `Sending command: ${message}`,
+      title: "Sending",
+      description: `Command: ${message}`,
       className: "bg-zinc-900 border-zinc-800 text-white",
     });
 
-    // Retry mechanism
-    let gotResponse = false;
-    let retries = 0;
+    const success = publish(message);
+    setProcessing(null);
 
-    while (!gotResponse && retries < 3) {
-      try {
-        // Simulate sending MQTT message
-        console.log(`Sending MQTT message: ${message}`);
-
-        // Simulate waiting for response
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-
-        // Simulate response (in a real implementation, this would be an MQTT subscription)
-        // For demo purposes, randomly succeed or fail
-        const success = Math.random() > 0.3;
-
-        if (success) {
-          console.log(`Received "got" feedback for: ${message}`);
-          gotResponse = true;
-          toast({
-            title: "Success",
-            description: `Command ${message} acknowledged`,
-            className: "bg-zinc-900 border-zinc-800 text-emerald-400",
-          });
-
-          // Wait for "done" message (simulated)
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          toast({
-            title: "Completed",
-            description: `Command ${message} completed`,
-            className: "bg-zinc-900 border-zinc-800 text-emerald-400",
-          });
-        } else {
-          console.log(`No response for: ${message}, retry ${retries + 1}/3`);
-          retries++;
-        }
-      } catch (error) {
-        console.error(`Error sending MQTT message: ${error}`);
-        retries++;
-      }
-    }
-
-    if (!gotResponse) {
+    if (success) {
+      toast({
+        title: "Sent",
+        description: `Command ${message} published to machine`,
+        className: "bg-zinc-900 border-zinc-800 text-emerald-400",
+      });
+    } else {
       toast({
         title: "Failed",
-        description: `Command ${message} failed after 3 retries`,
+        description: `Could not send command: ${message}`,
         variant: "destructive",
         className: "bg-zinc-900 border-zinc-800 text-red-400",
       });
     }
-
-    setProcessing(null);
   };
 
   // Handle toggle switches
@@ -169,7 +143,7 @@ export default function ControlsPage() {
             <Button
               variant="outline"
               className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
-              onClick={() => sendMqttMessage("Subtank_fill-1")}
+              onClick={() => sendMqttMessage("subtank_fill-1")}
             >
               <Droplets className="h-5 w-5 text-emerald-400" />
               <span className="text-xs text-center">Subtank Fill Coffee</span>
@@ -185,26 +159,10 @@ export default function ControlsPage() {
             <Button
               variant="outline"
               className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
-              onClick={() => sendMqttMessage("Demo")}
-            >
-              <Play className="h-5 w-5 text-emerald-400" />
-              <span>Demo</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
               onClick={() => sendMqttMessage("Count_display")}
             >
               <Thermometer className="h-5 w-5 text-emerald-400" />
               <span className="text-xs text-center">Display Temperature</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
-              onClick={() => sendMqttMessage("programming")}
-            >
-              <Settings className="h-5 w-5 text-emerald-400" />
-              <span>Program</span>
             </Button>
           </div>
         </div>
@@ -213,7 +171,7 @@ export default function ControlsPage() {
         <div className="col-span-12 md:col-span-4 bg-zinc-900 rounded-xl p-6 border border-zinc-800 shadow-lg">
           <h2 className="text-2xl font-semibold mb-5 text-white flex items-center">
             <Coffee className="mr-2 h-5 w-5 text-emerald-400" />
-            Brew Types
+        Machine Buttons
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <Button
@@ -261,7 +219,7 @@ export default function ControlsPage() {
             <Button
               variant="outline"
               className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-amber-400 text-zinc-300"
-              onClick={() => sendMqttMessage("flushing")}
+              onClick={() => sendMqttMessage("flush")}
             >
               Flushing
             </Button>
@@ -310,36 +268,41 @@ export default function ControlsPage() {
             Controls
           </h2>
 
-          {/* Row 1 */}
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            <Button
-              size="sm"
+          <Button
               variant="outline"
-              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-20 mb-4 w-full flex flex-col items-center justify-center gap-1.5 text-zinc-300 text-base"
+              onClick={() => sendMqttMessage("programming")}
+            >
+              <Settings className="h-6 w-6 text-emerald-400" />
+              <span>Program</span>
+            </Button>
+
+          {/* Row 1 */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300 h-12 min-h-12 text-base"
               onClick={() => sendMqttMessage("up")}
             >
               Up
             </Button>
             <Button
-              size="sm"
               variant="outline"
-              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300 h-12 min-h-12 text-base"
               onClick={() => sendMqttMessage("down")}
             >
               Down
             </Button>
             <Button
-              size="sm"
               variant="outline"
-              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300 h-12 min-h-12 text-base"
               onClick={() => sendMqttMessage("save")}
             >
               Save
             </Button>
             <Button
-              size="sm"
               variant="outline"
-              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 text-zinc-300 h-12 min-h-12 text-base"
               onClick={() => sendMqttMessage("exit")}
             >
               Exit
@@ -375,7 +338,17 @@ export default function ControlsPage() {
               >
                 {downLatch ? "ON" : "OFF"}
               </Button>
+              
             </div>
+            <Button
+              variant="outline"
+              className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
+              onClick={() => sendMqttMessage("Demo")}
+            >
+              <Play className="h-5 w-5 text-emerald-400" />
+              <span>Demo</span>
+            </Button>
+            
           </div>
         </div>
       </div>

@@ -36,6 +36,31 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
       return;
     }
 
+    const clientBase = process.env.CLIENT_PUBLIC_URL;
+    if (!clientBase) {
+      res.status(500).json({ success: false, message: 'CLIENT_PUBLIC_URL not configured' });
+      return;
+    }
+
+    // Zero price: skip payment gateway, create completed order and redirect to success
+    if (recipe.price == null || Number(recipe.price) === 0) {
+      const orderId = uuidv4().replace(/-/g, '').substring(0, 20);
+      const newOrder = await Order.create({
+        order_id: orderId,
+        user_id,
+        machine_id,
+        recipe_id,
+        bill: 0,
+        ordered_at: new Date(),
+        status: 'completed'
+      });
+      await finalizeOrderAndUpdateInventory(newOrder);
+      const recipeName = encodeURIComponent(recipe.name || 'Coffee');
+      const redirectUrl = `${clientBase}/product/success?recipe=${recipeName}&price=0`;
+      res.json({ success: true, redirectUrl });
+      return;
+    }
+
     // Create a pending order to attach to transaction (CCAvenue typically limits to 20 chars)
     const orderId = uuidv4().replace(/-/g, '').substring(0, 20);
     await Order.create({

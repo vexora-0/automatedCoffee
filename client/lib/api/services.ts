@@ -350,18 +350,26 @@ export const orderService = {
 
 // ===== PAYMENT SERVICES =====
 export const paymentService = {
-  // Initiate payment: server responds with HTML that redirects to CCAvenue
+  // Initiate payment: server responds with HTML (CCAvenue redirect) or JSON { redirectUrl } when price is 0
   initiate: async (payload: {
     user_id: string;
     machine_id: string;
     recipe_id: string;
-  }): Promise<string> => {
-    // We need raw HTML, not JSON
+  }): Promise<string | { redirectUrl: string }> => {
     const response = await apiClient.post('/payments/init', payload, {
       headers: { 'Content-Type': 'application/json' },
       responseType: 'text',
     });
-    return response.data as unknown as string;
+    const data = response.data as unknown as string;
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed && typeof parsed.redirectUrl === 'string') {
+        return { redirectUrl: parsed.redirectUrl };
+      }
+    } catch {
+      // Not JSON, treat as HTML form
+    }
+    return data;
   },
 };
 

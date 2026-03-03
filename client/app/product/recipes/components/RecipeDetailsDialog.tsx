@@ -144,21 +144,26 @@ export default function RecipeDetailsDialog({
     setErrorMessage("");
 
     try {
-      // Ask server to build and return an HTML form that posts to CCAvenue
-      const html = await paymentService.initiate({
+      const result = await paymentService.initiate({
         user_id: userId,
         machine_id: machineId,
         recipe_id: recipe.recipe_id,
       });
 
-      // Create a new document and write the HTML to trigger redirect
+      // Price 0: server returns redirect URL — go straight to success page
+      if (typeof result === 'object' && result?.redirectUrl) {
+        window.location.href = result.redirectUrl;
+        return;
+      }
+
+      // Otherwise: HTML form that posts to CCAvenue
+      const html = result as string;
       const newWindow = window.open('', '_self');
       if (newWindow) {
         newWindow.document.open();
         newWindow.document.write(html);
         newWindow.document.close();
       } else {
-        // Fallback: render inline
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         document.body.appendChild(iframe);
