@@ -167,40 +167,21 @@ function SuccessPageContent() {
     const quoteIndex = Math.floor(seededRandom(42) * SUCCESS_QUOTES.length);
     setRandomQuote(SUCCESS_QUOTES[quoteIndex]);
 
-    // Prevent scrolling on tablets - fixed for tablet 1340x800
-    const preventTouchScroll = (e: TouchEvent) => {
-      e.preventDefault();
-    };
-    
-    const preventWheelScroll = (e: WheelEvent) => {
-      e.preventDefault();
-    };
-    
-    // Disable scrolling - fixed for tablet 1340x800
+    // Prevent all scrolling
+    const preventScroll = (e: TouchEvent | WheelEvent) => e.preventDefault();
     if (typeof document !== 'undefined') {
+      document.documentElement.style.overflow = 'hidden';
       document.body.style.overflow = 'hidden';
-      document.body.style.height = '800px';
-      document.body.style.width = '1340px';
-      document.body.style.position = 'fixed';
-      document.body.style.top = '0';
-      document.body.style.left = '0';
-      
-      // Prevent touch and wheel scrolling
-      document.addEventListener('touchmove', preventTouchScroll, { passive: false });
-      document.addEventListener('wheel', preventWheelScroll, { passive: false });
+      document.addEventListener('touchmove', preventScroll, { passive: false });
+      document.addEventListener('wheel', preventScroll, { passive: false });
     }
 
     return () => {
-      // Re-enable scrolling on unmount
       if (typeof document !== 'undefined') {
+        document.documentElement.style.overflow = '';
         document.body.style.overflow = '';
-        document.body.style.height = '';
-        document.body.style.width = '';
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.removeEventListener('touchmove', preventTouchScroll);
-        document.removeEventListener('wheel', preventWheelScroll);
+        document.removeEventListener('touchmove', preventScroll);
+        document.removeEventListener('wheel', preventScroll);
       }
     };
   }, [searchParams]);
@@ -286,7 +267,7 @@ function SuccessPageContent() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D]/50 flex flex-col items-center justify-center relative overflow-hidden" style={{ width: '1340px', height: '800px', overflow: 'hidden', position: 'fixed', top: 0, left: 0 }}>
+    <div className="bg-gradient-to-br from-[#F4EBDE] to-[#DAB49D]/50 flex flex-col items-center justify-center relative overflow-hidden w-screen h-screen">
       {/* Animated background */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         {/* Animated coffee color gradient backdrop */}
@@ -424,7 +405,7 @@ function SuccessPageContent() {
       </motion.div>
 
       {/* Main content with 3D card effect */}
-      <div className="relative z-20 w-full max-w-5xl px-4" style={{ maxHeight: "760px", overflow: "hidden" }}>
+      <div className="relative z-20 w-full max-w-5xl px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20, rotateX: -10 }}
           animate={{
@@ -435,7 +416,7 @@ function SuccessPageContent() {
           }}
           className="bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden shadow-[0_20px_80px_-15px_rgba(194,134,84,0.35)] border border-white/40"
         >
-          <div className="grid grid-cols-1 md:grid-cols-[1.08fr_0.92fr] gap-6 md:gap-8 p-5 md:p-8 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-[1.1fr_0.9fr] gap-4 md:gap-6 p-5 md:p-8 items-center">
             {/* Left column: confirmation + order summary */}
             <div className="space-y-4 md:space-y-6">
               <div className="relative px-2 md:px-3 pt-2">
@@ -612,7 +593,7 @@ function SuccessPageContent() {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-white/75 to-white/50 backdrop-blur-md rounded-2xl border border-white/55 shadow-inner p-4 md:p-5 max-h-[520px] overflow-hidden">
+              <div className="bg-gradient-to-br from-white/75 to-white/50 backdrop-blur-md rounded-2xl border border-white/55 shadow-inner p-4 md:p-5 overflow-hidden">
                 <div className="relative">
                   {/* Timeline line */}
                   <div className="absolute left-5 top-4 bottom-4 w-px bg-gradient-to-b from-[#C28654] via-[#8A5738] to-[#5F3023]/30"></div>
@@ -754,7 +735,7 @@ function SuccessPageContent() {
       </div>
 
       {/* Floating coffee elements */}
-      <div className="fixed inset-0 z-10 pointer-events-none">
+      <div className="absolute inset-0 z-10 pointer-events-none">
         {orderReady
           ? // Steam effect when coffee is ready
             [...Array(8)].map((_, i) => {
