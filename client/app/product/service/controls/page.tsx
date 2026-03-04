@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { useMqttContext } from "@/components/MqttProvider";
@@ -12,13 +12,27 @@ import {
   Settings,
   Play,
   Thermometer,
+  Milk,
 } from "lucide-react";
+
+const FLUSH_WAIT_SECONDS = 12;
+
+const FLUSH_OPTIONS = [
+  { label: "Coffee", command: "black_coffee", icon: Coffee, color: "text-emerald-400" },
+  { label: "Milk",   command: "hot_milk",       icon: Milk,   color: "text-blue-400"    },
+  { label: "Tea",    command: "black_tea",      icon: Coffee, color: "text-amber-400"   },
+] as const;
 
 export default function ControlsPage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [upLatch, setUpLatch] = useState(false);
   const [downLatch, setDownLatch] = useState(false);
   const { isConnected, publish } = useMqttContext();
+
+  // Flush flow state
+  const [flushCountdown, setFlushCountdown] = useState<number | null>(null);
+  const [showFlushConfirm, setShowFlushConfirm] = useState(false);
+  const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const sendMqttMessage = (message: string) => {
     if (!isConnected) {
@@ -57,6 +71,37 @@ export default function ControlsPage() {
     }
   };
 
+  // Start Flush flow
+  const handleStartFlush = () => {
+    if (flushTimerRef.current) return; // already running
+    sendMqttMessage("flushing");
+    setFlushCountdown(FLUSH_WAIT_SECONDS);
+
+    let remaining = FLUSH_WAIT_SECONDS;
+    flushTimerRef.current = setInterval(() => {
+      remaining -= 1;
+      setFlushCountdown(remaining);
+      if (remaining <= 0) {
+        clearInterval(flushTimerRef.current!);
+        flushTimerRef.current = null;
+        setFlushCountdown(null);
+        setShowFlushConfirm(true);
+      }
+    }, 1000);
+  };
+
+  const handleFlushSelect = (command: string) => {
+    setShowFlushConfirm(false);
+    sendMqttMessage(command);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (flushTimerRef.current) clearInterval(flushTimerRef.current);
+    };
+  }, []);
+
   // Handle toggle switches
   const handleToggle = (type: "up" | "down", state: boolean) => {
     if (type === "up") {
@@ -73,6 +118,42 @@ export default function ControlsPage() {
       <h1 className="text-3xl font-bold mb-8 text-white tracking-tight">
         Machine Controls
       </h1>
+
+      {/* Flush countdown overlay */}
+      {flushCountdown !== null && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-zinc-900 p-8 rounded-xl shadow-2xl border border-zinc-800 w-full max-w-sm text-center">
+            <Droplets className="h-10 w-10 text-emerald-400 mx-auto mb-4 animate-pulse" />
+            <h3 className="text-white text-xl font-bold mb-2">Flushing…</h3>
+            <p className="text-zinc-400 mb-6">Please wait before selecting your drink</p>
+            <div className="text-5xl font-mono font-bold text-emerald-400">{flushCountdown}</div>
+            <p className="text-zinc-500 mt-2 text-sm">seconds remaining</p>
+          </div>
+        </div>
+      )}
+
+      {/* Flush drink selection dialog */}
+      {showFlushConfirm && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-zinc-900 p-8 rounded-xl shadow-2xl border border-zinc-800 w-full max-w-sm">
+            <h3 className="text-white text-xl font-bold mb-2 text-center">Select Drink</h3>
+            <p className="text-zinc-400 text-sm text-center mb-6">What would you like to brew after flushing?</p>
+            <div className="grid grid-cols-3 gap-3">
+              {FLUSH_OPTIONS.map(({ label, command, icon: Icon, color }) => (
+                <Button
+                  key={command}
+                  variant="outline"
+                  className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 h-20 flex flex-col items-center justify-center gap-2 text-zinc-300"
+                  onClick={() => handleFlushSelect(command)}
+                >
+                  <Icon className={`h-6 w-6 ${color}`} />
+                  <span className={`text-sm font-medium ${color}`}>{label}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {processing && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
@@ -103,7 +184,8 @@ export default function ControlsPage() {
             <Button
               variant="outline"
               className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
-              onClick={() => sendMqttMessage("flushing")}
+              onClick={handleStartFlush}
+              disabled={flushCountdown !== null}
             >
               <Droplets className="h-5 w-5 text-emerald-400" />
               <span>Start Flush</span>
