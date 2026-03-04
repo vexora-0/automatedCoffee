@@ -46,12 +46,6 @@ export default function ControlsPage() {
     }
 
     setProcessing(message);
-    toast({
-      title: "Sending",
-      description: `Command: ${message}`,
-      className: "bg-zinc-900 border-zinc-800 text-white",
-    });
-
     const success = publish(message);
     setProcessing(null);
 
