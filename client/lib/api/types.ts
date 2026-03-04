@@ -63,6 +63,27 @@ export interface RecipeCategory {
   name: string;
 }
 
+export type MachineCommand =
+  | 'strong_coffee'
+  | 'light_coffee'
+  | 'black_coffee'
+  | 'strong_tea'
+  | 'light_tea'
+  | 'black_tea'
+  | 'tea_bag_tea'
+  | 'hot_milk';
+
+export const MACHINE_COMMANDS: MachineCommand[] = [
+  'strong_coffee',
+  'light_coffee',
+  'black_coffee',
+  'strong_tea',
+  'light_tea',
+  'black_tea',
+  'tea_bag_tea',
+  'hot_milk',
+];
+
 export interface Recipe {
   recipe_id: string;
   name: string;
@@ -75,6 +96,7 @@ export interface Recipe {
   carbs: number;
   fat: number;
   sugar: number;
+  machine_command: MachineCommand;
   created_at: Date;
 }
 
@@ -90,6 +112,7 @@ export interface RecipeFormData {
   carbs: number;
   fat: number;
   sugar: number;
+  machine_command: MachineCommand | '';
   ingredients?: {
     ingredient_id: string;
     quantity: number;

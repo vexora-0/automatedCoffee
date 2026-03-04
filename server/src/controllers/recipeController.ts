@@ -211,6 +211,7 @@ export const createRecipeWithImage = async (req: MulterRequest, res: Response): 
       carbs: recipeData.carbs,
       fat: recipeData.fat,
       sugar: recipeData.sugar,
+      machine_command: recipeData.machine_command,
       created_at: new Date()
     });
     
@@ -372,9 +373,10 @@ export const createRecipe = async (req: Request, res: Response): Promise<void> =
       carbs,
       fat,
       sugar,
+      machine_command,
       ingredients
     } = req.body;
-    
+
     // Check if category exists
     const category = await RecipeCategory.findOne({ category_id });
     if (!category) {
@@ -384,7 +386,7 @@ export const createRecipe = async (req: Request, res: Response): Promise<void> =
       });
       return;
     }
-    
+
     // Create recipe
     const recipe = await Recipe.create({
       recipe_id: uuidv4(),
@@ -398,6 +400,7 @@ export const createRecipe = async (req: Request, res: Response): Promise<void> =
       carbs,
       fat,
       sugar,
+      machine_command,
       created_at: new Date()
     });
     
@@ -464,9 +467,10 @@ export const updateRecipe = async (req: Request, res: Response): Promise<void> =
       carbs,
       fat,
       sugar,
+      machine_command,
       ingredients
     } = req.body;
-    
+
     const recipe = await Recipe.findOne({ recipe_id: req.params.recipeId });
 
     if (!recipe) {
@@ -499,7 +503,8 @@ export const updateRecipe = async (req: Request, res: Response): Promise<void> =
       protein,
       carbs,
       fat,
-      sugar
+      sugar,
+      machine_command
     };
     
     // Only update image_url if it's provided and not empty

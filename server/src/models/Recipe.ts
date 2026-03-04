@@ -52,6 +52,11 @@ const recipeSchema: Schema = new Schema({
     type: Number,
     required: true
   },
+  machine_command: {
+    type: String,
+    enum: ['strong_coffee', 'light_coffee', 'black_coffee', 'strong_tea', 'light_tea', 'black_tea', 'tea_bag_tea', 'hot_milk'],
+    default: null
+  },
   created_at: {
     type: Date,
     default: Date.now

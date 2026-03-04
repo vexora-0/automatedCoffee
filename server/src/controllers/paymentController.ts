@@ -56,7 +56,8 @@ export const initiatePayment = async (req: Request, res: Response): Promise<void
       });
       await finalizeOrderAndUpdateInventory(newOrder);
       const recipeName = encodeURIComponent(recipe.name || 'Coffee');
-      const redirectUrl = `${clientBase}/product/success?recipe=${recipeName}&price=0`;
+      const recipeCommand = encodeURIComponent(recipe.machine_command || recipe.name || 'Coffee');
+      const redirectUrl = `${clientBase}/product/success?recipe=${recipeName}&command=${recipeCommand}&price=0`;
       res.json({ success: true, redirectUrl });
       return;
     }
@@ -163,6 +164,7 @@ export const handleCcavResponse = async (req: Request, res: Response): Promise<v
       return;
     }
     let recipeName = '';
+    let recipeCommand = '';
     let amount = '';
 
     if (updated) {
@@ -170,11 +172,12 @@ export const handleCcavResponse = async (req: Request, res: Response): Promise<v
       try {
         const recipe = await Recipe.findOne({ recipe_id: updated.recipe_id });
         recipeName = encodeURIComponent(recipe?.name || 'Coffee');
+        recipeCommand = encodeURIComponent(recipe?.machine_command || recipe?.name || 'Coffee');
       } catch {}
     }
 
     if (newStatus === 'completed') {
-      res.redirect(`${clientBase}/product/success?recipe=${recipeName}&price=${amount}`);
+      res.redirect(`${clientBase}/product/success?recipe=${recipeName}&command=${recipeCommand}&price=${amount}`);
     } else {
       res.redirect(`${clientBase}/product/auth?payment=${newStatus}`);
     }

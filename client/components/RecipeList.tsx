@@ -32,7 +32,7 @@ export default function RecipeList() {
               <div className="grid grid-cols-2 gap-2 mt-4">
                 <div>
                   <p className="text-xs font-medium">Price</p>
-                  <p className="font-bold">${recipe.price.toFixed(2)}</p>
+                  <p className="font-bold">₹{recipe.price.toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium">Calories</p>

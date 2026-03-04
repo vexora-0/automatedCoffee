@@ -87,6 +87,7 @@ const formatPx = (value: number): string => {
 function SuccessPageContent() {
   const searchParams = useSearchParams();
   const [recipeName, setRecipeName] = useState<string>("Coffee");
+  const [machineCommand, setMachineCommand] = useState<string>("");
   const [price, setPrice] = useState<string>("0");
   const [userName, setUserName] = useState<string>("Coffee Lover");
   const [preparationStep, setPreparationStep] = useState<number>(1);
@@ -113,46 +114,46 @@ function SuccessPageContent() {
       setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     }
 
-    // Fetch order data - prioritize localStorage, fallback to URL params
+    // Fetch order data - prioritize URL params (they carry machine_command), fallback to localStorage
     try {
       const urlRecipe = searchParams.get("recipe");
+      const urlCommand = searchParams.get("command");
       const urlPrice = searchParams.get("price");
-      
-      // Check localStorage first
-      const orderDataStr = localStorage.getItem("orderData");
-      if (orderDataStr) {
-        const orderData = JSON.parse(orderDataStr);
-        if (orderData.recipe) {
-          setRecipeName(orderData.recipe);
-        }
-        if (orderData.price) {
-          setPrice(orderData.price);
-        }
-        console.log("[Success] Loaded order data from localStorage:", orderData);
-      } else if (urlRecipe || urlPrice) {
-        // If no localStorage but URL params exist (actual payment flow)
-        // Set localStorage from URL params for consistency
+
+      if (urlRecipe || urlCommand || urlPrice) {
+        if (urlRecipe) setRecipeName(urlRecipe);
+        if (urlCommand) setMachineCommand(urlCommand);
+        if (urlPrice) setPrice(urlPrice);
+
         const orderData = {
           recipe: urlRecipe || 'Coffee',
+          command: urlCommand || urlRecipe || 'Coffee',
           price: urlPrice || '0',
           orderId: '',
           recipeId: '',
           machineId: localStorage.getItem('machineId') || '',
           timestamp: new Date().toISOString()
         };
-        
         localStorage.setItem('orderData', JSON.stringify(orderData));
-        
-        if (urlRecipe) setRecipeName(urlRecipe);
-        if (urlPrice) setPrice(urlPrice);
-        console.log("[Success] Set order data in localStorage from URL parameters:", orderData);
+        console.log("[Success] Set order data from URL parameters:", orderData);
+      } else {
+        // Fallback to localStorage if no URL params
+        const orderDataStr = localStorage.getItem("orderData");
+        if (orderDataStr) {
+          const orderData = JSON.parse(orderDataStr);
+          if (orderData.recipe) setRecipeName(orderData.recipe);
+          if (orderData.command) setMachineCommand(orderData.command);
+          if (orderData.price) setPrice(orderData.price);
+          console.log("[Success] Loaded order data from localStorage:", orderData);
+        }
       }
     } catch (error) {
       console.error("[Success] Failed to load order data:", error);
-      // Final fallback to URL parameters
       const urlRecipe = searchParams.get("recipe");
+      const urlCommand = searchParams.get("command");
       const urlPrice = searchParams.get("price");
       if (urlRecipe) setRecipeName(urlRecipe);
+      if (urlCommand) setMachineCommand(urlCommand);
       if (urlPrice) setPrice(urlPrice);
     }
 
@@ -215,22 +216,23 @@ function SuccessPageContent() {
     }
   }, [orderReady]);
 
-  // Send recipe name to MQTT input topic when connected
+  // Send machine command to MQTT input topic when connected
   useEffect(() => {
-    if (isConnected && recipeName && !recipePublishedRef.current) {
-      console.log(`Sending recipe "${recipeName}" to MQTT input topic`);
-      const success = publish(recipeName);
+    const command = machineCommand || recipeName;
+    if (isConnected && command && !recipePublishedRef.current) {
+      console.log(`Sending machine command "${command}" to MQTT input topic`);
+      const success = publish(command);
       if (success) {
-        console.log(`Recipe "${recipeName}" published successfully`);
+        console.log(`Machine command "${command}" published successfully`);
         recipePublishedRef.current = true;
       } else {
         console.error(
-          `Failed to publish recipe "${recipeName}" - MQTT client may not be connected`
+          `Failed to publish machine command "${command}" - MQTT client may not be connected`
         );
         // Retry after a short delay
         setTimeout(() => {
           if (isConnected && !recipePublishedRef.current) {
-            const retrySuccess = publish(recipeName);
+            const retrySuccess = publish(command);
             if (retrySuccess) {
               recipePublishedRef.current = true;
             }
@@ -238,7 +240,7 @@ function SuccessPageContent() {
         }, 1000);
       }
     }
-  }, [isConnected, recipeName, publish]);
+  }, [isConnected, machineCommand, recipeName, publish]);
 
   // Simulate preparation steps with timeouts
   useEffect(() => {

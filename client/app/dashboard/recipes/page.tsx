@@ -49,7 +49,7 @@ import {
   useIngredients,
 } from "@/lib/api/hooks";
 import { recipeService, recipeIngredientService } from "@/lib/api/services";
-import { Recipe, RecipeFormData, Ingredient } from "@/lib/api/types";
+import { Recipe, RecipeFormData, Ingredient, MACHINE_COMMANDS, MachineCommand } from "@/lib/api/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -97,6 +97,7 @@ export default function RecipesManagement() {
     carbs: 0,
     fat: 0,
     sugar: 0,
+    machine_command: "",
     ingredients: [],
   });
 
@@ -114,6 +115,7 @@ export default function RecipesManagement() {
       carbs: 0,
       fat: 0,
       sugar: 0,
+      machine_command: "",
       ingredients: [],
     });
     setSelectedIngredients([]);
@@ -234,6 +236,7 @@ export default function RecipesManagement() {
       carbs: recipe.carbs,
       fat: recipe.fat,
       sugar: recipe.sugar,
+      machine_command: recipe.machine_command || "",
     });
 
     // Fetch recipe ingredients and populate selectedIngredients
@@ -493,7 +496,28 @@ export default function RecipesManagement() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="price">Price ($)</Label>
+                        <Label htmlFor="machine_command">Machine Command</Label>
+                        <Select
+                          value={formData.machine_command}
+                          onValueChange={(value) =>
+                            handleSelectChange("machine_command", value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select machine command" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {MACHINE_COMMANDS.map((cmd) => (
+                              <SelectItem key={cmd} value={cmd}>
+                                {cmd}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="price">Price (₹)</Label>
                         <Input
                           id="price"
                           name="price"
@@ -720,6 +744,7 @@ export default function RecipesManagement() {
                     disabled={
                       !formData.name ||
                       !formData.category_id ||
+                      !formData.machine_command ||
                       selectedIngredients.length === 0
                     }
                   >
@@ -759,6 +784,9 @@ export default function RecipesManagement() {
                         Price
                       </TableHead>
                       <TableHead className="text-[#5F3023] font-semibold">
+                        Command
+                      </TableHead>
+                      <TableHead className="text-[#5F3023] font-semibold">
                         Nutrition
                       </TableHead>
                       <TableHead className="text-right text-[#5F3023] font-semibold">
@@ -790,7 +818,19 @@ export default function RecipesManagement() {
                           )}
                         </TableCell>
                         <TableCell className="text-[#5F3023] font-medium">
-                          ${recipe.price.toFixed(2)}
+                          ₹{recipe.price.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          {recipe.machine_command ? (
+                            <Badge
+                              variant="outline"
+                              className="border-[#8A5738]/30 text-[#5F3023] font-mono text-xs"
+                            >
+                              {recipe.machine_command}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
@@ -930,7 +970,28 @@ export default function RecipesManagement() {
                   </div>
 
                   <div>
-                    <Label htmlFor="edit-price">Price ($)</Label>
+                    <Label htmlFor="edit-machine-command">Machine Command</Label>
+                    <Select
+                      value={formData.machine_command}
+                      onValueChange={(value) =>
+                        handleSelectChange("machine_command", value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select machine command" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MACHINE_COMMANDS.map((cmd) => (
+                          <SelectItem key={cmd} value={cmd}>
+                            {cmd}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-price">Price (₹)</Label>
                     <Input
                       id="edit-price"
                       name="price"
@@ -1147,7 +1208,7 @@ export default function RecipesManagement() {
               </Button>
               <Button
                 onClick={handleUpdateRecipe}
-                disabled={!formData.name || !formData.category_id}
+                disabled={!formData.name || !formData.category_id || !formData.machine_command}
               >
                 Update Recipe
               </Button>

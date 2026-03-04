@@ -51,6 +51,16 @@ export interface IRecipeCategory extends Document {
   name: string;
 }
 
+export type MachineCommand =
+  | 'strong_coffee'
+  | 'light_coffee'
+  | 'black_coffee'
+  | 'strong_tea'
+  | 'light_tea'
+  | 'black_tea'
+  | 'tea_bag_tea'
+  | 'hot_milk';
+
 export interface IRecipe extends Document {
   recipe_id: string;
   name: string;
@@ -63,6 +73,7 @@ export interface IRecipe extends Document {
   carbs: number;
   fat: number;
   sugar: number;
+  machine_command?: MachineCommand;
   created_at: Date;
 }
 
