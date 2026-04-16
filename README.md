@@ -1,4 +1,3 @@
-
 # Coffee Machine Inventory & Recipe Availability System Documentation 
 
 ## System Architecture Overview
