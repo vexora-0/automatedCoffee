@@ -47,7 +47,7 @@ export default function StaffMaintenancePage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [upLatch, setUpLatch] = useState(false);
   const [downLatch, setDownLatch] = useState(false);
-  const { isConnected, publish } = useMqttContext();
+  const { isConnected, publishWithAck } = useMqttContext();
 
   useEffect(() => {
     const storedStaffData = localStorage.getItem("staffData");
@@ -76,7 +76,7 @@ export default function StaffMaintenancePage() {
     }
   }, [selectedMachine]);
 
-  const sendMqttMessage = (message: string) => {
+  const sendMqttMessage = async (message: string) => {
     if (!selectedMachine) {
       toast({
         title: "Error",
@@ -101,20 +101,22 @@ export default function StaffMaintenancePage() {
       description: `Command to ${getSelectedMachineData()?.location}: ${message}`,
     });
 
-    const success = publish(message);
-    setProcessing(null);
-
-    if (success) {
-      toast({
-        title: "Sent",
-        description: `Command ${message} published to ${getSelectedMachineData()?.location}`,
-      });
-    } else {
-      toast({
-        title: "Failed",
-        description: `Could not send command: ${message}`,
-        variant: "destructive",
-      });
+    try {
+      const acked = await publishWithAck(message, { ack: "got", retries: 3, timeoutMs: 5000, retryGapMs: 5000 });
+      if (acked) {
+        toast({
+          title: "Acknowledged",
+          description: `Command ${message} acknowledged by ${getSelectedMachineData()?.location}`,
+        });
+      } else {
+        toast({
+          title: "Failed",
+          description: "Network issue. Please retry after sometime.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setProcessing(null);
     }
   };
 

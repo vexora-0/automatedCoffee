@@ -27,14 +27,14 @@ export default function ControlsPage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [upLatch, setUpLatch] = useState(false);
   const [downLatch, setDownLatch] = useState(false);
-  const { isConnected, publish } = useMqttContext();
+  const { isConnected, publishWithAck } = useMqttContext();
 
   // Flush flow state
   const [flushCountdown, setFlushCountdown] = useState<number | null>(null);
   const [showFlushConfirm, setShowFlushConfirm] = useState(false);
   const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const sendMqttMessage = (message: string) => {
+  const sendMqttMessage = async (message: string) => {
     if (!isConnected) {
       toast({
         title: "Not connected",
@@ -46,29 +46,37 @@ export default function ControlsPage() {
     }
 
     setProcessing(message);
-    const success = publish(message);
-    setProcessing(null);
+    try {
+      const acked = await publishWithAck(message, {
+        ack: "got",
+        retries: 3,
+        timeoutMs: 5000,
+        retryGapMs: 5000,
+      });
 
-    if (success) {
-      toast({
-        title: "Sent",
-        description: `Command ${message} published to machine`,
-        className: "bg-zinc-900 border-zinc-800 text-emerald-400",
-      });
-    } else {
-      toast({
-        title: "Failed",
-        description: `Could not send command: ${message}`,
-        variant: "destructive",
-        className: "bg-zinc-900 border-zinc-800 text-red-400",
-      });
+      if (acked) {
+        toast({
+          title: "Acknowledged",
+          description: `Command ${message} acknowledged by machine`,
+          className: "bg-zinc-900 border-zinc-800 text-emerald-400",
+        });
+      } else {
+        toast({
+          title: "Failed",
+          description: "Network issue. Please retry after sometime.",
+          variant: "destructive",
+          className: "bg-zinc-900 border-zinc-800 text-red-400",
+        });
+      }
+    } finally {
+      setProcessing(null);
     }
   };
 
   // Start Flush flow
-  const handleStartFlush = () => {
+  const handleStartFlush = async () => {
     if (flushTimerRef.current) return; // already running
-    sendMqttMessage("flushing");
+    await sendMqttMessage("flushing");
     setFlushCountdown(FLUSH_WAIT_SECONDS);
 
     let remaining = FLUSH_WAIT_SECONDS;
@@ -84,9 +92,9 @@ export default function ControlsPage() {
     }, 1000);
   };
 
-  const handleFlushSelect = (command: string) => {
+  const handleFlushSelect = async (command: string) => {
     setShowFlushConfirm(false);
-    sendMqttMessage(command);
+    await sendMqttMessage(command);
   };
 
   // Cleanup on unmount

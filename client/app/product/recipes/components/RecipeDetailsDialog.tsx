@@ -8,6 +8,7 @@ import { paymentService } from "@/lib/api/services";
 import { Button } from "@/components/ui/button";
 import { X, ShoppingCart, Loader2, ThumbsUp, Coffee } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useMqttContext } from "@/components/MqttProvider";
 
 // Track failed image URLs to avoid repeated 404 fetches
 const failedImageUrls = new Set<string>();
@@ -66,6 +67,7 @@ export default function RecipeDetailsDialog({
   recipeIngredients,
 }: RecipeDetailsDialogProps) {
   const router = useRouter();
+  const { isConnected: isMqttConnected, publishWithAck } = useMqttContext();
   const [isOrdering, setIsOrdering] = useState(false);
   const [showOrderSuccess, setShowOrderSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -144,6 +146,24 @@ export default function RecipeDetailsDialog({
     setErrorMessage("");
 
     try {
+      // Payment gate: send check_payment and wait for system_online before redirecting to gateway.
+      if (!isMqttConnected) {
+        setErrorMessage("Machine is not connected. Please wait and try again.");
+        return;
+      }
+
+      const systemOnline = await publishWithAck("check_payment", {
+        ack: "system_online",
+        retries: 3,
+        timeoutMs: 5000,
+        retryGapMs: 5000,
+      });
+
+      if (!systemOnline) {
+        setErrorMessage("Network issue. Please retry after sometime.");
+        return;
+      }
+
       const result = await paymentService.initiate({
         user_id: userId,
         machine_id: machineId,

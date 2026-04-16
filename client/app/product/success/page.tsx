@@ -93,7 +93,7 @@ function SuccessPageContent() {
   const [preparationStep, setPreparationStep] = useState<number>(1);
   const [orderReady, setOrderReady] = useState<boolean>(false);
   const router = useRouter();
-  const { isConnected, publish } = useMqttContext();
+  const { isConnected, publishWithAck } = useMqttContext();
   const recipePublishedRef = useRef(false);
   const [randomQuote, setRandomQuote] = useState<string>("");
   const [timeElapsed, setTimeElapsed] = useState<number>(0);
@@ -202,26 +202,24 @@ function SuccessPageContent() {
     const command = machineCommand || recipeName;
     if (isConnected && command && !recipePublishedRef.current) {
       console.log(`Sending machine command "${command}" to MQTT input topic`);
-      const success = publish(command);
-      if (success) {
-        console.log(`Machine command "${command}" published successfully`);
-        recipePublishedRef.current = true;
-      } else {
-        console.error(
-          `Failed to publish machine command "${command}" - MQTT client may not be connected`
-        );
-        // Retry after a short delay
-        setTimeout(() => {
-          if (isConnected && !recipePublishedRef.current) {
-            const retrySuccess = publish(command);
-            if (retrySuccess) {
-              recipePublishedRef.current = true;
-            }
-          }
-        }, 1000);
-      }
+      (async () => {
+        const acked = await publishWithAck(command, {
+          ack: "got",
+          retries: 3,
+          timeoutMs: 5000,
+          retryGapMs: 5000,
+        });
+        if (acked) {
+          console.log(`Machine command "${command}" acknowledged`);
+          recipePublishedRef.current = true;
+        } else {
+          console.error(
+            `Machine command "${command}" not acknowledged after retries (network issue)`
+          );
+        }
+      })();
     }
-  }, [isConnected, machineCommand, recipeName, publish]);
+  }, [isConnected, machineCommand, recipeName, publishWithAck]);
 
   // Simulate preparation steps with timeouts
   useEffect(() => {
