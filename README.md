@@ -147,7 +147,6 @@ The automated coffee system uses a client-server architecture with real-time com
 1. **Offline Mode**:
    - Implement cached data for offline operation
    - Queue operations when offline for later sync
-
 2. **Connection Quality Management**:
    - Adapt update frequency based on connection quality
    - Reduce payload size for poor connections
