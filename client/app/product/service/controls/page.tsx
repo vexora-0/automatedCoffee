@@ -219,7 +219,7 @@ export default function ControlsPage() {
             <Button
               variant="outline"
               className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
-              onClick={() => sendMqttMessage("Intermideate_brew-2")}
+              onClick={() => sendMqttMessage("intermideate_brew-2")}
             >
               <Coffee className="h-5 w-5 text-amber-400 opacity-70" />
               <span className="text-xs text-center">Intermediate Tea</span>
@@ -243,7 +243,7 @@ export default function ControlsPage() {
             <Button
               variant="outline"
               className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:text-emerald-400 h-16 flex flex-col items-center justify-center gap-1 text-zinc-300"
-              onClick={() => sendMqttMessage("Count_display")}
+              onClick={() => sendMqttMessage("count_display")}
             >
               <Thermometer className="h-5 w-5 text-emerald-400" />
               <span className="text-xs text-center">Display Temperature</span>
